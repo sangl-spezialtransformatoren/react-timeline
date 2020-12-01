@@ -1,5 +1,2 @@
-export {DivBar} from "./components/bars"
-export {Timeline} from "./timeline"
-export {Canvas} from "./canvas"
-export {ReactTimelineContext} from "./context"
-export {Grid, AdaptiveGrid} from "./grid"
+export {Timeline, TimelineProps, TimelineState, DefaultTimelineState, InitialTimelineParameters, useTimelineState} from "./timeline"
+export {Grid} from "./grid"

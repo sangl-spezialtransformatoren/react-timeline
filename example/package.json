@@ -14,7 +14,8 @@
     "react": "../node_modules/react",
     "react-dom": "../node_modules/react-dom",
     "scheduler/tracing": "../node_modules/scheduler/tracing-profiling",
-    "react-timeline": "../dist"
+    "react-timeline": "../dist",
+    "react-timeline/budle.css": "../dist/bundle.css"
   },
   "devDependencies": {
     "@types/react": "^16.9.11",
