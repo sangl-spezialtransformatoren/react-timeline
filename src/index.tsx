@@ -1,2 +1,6 @@
-export {Timeline, TimelineProps, TimelineState, DefaultTimelineState, InitialTimelineParameters, useTimelineState} from "./timeline"
+export {Timeline, useTimelineState} from "./timeline"
 export {Grid} from "./grid"
+export {DefaultTimelineState} from "./defaults"
+export {TimelineState} from "./definitions"
+export {InitialTimelineParameters} from "./definitions"
+export {TimelineProps} from "./definitions"

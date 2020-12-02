@@ -11,7 +11,7 @@ const App = () => {
         endDate: new Date().valueOf() + 3600000
     }
     let [state, setState] = useTimelineState()
-    return <Timeline state={state} setState={setState} initialParamaters={initialParameters} style={{height: 500}}>
+    return <Timeline state={state} setState={setState} initialParamaters={initialParameters} style={{height: "100%", width: "100%"}}>
         <Grid interval={3600000} startDate={new Date()}/>
     </Timeline>
 }

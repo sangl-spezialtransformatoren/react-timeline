@@ -1,90 +1,29 @@
-import React, {createContext, Dispatch, SetStateAction, useEffect, useState} from "react"
-import {animated, useSpring} from 'react-spring'
+import React, {useEffect, useRef, useState} from "react"
+import {animated, useSpring, config} from 'react-spring'
 import useResizeObserver from "use-resize-observer"
 import './style.css'
 import {useGesture} from "react-use-gesture"
-import {State} from "react-use-gesture/dist/types"
-
-export type TimelineStyle = {
-    width?: React.CSSProperties["width"]
-    height?: React.CSSProperties["height"]
-}
-
-export type TimelineProps = {
-    state: TimelineState
-    setState: Dispatch<SetStateAction<TimelineState>>
-    initialParameters?: InitialTimelineParameters
-    style?: TimelineStyle,
-    onCanvasDrag?: (state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: State['drag']) => void
-}
-
-const defaultOnCanvasDrag: TimelineProps["onCanvasDrag"] = (state, setState, eventState) => {
-    console.log(eventState.movement)
-    setState({
-        ...state,
-        startDate: state.initialStartDate.valueOf() - eventState.offset[0] * state.timePerPixel
-    })
-}
-
-export type InitialTimelineParameters = {
-    startDate: Date | number
-    endDate: Date | number
-}
-
-export type TimelineState = {
-    startDate: Date | number
-    timePerPixel: number
-    width: number
-    initialStartDate: Date | number
-    initialTimePerPixel: number
-    initialParametersApplied: boolean
-}
-
-export const DefaultTimelineState: TimelineState = {
-    startDate: new Date().valueOf(),
-    timePerPixel: 1,
-    width: 1,
-    initialStartDate: new Date().valueOf(),
-    initialTimePerPixel: 1,
-    initialParametersApplied: false
-}
-
-export type TimelineContextShape = {
-    dateZero: Date | number
-    startDate: Date | number
-    timePerPixel: number
-    svgWidth: number
-
-}
-export const TimelineContext = createContext<TimelineContextShape>({
-    dateZero: 0,
-    startDate: 0,
-    timePerPixel: 0,
-    svgWidth: 1
-})
+import {defaultOnCanvasDrag, defaultOnCanvasWheel, DefaultTimelineState} from "./defaults"
+import {TimelineContext, TimelineProps, TimelineState} from "./definitions"
 
 export const useTimelineState = (initialState: TimelineState = DefaultTimelineState) => {
     return useState<TimelineState>(initialState)
 }
 
-export const Timeline: React.FC<TimelineProps> = (
-    {
-        children,
-        style,
-        state,
-        setState,
-        initialParameters,
-        onCanvasDrag = defaultOnCanvasDrag
-    }) => {
-    const {ref, width, height} = useResizeObserver<HTMLDivElement>()
-    let {initialParametersApplied, startDate, timePerPixel, initialStartDate} = state
+export const Timeline: React.FC<TimelineProps> = (props) => {
+    let {children, style, state, setState, initialParameters, onCanvasDrag = defaultOnCanvasDrag, onCanvasWheel = defaultOnCanvasWheel, sprintConfig = { mass: 1, tension: 210, friction: 20.1 }} = props
+    let {initialParametersApplied, startDate, timePerPixel, dateZero} = state
 
-    let [{x}] = useSpring(
-        () => ({
-            x: (startDate.valueOf() - initialStartDate.valueOf()) / timePerPixel,
-            config: {mass: 0.5, tension: 210, friction: 25}
-        }), [startDate])
+    const {ref, width, height} = useResizeObserver<HTMLDivElement>()
+    let svgRef = useRef<SVGSVGElement>(null)
+
+    let {x} = useSpring({
+        x: (startDate.valueOf() - dateZero.valueOf()) / timePerPixel,
+        config: sprintConfig
+    })
     let viewBox = x.to(x => `${x} 0 ${width} ${height}`)
+
+    let [date] = useState<Date>(new Date())
 
     useEffect(() => {
         if ((!initialParametersApplied) && width) {
@@ -96,32 +35,50 @@ export const Timeline: React.FC<TimelineProps> = (
                 ...state,
                 startDate: startDate,
                 timePerPixel: timePerPixel,
-                initialStartDate: startDate,
+                dateZero: startDate,
                 initialTimePerPixel: timePerPixel,
                 initialParametersApplied: true
             })
         }
     }, [initialParameters, initialParametersApplied, width])
 
+    useEffect(() => {
+        setState({...state, svg: svgRef})
+    }, [svgRef])
+
     const bind = useGesture({
-        onDrag: eventState => onCanvasDrag(state, setState, eventState),
-        onWheel: ({offset: [_, dy]}) => console.log(dy)
+        onDrag: eventState => onCanvasDrag?.({state, setState, eventState}),
+        onWheel: eventState => onCanvasWheel?.({state, setState, eventState})
     })
 
     return <TimelineContext.Provider
         value={{
-            dateZero: state.initialStartDate,
+            dateZero: state.dateZero,
             startDate: startDate,
             timePerPixel: state.timePerPixel || 1,
-            svgWidth: width || 1
+            svgWidth: width || 1,
+            springConfig: config.stiff,
+            initialized: state.initialParametersApplied
         }}>
         <div className={"react-timeline"} style={style} ref={ref}>
             <animated.svg
                 {...bind()}
                 viewBox={viewBox}
                 className={"react-timeline-svg"}
+                ref={svgRef}
             >
-                {children}
+                {state.initialParametersApplied && children}
+                <rect x={(date.valueOf() - dateZero.valueOf())/timePerPixel} y={0} fill={"black"} width={2 * 3600 * 1000 / timePerPixel} height={50}/>
+                <rect x={(date.valueOf() + 3 * 3600 * 1000 - dateZero.valueOf())/timePerPixel} y={0} fill={"gray"} width={2 * 3600 * 1000 / timePerPixel}
+                      height={50}/>
+                <foreignObject x={(date.valueOf() + 3 * 3600 * 1000 - dateZero.valueOf())/timePerPixel} y={0} width={2 * 3600 * 1000 / timePerPixel}
+                               height={50}>
+                    <div>
+                        Test
+                    </div>
+                </foreignObject>
+                <rect x={(date.valueOf() + 3 * 3600 *365*5 * 1000 - dateZero.valueOf())/timePerPixel} y={0} fill={"gray"} width={2 * 3600 * 1000 / timePerPixel}
+                      height={50}/>
             </animated.svg>
         </div>
     </TimelineContext.Provider>
