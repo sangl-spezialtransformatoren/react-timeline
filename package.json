@@ -24,11 +24,6 @@
   "peerDependencies": {
     "react": ">=16"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "tsdx lint"
-    }
-  },
   "prettier": {
     "printWidth": 80,
     "semi": true,
@@ -71,7 +66,7 @@
     "react-spring": "^9.0.0-rc.3",
     "react-use-gesture": "^8.0.1",
     "rollup-plugin-scss": "^2.6.1",
-    "schedule-fns": "../schedule-fns/lib",
+    "schedule-fns": "../schedule-fns",
     "size-limit": "^4.9.0",
     "tsdx": "^0.14.1",
     "tslib": "^2.0.3",

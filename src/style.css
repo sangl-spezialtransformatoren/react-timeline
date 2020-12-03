@@ -3,10 +3,17 @@
     height: 100%;
     width: 100%;
     display: block;
+    touch-action: none;
 }
 
 .react-timeline {
     padding: 0;
     margin: 0;
     border-width: 0;
+}
+
+div.react-timeline-event {
+    font-family: sans-serif;
+    color: white;
+    user-select: none;
 }

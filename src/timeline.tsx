@@ -1,85 +1,82 @@
-import React, {useEffect, useRef, useState} from "react"
-import {animated, useSpring, config} from 'react-spring'
-import useResizeObserver from "use-resize-observer"
+import React, { useEffect, useRef, useState } from 'react'
+import { animated, config } from 'react-spring'
+import useResizeObserver from 'use-resize-observer'
 import './style.css'
-import {useGesture} from "react-use-gesture"
-import {defaultOnCanvasDrag, defaultOnCanvasWheel, DefaultTimelineState} from "./defaults"
-import {TimelineContext, TimelineProps, TimelineState} from "./definitions"
+import { useGesture } from 'react-use-gesture'
+import { DefaultTimelineProps, DefaultTimelineState } from './defaults'
+import { TimelineContext, TimelineProps, TimelineState } from './definitions'
+import { EventGroup } from './blocks'
 
-export const useTimelineState = (initialState: TimelineState = DefaultTimelineState) => {
-    return useState<TimelineState>(initialState)
+export const useTimelineState = (initialState: Partial<TimelineState>) => {
+  return useState<TimelineState>({ ...DefaultTimelineState, ...initialState })
 }
 
-export const Timeline: React.FC<TimelineProps> = (props) => {
-    let {children, style, state, setState, initialParameters, onCanvasDrag = defaultOnCanvasDrag, onCanvasWheel = defaultOnCanvasWheel, sprintConfig = { mass: 1, tension: 210, friction: 20.1 }} = props
-    let {initialParametersApplied, startDate, timePerPixel, dateZero} = state
+export const Timeline: React.FC<TimelineProps> = (givenProps) => {
+  let props = { ...DefaultTimelineProps, ...givenProps }
+  let { children, style, state, setState, initialParameters, onCanvasDrag, onCanvasWheel, onCanvasPinch, onEventDrag, onEventDragStart, onEventDragEnd } = props
+  let { internal: { initialized }, data, startDate } = state
 
-    const {ref, width, height} = useResizeObserver<HTMLDivElement>()
-    let svgRef = useRef<SVGSVGElement>(null)
+  const { ref, width, height } = useResizeObserver<HTMLDivElement>()
+  let svgRef = useRef<SVGSVGElement>(null)
+  let initialStartDate = initialParameters?.startDate
+  let initialEndDate = initialParameters?.endDate
 
-    let {x} = useSpring({
-        x: (startDate.valueOf() - dateZero.valueOf()) / timePerPixel,
-        config: sprintConfig
-    })
-    let viewBox = x.to(x => `${x} 0 ${width} ${height}`)
+  useEffect(() => {
+    console.log('!')
+    if ((!initialized) && width && (initialStartDate !== undefined) && (initialEndDate !== undefined)) {
+      let timePerPixel = (initialEndDate!.valueOf() - initialStartDate!.valueOf()) / width
 
-    let [date] = useState<Date>(new Date())
-
-    useEffect(() => {
-        if ((!initialParametersApplied) && width) {
-            let startDate = initialParameters?.startDate || new Date().valueOf()
-            let endDate = initialParameters?.endDate || new Date().valueOf() + 24 * 3600 * 1000
-            let timePerPixel = (endDate.valueOf() - startDate.valueOf()) / width
-
-            setState({
-                ...state,
-                startDate: startDate,
-                timePerPixel: timePerPixel,
-                dateZero: startDate,
-                initialTimePerPixel: timePerPixel,
-                initialParametersApplied: true
-            })
+      setState({
+        ...state,
+        startDate: initialStartDate!,
+        timePerPixel: timePerPixel,
+        internal: {
+          ...state.internal,
+          initialized: true
         }
-    }, [initialParameters, initialParametersApplied, width])
+      })
+    }
+  }, [initialStartDate, initialEndDate, initialized, width])
 
-    useEffect(() => {
-        setState({...state, svg: svgRef})
-    }, [svgRef])
+  useEffect(() => {
+    setState({ ...state, internal: { ...state.internal, svg: svgRef } })
+  }, [svgRef])
 
-    const bind = useGesture({
-        onDrag: eventState => onCanvasDrag?.({state, setState, eventState}),
-        onWheel: eventState => onCanvasWheel?.({state, setState, eventState})
-    })
+  useGesture({
+    onDrag: eventState => onCanvasDrag?.({ state, setState, eventState }),
+    onWheel: eventState => onCanvasWheel?.({ state, setState, eventState }),
+    onPinch: eventState => onCanvasPinch?.({ state, setState, eventState })
+  }, { domTarget: svgRef, eventOptions: { passive: false } })
 
-    return <TimelineContext.Provider
-        value={{
-            dateZero: state.dateZero,
-            startDate: startDate,
-            timePerPixel: state.timePerPixel || 1,
-            svgWidth: width || 1,
-            springConfig: config.stiff,
-            initialized: state.initialParametersApplied
-        }}>
-        <div className={"react-timeline"} style={style} ref={ref}>
-            <animated.svg
-                {...bind()}
-                viewBox={viewBox}
-                className={"react-timeline-svg"}
-                ref={svgRef}
-            >
-                {state.initialParametersApplied && children}
-                <rect x={(date.valueOf() - dateZero.valueOf())/timePerPixel} y={0} fill={"black"} width={2 * 3600 * 1000 / timePerPixel} height={50}/>
-                <rect x={(date.valueOf() + 3 * 3600 * 1000 - dateZero.valueOf())/timePerPixel} y={0} fill={"gray"} width={2 * 3600 * 1000 / timePerPixel}
-                      height={50}/>
-                <foreignObject x={(date.valueOf() + 3 * 3600 * 1000 - dateZero.valueOf())/timePerPixel} y={0} width={2 * 3600 * 1000 / timePerPixel}
-                               height={50}>
-                    <div>
-                        Test
-                    </div>
-                </foreignObject>
-                <rect x={(date.valueOf() + 3 * 3600 *365*5 * 1000 - dateZero.valueOf())/timePerPixel} y={0} fill={"gray"} width={2 * 3600 * 1000 / timePerPixel}
-                      height={50}/>
-            </animated.svg>
-        </div>
+  let context = {
+    state,
+    setState,
+    startDate: startDate,
+    endDate: startDate.valueOf() + (width || 0) * state.timePerPixel,
+    timePerPixel: state.timePerPixel || 1,
+    svgWidth: width || 1,
+    springConfig: config.stiff,
+    initialized: state.internal.initialized,
+    onEventDrag,
+    onEventDragStart,
+    onEventDragEnd
+  }
+
+  return <>
+    <TimelineContext.Provider value={context}>
+      <div className={'react-timeline'} style={style} ref={ref}>
+        <animated.svg
+          viewBox={`0 0 ${width} ${height}`}
+          className={'react-timeline-svg'}
+          ref={svgRef}
+        >
+          {state.internal.initialized && <>
+            {children}
+            {data?.events && <EventGroup events={data.events} />}
+          </>
+          }
+        </animated.svg>
+      </div>
     </TimelineContext.Provider>
+  </>
 }
