@@ -64,13 +64,13 @@ export const TimeRect: React.FC<TimeRectProps> = ({ interval, ...props }) => {
 
   let { startDate, timePerPixel, springConfig, onEventDrag, onEventDragStart, onEventDragEnd, state, setState } = useContext(TimelineContext)
 
-  let { x, width, x1, y } = useSpring({
+  let [{ x, width, x1, y }] = useSpring({
     x: (interval.start.valueOf() - startDate.valueOf()) / timePerPixel,
     x1: (interval.end.valueOf() - startDate.valueOf()) / timePerPixel,
     width: (interval.end.valueOf() - interval.start.valueOf()) / timePerPixel,
     y: props.y,
     config: springConfig
-  })
+  }, [interval, springConfig, props.y, startDate])
 
   let transform = y.to(y => `translate(0, ${y * 20})`)
 
@@ -87,7 +87,7 @@ export const TimeRect: React.FC<TimeRectProps> = ({ interval, ...props }) => {
   }, { domTarget: endRef, eventOptions: { passive: false } })
 
   return <animated.g transform={transform}>
-    <animated.rect ref={ref} fill={'gray'} stroke={'black'} height={20} style={{paintOrder: "stroke"}}{...props} y={0} x={x} width={width}  />
+    <animated.rect ref={ref} fill={'gray'} height={20} style={{paintOrder: "stroke"}}{...props} y={0} x={x} width={width}  />
     <animated.rect ref={startRef} fill={'transparent'} y={0} height={20} x={x} width={10}
                    style={{ cursor: 'ew-resize' }} />
     <animated.rect ref={endRef} fill={'transparent'} y={0} height={20} x={x1} width={10} style={{ cursor: 'ew-resize' }}
