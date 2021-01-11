@@ -10,10 +10,11 @@ export type TimelineEvent = {
     label?: string
     payload?: any
     group?: string
+    manipulated?: boolean
 }
 
 export type TimelineData = {
-    events: { [id: string]: TimelineEvent }
+    events: Record<string, TimelineEvent>
     groups?: Array<string>
 }
 

@@ -13,7 +13,19 @@ export const useTimelineState = (initialState: Partial<TimelineState>) => {
 
 export const Timeline: React.FC<TimelineProps> = (givenProps) => {
     let props = {...DefaultTimelineProps, ...givenProps}
-    let {children, style, state, setState, initialParameters, onCanvasDrag, onCanvasWheel, onCanvasPinch, onEventDrag, onEventDragStart, onEventDragEnd} = props
+    let {
+        children,
+        style,
+        state,
+        setState,
+        initialParameters,
+        onCanvasDrag,
+        onCanvasWheel,
+        onCanvasPinch,
+        onEventDrag,
+        onEventDragStart,
+        onEventDragEnd
+    } = props
     let {internal: {initialized}, data, startDate} = state
 
     let [groupsAndEvents, setGroupsAndEvents] = useState<{ [groupsId: string]: { [eventId: string]: TimelineEvent } }>({})
@@ -68,7 +80,8 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
         let animatedEvents = data?.events ? Object.fromEntries(Object.keys(data.events).map((id) => {
             return [id, {
                 ...data?.events[id]!,
-                ...state.internal?.animatedData?.events?.[id]
+                ...state.internal?.animatedData?.events?.[id],
+                manipulated: !!state.internal?.animatedData?.events?.[id]
             }]
         })) : {}
         data?.groups && setGroupsAndEvents(Object.fromEntries(data.groups.map(group => [group, Object.fromEntries(Object.entries(animatedEvents).filter(([_, event]) => event.group === group))])))
@@ -82,6 +95,19 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
                     className={'react-timeline-svg'}
                     ref={svgRef}
                 >
+                    <defs>
+                        <filter id="dropshadow" height="130%">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                            <feOffset dx="0" dy="0" result="offsetblur"/>
+                            <feComponentTransfer>
+                                <feFuncA type="linear" slope="0.5"/>
+                            </feComponentTransfer>
+                            <feMerge>
+                                <feMergeNode/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
                     {state.internal.initialized && <>
                         {children}
                         {Object.entries(groupsAndEvents).map(([_, events]) => {
