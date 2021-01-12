@@ -12,3 +12,13 @@ export {
     InitialTimelineParameters
 } from './definitions'
 export {TimeRect} from './blocks'
+export {DayHeader, WeekHeader} from "./headers"
+let defaultTimeZone = "Etc/UTC"
+
+export function setDefaultTimezone(timeZone: string) {
+    defaultTimeZone = timeZone
+}
+
+export function getDefaultTimeZone() {
+    return defaultTimeZone
+}

@@ -1,10 +1,10 @@
 import React, {useEffect, useRef, useState} from 'react'
-import {animated, config} from 'react-spring'
+import {animated, config, useSpring} from 'react-spring'
 import useResizeObserver from 'use-resize-observer'
 import './style.css'
 import {useGesture} from 'react-use-gesture'
 import {DefaultTimelineProps, DefaultTimelineState} from './defaults'
-import {TimelineContext, TimelineEvent, TimelineProps, TimelineState} from './definitions'
+import {TimelineContext, TimelineContextShape, TimelineEvent, TimelineProps, TimelineState} from './definitions'
 import {EventGroup} from './blocks'
 
 export const useTimelineState = (initialState: Partial<TimelineState>) => {
@@ -14,6 +14,7 @@ export const useTimelineState = (initialState: Partial<TimelineState>) => {
 export const Timeline: React.FC<TimelineProps> = (givenProps) => {
     let props = {...DefaultTimelineProps, ...givenProps}
     let {
+        animate,
         children,
         style,
         state,
@@ -61,12 +62,28 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
         onPinch: eventState => onCanvasPinch?.({state, setState, eventState})
     }, {domTarget: svgRef, eventOptions: {passive: false}})
 
-    let context = {
+    let [{
+        animatedStartDate,
+        animatedEndDate,
+        animatedTimePerPixel
+    }] = useSpring<{ animatedStartDate: number | Date, animatedEndDate: number | Date, animatedTimePerPixel: number }>({
+        animatedStartDate: startDate,
+        animatedEndDate: startDate.valueOf() + (width || 0) * state.timePerPixel,
+        animatedTimePerPixel: state.timePerPixel,
+        immediate: !animate || !initialized,
+        config: config.stiff
+    }, [startDate, width, state.timePerPixel])
+
+    let context: TimelineContextShape = {
         state,
         setState,
+        animate: !!animate,
         startDate: startDate,
         endDate: startDate.valueOf() + (width || 0) * state.timePerPixel,
+        startDateSpring: animatedStartDate,
+        endDateSpring: animatedEndDate,
         timePerPixel: state.timePerPixel || 1,
+        timePerPixelSpring: animatedTimePerPixel,
         svgWidth: width || 1,
         springConfig: config.stiff,
         initialized: state.internal.initialized,

@@ -1,10 +1,48 @@
-import React, {SVGProps, useContext, useEffect, useRef, useState} from 'react'
+import React, {MutableRefObject, useContext, useEffect, useRef, useState} from 'react'
 import {TimelineContext, TimelineData, TimelineEvent} from './definitions'
 import {compareAsc, Interval} from 'date-fns'
-import {animated, AnimatedProps, useSpring} from 'react-spring'
+import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {areIntervalsIntersecting} from "schedule-fns/lib/src/functions/intervals"
 
+
+type EventComponentProps = {
+    y: number,
+    x: number,
+    width: number,
+    height: number,
+    dragHandle: MutableRefObject<any>,
+    dragStartHandle: MutableRefObject<any>,
+    dragEndHandle: MutableRefObject<any>
+}
+
+type EventComponent = React.FC<EventComponentProps>
+
+const DefaultEventComponent: EventComponent = (
+    {
+        x,
+        y,
+        width,
+        height,
+        dragHandle,
+        dragStartHandle,
+        dragEndHandle
+    }) => {
+    return <g>
+        <rect ref={dragHandle} fill={'gray'} height={height} style={{paintOrder: "stroke"}} y={y} x={x}
+              width={width} filter="url(#dropshadow)"/>
+        <rect ref={dragStartHandle} fill={'transparent'} y={y} height={height} x={x} width={10}
+              style={{cursor: 'ew-resize'}}/>
+        <rect ref={dragEndHandle} fill={'transparent'} y={y} height={height} x={x + width} width={10}
+              style={{cursor: 'ew-resize'}}
+              transform={'translate(-10, 0)'}/>
+        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
+            <div className={'react-timeline-event'}>
+                Test2
+            </div>
+        </foreignObject>
+    </g>
+}
 
 export type EventGroupProps = {
     events: TimelineData['events']
@@ -34,12 +72,13 @@ function distributeEventsVertically(events: [string, TimelineEvent][]): Record<s
 
 export const EventGroup: React.FC<EventGroupProps> = ({events}) => {
     let [eventsWithPositions, setEventsWithPositions] = useState<{ [id: string]: TimelineEvent & { position: number } }>({})
-    let {springConfig} = useContext(TimelineContext)
+    let {springConfig, animate, initialized} = useContext(TimelineContext)
 
     let [{height}] = useSpring({
         height: (Math.max(...Object.values(eventsWithPositions).map(event => event.position)) + 1) * 20,
-        config: springConfig
-    }, [eventsWithPositions])
+        config: springConfig,
+        immediate: !animate || !initialized
+    }, [eventsWithPositions, animate])
 
     useEffect(() => {
         setEventsWithPositions(distributeEventsVertically(orderEventsForPositioning(events)))
@@ -57,60 +96,60 @@ export type TimeRectProps = {
     id: any,
     interval: Interval,
     label?: string,
-    y: number
-} & Omit<AnimatedProps<SVGProps<SVGRectElement>>, 'ref' | 'y'>
+    y: number,
+    component?: React.FC<EventComponentProps>
+}
 
 
-export const TimeRect: React.FC<TimeRectProps> = ({interval, ...props}) => {
+export const TimeRect: React.FC<TimeRectProps> = ({interval, component, y, id}) => {
     let ref = useRef<SVGRectElement>(null)
     let startRef = useRef<SVGRectElement>(null)
     let endRef = useRef<SVGRectElement>(null)
 
     let {
-        startDate,
-        timePerPixel,
+        startDateSpring,
+        timePerPixelSpring,
         springConfig,
         onEventDrag,
         onEventDragStart,
         onEventDragEnd,
         state,
-        setState
+        setState,
+        animate
     } = useContext(TimelineContext)
 
-    let [{x, width, x1, y}] = useSpring({
-        x: (interval.start.valueOf() - startDate.valueOf()) / timePerPixel,
-        x1: (interval.end.valueOf() - startDate.valueOf()) / timePerPixel,
-        width: (interval.end.valueOf() - interval.start.valueOf()) / timePerPixel,
-        y: props.y,
-        config: springConfig
-    }, [interval, springConfig, props.y, startDate])
+    let [{ySpring, intervalStartSpring, intervalEndSpring}] = useSpring({
+        intervalStartSpring: interval.start,
+        intervalEndSpring: interval.end,
+        ySpring: y,
+        config: springConfig,
+        immediate: !animate
+    }, [springConfig, y, interval.start, interval.end, animate])
 
-    let transform = y.to(y => `translate(0, ${y * 22})`)
+    let xSpring = to([startDateSpring, timePerPixelSpring, intervalStartSpring], (startDate, timePerPixel, intervalStart) => (intervalStart.valueOf() - startDate.valueOf()) / timePerPixel.valueOf())
+    let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
 
     useGesture({
-        onDrag: eventState => onEventDrag?.({state, setState, eventState, id: props.id})
+        onDrag: eventState => onEventDrag?.({state, setState, eventState, id})
     }, {domTarget: ref, eventOptions: {passive: false}})
 
     useGesture({
-        onDrag: eventState => onEventDragStart?.({state, setState, eventState, id: props.id})
+        onDrag: eventState => onEventDragStart?.({state, setState, eventState, id})
     }, {domTarget: startRef, eventOptions: {passive: false}})
 
     useGesture({
-        onDrag: eventState => onEventDragEnd?.({state, setState, eventState, id: props.id})
+        onDrag: eventState => onEventDragEnd?.({state, setState, eventState, id})
     }, {domTarget: endRef, eventOptions: {passive: false}})
 
-    return <animated.g transform={transform}>
-        <animated.rect ref={ref} fill={'gray'} height={20} style={{paintOrder: "stroke"}}{...props} y={0} x={x}
-                       width={width} filter="url(#dropshadow)"/>
-        <animated.rect ref={startRef} fill={'transparent'} y={0} height={20} x={x} width={10}
-                       style={{cursor: 'ew-resize'}}/>
-        <animated.rect ref={endRef} fill={'transparent'} y={0} height={20} x={x1} width={10}
-                       style={{cursor: 'ew-resize'}}
-                       transform={'translate(-10, 0)'}/>
-        <animated.foreignObject y={0} height={20} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'}>
-                {props.label}
-            </div>
-        </animated.foreignObject>
-    </animated.g>
+    component = component || DefaultEventComponent
+    let PresentationalComponent = animated(component)
+
+    return <PresentationalComponent
+        x={xSpring}
+        y={ySpring}
+        width={widthSpring}
+        height={20}
+        dragHandle={ref}
+        dragStartHandle={startRef}
+        dragEndHandle={endRef}/>
 }

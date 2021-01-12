@@ -1,5 +1,5 @@
 import React, {createContext, Dispatch, RefObject, SetStateAction} from 'react'
-import {SpringConfig} from 'react-spring'
+import {SpringConfig, SpringValue} from 'react-spring'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 import {DefaultTimelineContext} from './defaults'
 
@@ -21,6 +21,7 @@ export type TimelineData = {
 export type TimelineProps = {
     state: TimelineState
     setState: Dispatch<SetStateAction<TimelineState>>
+    animate?: boolean
     initialParameters?: InitialTimelineParameters
     style?: TimelineStyle,
     sprintConfig?: SpringConfig,
@@ -57,9 +58,13 @@ export type TimelineState = {
 }
 
 export type TimelineContextShape = {
+    animate: boolean
     startDate: Date | number
     endDate: Date | number
+    startDateSpring: SpringValue<number | Date>
+    endDateSpring: SpringValue<number | Date>
     timePerPixel: number
+    timePerPixelSpring: SpringValue<number>
     svgWidth: number,
     springConfig: SpringConfig
     initialized: boolean

@@ -1,6 +1,10 @@
 import {TimelineContextShape, TimelineProps, TimelineState} from './definitions'
-import {config} from 'react-spring'
+import {config, SpringValue} from 'react-spring'
 
+
+function SpringConstant<T>() {
+    return new SpringValue<T>()
+}
 
 export const DefaultTimelineState: TimelineState = {
     startDate: new Date().valueOf(),
@@ -14,7 +18,11 @@ export const DefaultTimelineState: TimelineState = {
 }
 
 export const DefaultTimelineContext: TimelineContextShape = {
+    endDateSpring: SpringConstant(),
+    startDateSpring: SpringConstant(),
+    timePerPixelSpring: SpringConstant(),
     state: DefaultTimelineState,
+    animate: true,
     startDate: 0,
     endDate: 0,
     timePerPixel: 0,
@@ -226,6 +234,7 @@ export const defaultOnEventDragEnd: TimelineProps['onEventDragEnd'] = ({eventSta
 
 
 export const DefaultTimelineProps: Partial<TimelineProps> = {
+    animate: true,
     onCanvasDrag: defaultOnCanvasDrag,
     onCanvasWheel: defaultOnCanvasWheel,
     onCanvasPinch: defaultOnCanvasPinch,
