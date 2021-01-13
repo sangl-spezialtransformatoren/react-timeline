@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react'
-import {animated, config, useSpring} from 'react-spring'
+import {animated, config, to, useSpring} from 'react-spring'
 import useResizeObserver from 'use-resize-observer'
 import './style.css'
 import {useGesture} from 'react-use-gesture'
@@ -27,7 +27,7 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
         onEventDragStart,
         onEventDragEnd
     } = props
-    let {internal: {initialized}, data, startDate} = state
+    let {internal: {initialized, dateZero}, data, startDate, timePerPixel} = state
 
     let [groupsAndEvents, setGroupsAndEvents] = useState<{ [groupsId: string]: { [eventId: string]: TimelineEvent } }>({})
 
@@ -46,7 +46,8 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
                 timePerPixel: timePerPixel,
                 internal: {
                     ...state.internal,
-                    initialized: true
+                    initialized: true,
+                    dateZero: initialStartDate.valueOf()
                 }
             })
         }
@@ -55,6 +56,19 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
     useEffect(() => {
         setState({...state, internal: {...state.internal, svg: svgRef}})
     }, [svgRef])
+
+    useEffect(() => {
+        if (width && Math.abs(startDate.valueOf() + width * timePerPixel / 2 - dateZero.valueOf()) > Math.abs(width * timePerPixel)) {
+            setState({
+                ...state,
+                internal: {
+                    ...state.internal,
+                    dateZero: startDate.valueOf() + width * timePerPixel / 2
+                }
+            })
+        }
+
+    }, [startDate, dateZero, width, timePerPixel])
 
     useGesture({
         onDrag: eventState => onCanvasDrag?.({state, setState, eventState}),
@@ -65,23 +79,27 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
     let [{
         animatedStartDate,
         animatedEndDate,
-        animatedTimePerPixel
-    }] = useSpring<{ animatedStartDate: number | Date, animatedEndDate: number | Date, animatedTimePerPixel: number }>({
+        animatedTimePerPixel,
+        animatedDateZero
+    }] = useSpring<{ animatedStartDate: number | Date, animatedEndDate: number | Date, animatedTimePerPixel: number, animatedDateZero: Date | number }>({
         animatedStartDate: startDate,
         animatedEndDate: startDate.valueOf() + (width || 0) * state.timePerPixel,
         animatedTimePerPixel: state.timePerPixel,
+        animatedDateZero: state.internal.dateZero,
         immediate: !animate || !initialized,
         config: config.stiff
-    }, [startDate, width, state.timePerPixel])
+    }, [startDate, width, state.timePerPixel, state.internal.dateZero])
 
     let context: TimelineContextShape = {
         state,
         setState,
         animate: !!animate,
         startDate: startDate,
+        dateZero: state.internal.dateZero,
         endDate: startDate.valueOf() + (width || 0) * state.timePerPixel,
         startDateSpring: animatedStartDate,
         endDateSpring: animatedEndDate,
+        dateZeroSpring: animatedDateZero,
         timePerPixel: state.timePerPixel || 1,
         timePerPixelSpring: animatedTimePerPixel,
         svgWidth: width || 1,
@@ -92,6 +110,7 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
         onEventDragEnd
     }
 
+    let offset = to([animatedStartDate, animatedTimePerPixel], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()} 0)`)
 
     useEffect(() => {
         let animatedEvents = data?.events ? Object.fromEntries(Object.keys(data.events).map((id) => {
@@ -125,13 +144,15 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
                             </feMerge>
                         </filter>
                     </defs>
-                    {state.internal.initialized && <>
-                        {children}
-                        {Object.entries(groupsAndEvents).map(([_, events]) => {
-                            return <EventGroup events={events}/>
-                        })}
-                    </>
-                    }
+                    <animated.g transform={offset}>
+                        {state.internal.initialized && <>
+                            {children}
+                            {Object.entries(groupsAndEvents).map(([_, events]) => {
+                                return <EventGroup events={events}/>
+                            })}
+                        </>
+                        }
+                    </animated.g>
                 </animated.svg>
             </div>
         </TimelineContext.Provider>

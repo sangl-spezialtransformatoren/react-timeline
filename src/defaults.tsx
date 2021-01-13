@@ -9,10 +9,12 @@ function SpringConstant<T>() {
 export const DefaultTimelineState: TimelineState = {
     startDate: new Date().valueOf(),
     timePerPixel: 1,
+    offset: 0,
     internal: {
         svg: undefined,
         initialized: false,
         wheelingCenter: undefined,
+        dateZero: new Date().valueOf(),
         animatedData: {}
     }
 }
@@ -21,11 +23,13 @@ export const DefaultTimelineContext: TimelineContextShape = {
     endDateSpring: SpringConstant(),
     startDateSpring: SpringConstant(),
     timePerPixelSpring: SpringConstant(),
+    dateZeroSpring: SpringConstant(),
     state: DefaultTimelineState,
     animate: true,
     startDate: 0,
     endDate: 0,
     timePerPixel: 0,
+    dateZero: 0,
     svgWidth: 1,
     springConfig: config.stiff,
     initialized: false,

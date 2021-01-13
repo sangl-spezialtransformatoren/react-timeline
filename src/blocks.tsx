@@ -107,7 +107,6 @@ export const TimeRect: React.FC<TimeRectProps> = ({interval, component, y, id}) 
     let endRef = useRef<SVGRectElement>(null)
 
     let {
-        startDateSpring,
         timePerPixelSpring,
         springConfig,
         onEventDrag,
@@ -115,7 +114,8 @@ export const TimeRect: React.FC<TimeRectProps> = ({interval, component, y, id}) 
         onEventDragEnd,
         state,
         setState,
-        animate
+        animate,
+        dateZero
     } = useContext(TimelineContext)
 
     let [{ySpring, intervalStartSpring, intervalEndSpring}] = useSpring({
@@ -126,7 +126,7 @@ export const TimeRect: React.FC<TimeRectProps> = ({interval, component, y, id}) 
         immediate: !animate
     }, [springConfig, y, interval.start, interval.end, animate])
 
-    let xSpring = to([startDateSpring, timePerPixelSpring, intervalStartSpring], (startDate, timePerPixel, intervalStart) => (intervalStart.valueOf() - startDate.valueOf()) / timePerPixel.valueOf())
+    let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
     let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
 
     useGesture({

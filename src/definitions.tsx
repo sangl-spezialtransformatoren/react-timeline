@@ -48,11 +48,13 @@ export type InternalTimelineState = {
     initialized: boolean
     wheelingCenter: Date | number | undefined
     animatedData: Partial<TimelineData>
+    dateZero: Date | number
 }
 
 export type TimelineState = {
     internal: InternalTimelineState
     startDate: Date | number
+    offset: number
     timePerPixel: number
     data?: TimelineData
 }
@@ -61,8 +63,10 @@ export type TimelineContextShape = {
     animate: boolean
     startDate: Date | number
     endDate: Date | number
+    dateZero: Date | number
     startDateSpring: SpringValue<number | Date>
     endDateSpring: SpringValue<number | Date>
+    dateZeroSpring: SpringValue<number | Date>
     timePerPixel: number
     timePerPixelSpring: SpringValue<number>
     svgWidth: number,
