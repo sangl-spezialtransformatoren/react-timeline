@@ -6,16 +6,42 @@ import {useGesture} from 'react-use-gesture'
 import {DefaultTimelineProps, DefaultTimelineState} from './defaults'
 import {TimelineContext, TimelineContextShape, TimelineEvent, TimelineProps, TimelineState} from './definitions'
 import {EventGroup} from './blocks'
+import {Provider, useDispatch} from "react-redux"
+import {timeLineStore} from "./store"
+import {useInitialized, useSetInitialized} from "./store/initialized"
+import {v4 as uuidv4} from 'uuid'
+import {
+    useDateZero,
+    useSetDateZero,
+    useSetStartDate,
+    useSetTimePerPixel,
+    useStartDate,
+    useTimePerPixel,
+    useZoomCenter
+} from "./store/timeScale"
+import {useSetAnimate} from "./store/animate"
+import {useSetSpringConfig} from "./store/springConfig"
+import {useSetSize} from "./store/size"
+import {useSetTimeZone} from "./store/timeZone"
+import {useSetWeekStartsOn} from "./store/weekStartsOn"
 
 export const useTimelineState = (initialState: Partial<TimelineState>) => {
     return useState<TimelineState>({...DefaultTimelineState, ...initialState})
 }
 
-export const Timeline: React.FC<TimelineProps> = (givenProps) => {
+export const Timeline: React.FC<TimelineProps> = (props) => {
+    return <Provider store={timeLineStore}>
+        <InnerTimeline {...props}/>
+    </Provider>
+}
+
+export const InnerTimeline: React.FC<TimelineProps> = (givenProps) => {
     let props = {...DefaultTimelineProps, ...givenProps}
     let {
         animate,
         children,
+        timeZone,
+        weekStartsOn,
         style,
         state,
         setState,
@@ -25,17 +51,64 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
         onCanvasPinch,
         onEventDrag,
         onEventDragStart,
-        onEventDragEnd
+        onEventDragEnd,
+        springConfig
     } = props
-    let {internal: {initialized, dateZero}, data, startDate, timePerPixel} = state
+
+    let dispatch = useDispatch()
+    let initialized = useInitialized()
+    let dateZero = useDateZero()
+    let startDate = useStartDate()
+    let timePerPixel = useTimePerPixel()
+    let zoomCenter = useZoomCenter()
+
+    let setAnimate = useSetAnimate()
+    let setDateZero = useSetDateZero()
+    let setInitialized = useSetInitialized()
+    let setSpringConfig = useSetSpringConfig()
+    let setStartDate = useSetStartDate()
+    let setTimePerPixel = useSetTimePerPixel()
+    let setSize = useSetSize()
+    let setTimeZone = useSetTimeZone()
+    let setWeekStartsOn = useSetWeekStartsOn()
+
+    let {data} = state
 
     let [groupsAndEvents, setGroupsAndEvents] = useState<{ [groupsId: string]: { [eventId: string]: TimelineEvent } }>({})
+    let [svgId, setSvgId] = useState("")
 
     const {ref, width, height} = useResizeObserver<HTMLDivElement>()
     let svgRef = useRef<SVGSVGElement>(null)
     let initialStartDate = initialParameters?.startDate
     let initialEndDate = initialParameters?.endDate
 
+    useEffect(() => {
+        setAnimate(animate!)
+    }, [animate])
+
+    useEffect(() => {
+        setTimeZone(timeZone!)
+    }, [timeZone])
+
+    useEffect(() => {
+        setWeekStartsOn(weekStartsOn!)
+    }, [weekStartsOn])
+
+    useEffect(() => {
+        if (width && (Math.abs(startDate.valueOf() - dateZero.valueOf()) > Math.abs(width * timePerPixel))) {
+            setDateZero(startDate.valueOf() + width * timePerPixel / 2)
+        }
+    }, [startDate, dateZero, width, timePerPixel])
+
+    useEffect(() => {
+        setSize({width: width!, height: height!})
+    }, [width, height])
+
+    useEffect(() => {
+        setSpringConfig(springConfig)
+    }, [springConfig])
+
+    // Initialize
     useEffect(() => {
         if ((!initialized) && width && (initialStartDate !== undefined) && (initialEndDate !== undefined)) {
             let timePerPixel = (initialEndDate!.valueOf() - initialStartDate!.valueOf()) / width
@@ -50,67 +123,51 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
                     dateZero: initialStartDate.valueOf()
                 }
             })
+
+            setStartDate(initialStartDate!)
+            setInitialized(true)
+            setDateZero(initialStartDate)
+            setTimePerPixel(timePerPixel)
         }
     }, [initialStartDate, initialEndDate, initialized, width])
 
-    useEffect(() => {
-        setState({...state, internal: {...state.internal, svg: svgRef}})
-    }, [svgRef])
-
-    useEffect(() => {
-        if (width && Math.abs(startDate.valueOf() + width * timePerPixel / 2 - dateZero.valueOf()) > Math.abs(width * timePerPixel)) {
-            setState({
-                ...state,
-                internal: {
-                    ...state.internal,
-                    dateZero: startDate.valueOf() + width * timePerPixel / 2
-                }
-            })
-        }
-
-    }, [startDate, dateZero, width, timePerPixel])
 
     useGesture({
-        onDrag: eventState => onCanvasDrag?.({state, setState, eventState}),
-        onWheel: eventState => onCanvasWheel?.({state, setState, eventState}),
-        onPinch: eventState => onCanvasPinch?.({state, setState, eventState})
+        onDrag: eventState => onCanvasDrag?.({dispatch, state, setState, eventState}),
+        onWheel: eventState => onCanvasWheel?.({dispatch, svgRef, state, setState, eventState}),
+        onPinch: eventState => onCanvasPinch?.({dispatch, svgRef, state, setState, eventState})
     }, {domTarget: svgRef, eventOptions: {passive: false}})
 
     let [{
-        animatedStartDate,
-        animatedEndDate,
-        animatedTimePerPixel,
-        animatedDateZero
-    }] = useSpring<{ animatedStartDate: number | Date, animatedEndDate: number | Date, animatedTimePerPixel: number, animatedDateZero: Date | number }>({
-        animatedStartDate: startDate,
-        animatedEndDate: startDate.valueOf() + (width || 0) * state.timePerPixel,
-        animatedTimePerPixel: state.timePerPixel,
-        animatedDateZero: state.internal.dateZero,
+        startDateSpring,
+        endDateSpring,
+        timePerPixelSpring
+    }] = useSpring<{ startDateSpring: number | Date, endDateSpring: number | Date, timePerPixelSpring: number }>({
+        startDateSpring: startDate,
+        endDateSpring: startDate.valueOf() + (width || 0) * state.timePerPixel,
+        timePerPixelSpring: state.timePerPixel,
         immediate: !animate || !initialized,
         config: config.stiff
-    }, [startDate, width, state.timePerPixel, state.internal.dateZero])
+    }, [startDate, width, timePerPixel, dateZero])
+
 
     let context: TimelineContextShape = {
         state,
         setState,
-        animate: !!animate,
-        startDate: startDate,
-        dateZero: state.internal.dateZero,
-        endDate: startDate.valueOf() + (width || 0) * state.timePerPixel,
-        startDateSpring: animatedStartDate,
-        endDateSpring: animatedEndDate,
-        dateZeroSpring: animatedDateZero,
-        timePerPixel: state.timePerPixel || 1,
-        timePerPixelSpring: animatedTimePerPixel,
+        startDateSpring: startDateSpring,
+        endDateSpring: endDateSpring,
+        timePerPixelSpring: timePerPixelSpring,
         svgWidth: width || 1,
-        springConfig: config.stiff,
-        initialized: state.internal.initialized,
         onEventDrag,
         onEventDragStart,
         onEventDragEnd
     }
 
-    let offset = to([animatedStartDate, animatedTimePerPixel], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()} 0)`)
+    useEffect(() => {
+        setSvgId(uuidv4())
+    }, [])
+
+    let offset = to([startDateSpring, timePerPixelSpring], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()} 0)`)
 
     useEffect(() => {
         let animatedEvents = data?.events ? Object.fromEntries(Object.keys(data.events).map((id) => {
@@ -130,6 +187,7 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
                     viewBox={`0 0 ${width} ${height}`}
                     className={'react-timeline-svg'}
                     ref={svgRef}
+                    id={svgId}
                 >
                     <defs>
                         <filter id="dropshadow" height="130%">
@@ -145,11 +203,15 @@ export const Timeline: React.FC<TimelineProps> = (givenProps) => {
                         </filter>
                     </defs>
                     <animated.g transform={offset}>
-                        {state.internal.initialized && <>
+                        {zoomCenter &&
+                        <rect x={(zoomCenter!.valueOf() - dateZero.valueOf()) / timePerPixel} y={0} width={3} height={500} fill={"red"}/>}
+                        {initialized && <>
                             {children}
-                            {Object.entries(groupsAndEvents).map(([_, events]) => {
-                                return <EventGroup events={events}/>
-                            })}
+                            <g transform={"translate(0, 64)"}>
+                                {Object.entries(groupsAndEvents).map(([_, events]) => {
+                                    return <EventGroup events={events}/>
+                                })}
+                            </g>
                         </>
                         }
                     </animated.g>

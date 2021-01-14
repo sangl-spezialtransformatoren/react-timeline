@@ -1,7 +1,4 @@
-export {MinuteHeader, QuarterHourHeader, HourHeader, DayHeader, WeekHeader, MonthHeader} from "./presentational"
-
 export {Timeline, useTimelineState} from './timeline'
-export {Grid} from './grid'
 export {DefaultTimelineState} from './defaults'
 export {
     TimelineState,
@@ -13,7 +10,6 @@ export {
     TimelineStyle,
     InitialTimelineParameters
 } from './definitions'
-export {TimeRect} from './blocks'
 export {createDayHeader, createWeekHeader} from "./headers"
 let defaultTimeZone = "Etc/UTC"
 
@@ -24,3 +20,17 @@ export function setDefaultTimezone(timeZone: string) {
 export function getDefaultTimeZone() {
     return defaultTimeZone
 }
+
+export {
+    MinuteHeader,
+    QuarterHourHeader,
+    HourHeader,
+    DayHeader,
+    WeekHeader,
+    MonthHeader,
+    QuarterHeader,
+    YearHeader,
+    DecadeHeader,
+    CenturyHeader,
+    AutomaticHeader
+} from "./presentational"

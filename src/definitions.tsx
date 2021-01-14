@@ -1,4 +1,5 @@
 import React, {createContext, Dispatch, RefObject, SetStateAction} from 'react'
+import {Dispatch as ReduxDispatch} from "redux"
 import {SpringConfig, SpringValue} from 'react-spring'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 import {DefaultTimelineContext} from './defaults'
@@ -21,16 +22,18 @@ export type TimelineData = {
 export type TimelineProps = {
     state: TimelineState
     setState: Dispatch<SetStateAction<TimelineState>>
+    timeZone?: string
+    weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
     animate?: boolean
     initialParameters?: InitialTimelineParameters
     style?: TimelineStyle,
-    sprintConfig?: SpringConfig,
-    onCanvasDrag?: (props: { state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'> }) => void
-    onCanvasWheel?: (props: { state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'wheel'> }) => void
-    onCanvasPinch?: (props: { state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'pinch'> }) => void
-    onEventDrag?: (props: { state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'>, id: any }) => void
-    onEventDragStart?: (props: { state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'>, id: any }) => void
-    onEventDragEnd?: (props: { state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'>, id: any }) => void
+    springConfig?: SpringConfig,
+    onCanvasDrag?: (props: { dispatch?: ReduxDispatch, state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'> }) => void
+    onCanvasWheel?: (props: { dispatch?: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'wheel'> }) => void
+    onCanvasPinch?: (props: { dispatch?: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'pinch'> }) => void
+    onEventDrag?: (props: { dispatch?: ReduxDispatch, state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'>, id: any }) => void
+    onEventDragStart?: (props: { dispatch?: ReduxDispatch, state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'>, id: any }) => void
+    onEventDragEnd?: (props: { dispatch?: ReduxDispatch, state: TimelineState, setState: Dispatch<SetStateAction<TimelineState>>, eventState: EventState<'drag'>, id: any }) => void
 }
 
 export type TimelineStyle = {
@@ -54,24 +57,15 @@ export type InternalTimelineState = {
 export type TimelineState = {
     internal: InternalTimelineState
     startDate: Date | number
-    offset: number
     timePerPixel: number
     data?: TimelineData
 }
 
 export type TimelineContextShape = {
-    animate: boolean
-    startDate: Date | number
-    endDate: Date | number
-    dateZero: Date | number
     startDateSpring: SpringValue<number | Date>
     endDateSpring: SpringValue<number | Date>
-    dateZeroSpring: SpringValue<number | Date>
-    timePerPixel: number
     timePerPixelSpring: SpringValue<number>
     svgWidth: number,
-    springConfig: SpringConfig
-    initialized: boolean
     onEventDrag: TimelineProps['onEventDrag']
     onEventDragStart: TimelineProps['onEventDragStart']
     onEventDragEnd: TimelineProps['onEventDragEnd']

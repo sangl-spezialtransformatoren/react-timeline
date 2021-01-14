@@ -1,5 +1,6 @@
 import {TimelineContextShape, TimelineProps, TimelineState} from './definitions'
 import {config, SpringValue} from 'react-spring'
+import {dragCanvas, lockZoomCenter, unlockZoomCenter, zoom} from "./store/timeScale"
 
 
 function SpringConstant<T>() {
@@ -9,7 +10,6 @@ function SpringConstant<T>() {
 export const DefaultTimelineState: TimelineState = {
     startDate: new Date().valueOf(),
     timePerPixel: 1,
-    offset: 0,
     internal: {
         svg: undefined,
         initialized: false,
@@ -23,59 +23,38 @@ export const DefaultTimelineContext: TimelineContextShape = {
     endDateSpring: SpringConstant(),
     startDateSpring: SpringConstant(),
     timePerPixelSpring: SpringConstant(),
-    dateZeroSpring: SpringConstant(),
     state: DefaultTimelineState,
-    animate: true,
-    startDate: 0,
-    endDate: 0,
-    timePerPixel: 0,
-    dateZero: 0,
     svgWidth: 1,
-    springConfig: config.stiff,
-    initialized: false,
     setState: () => null,
     onEventDrag: () => null,
     onEventDragEnd: () => null,
     onEventDragStart: () => null
 }
 
-export const defaultOnCanvasDrag: TimelineProps['onCanvasDrag'] = ({state, setState, eventState}) => {
+export const defaultOnCanvasDrag: TimelineProps['onCanvasDrag'] = ({dispatch, eventState}) => {
     let {pinching} = eventState
     if (!pinching) {
-        setState({
-            ...state,
-            startDate: state.startDate.valueOf() - eventState.delta[0] * state.timePerPixel
-        })
+        dragCanvas(dispatch!, eventState.delta[0])
     }
 }
 
-export const defaultOnCanvasWheel: TimelineProps['onCanvasWheel'] = ({state, eventState, setState}) => {
-    let svg = state.internal.svg?.current
+export const defaultOnCanvasWheel: TimelineProps['onCanvasWheel'] = ({dispatch, svgRef, eventState}) => {
+    let svg = svgRef?.current
     if (svg !== undefined && svg !== null) {
-        let {timePerPixel, startDate, internal: {wheelingCenter}} = state
-        let dateOfMouse
-        if (wheelingCenter) {
-            dateOfMouse = wheelingCenter
-        } else {
-            let point = svg.createSVGPoint()
-            point.x = eventState.event.clientX
-            point.y = eventState.event.clientY
-            let pos = point.matrixTransform(svg.getScreenCTM()?.inverse())
-            dateOfMouse = startDate.valueOf() + timePerPixel * pos.x
-        }
-        let factor = 0.002
+        let point = svg.createSVGPoint()
+        point.x = eventState.event.clientX
+        point.y = eventState.event.clientY
+        let pos = point.matrixTransform(svg.getScreenCTM()?.inverse())
         let {delta} = eventState
-        let newTimePerPixel = timePerPixel * (1 + factor * delta[1])
-        let newStartDate = (timePerPixel - newTimePerPixel) * dateOfMouse!.valueOf() / timePerPixel + startDate.valueOf() * newTimePerPixel / timePerPixel
-        setState({
-            ...state,
-            timePerPixel: newTimePerPixel,
-            startDate: newStartDate,
-            internal: {
-                ...state.internal,
-                wheelingCenter: eventState.last ? undefined : dateOfMouse
-            }
-        })
+        let factor = 0.002 * delta[1]
+
+        if (eventState.first) {
+            lockZoomCenter(dispatch!, pos.x)
+        }
+        if (eventState.last) {
+            unlockZoomCenter(dispatch!)
+        }
+        zoom(dispatch!, factor)
     }
 }
 
@@ -123,8 +102,8 @@ export const defaultOnEventDrag: TimelineProps['onEventDrag'] = ({eventState, st
     let {movement: [dx], last} = eventState
 
     let newInterval = {
-        start: (state.data?.events[id].interval.start.valueOf() || 0) + dx * timePerPixel,
-        end: (state.data?.events[id].interval.end.valueOf() || 0) + dx * timePerPixel
+        start: Math.floor(((state.data?.events[id].interval.start.valueOf() || 0) + dx * timePerPixel) / (24 * 3600000)) * 24 * 3600000,
+        end: Math.floor(((state.data?.events[id].interval.end.valueOf() || 0) + dx * timePerPixel) / (24 * 3600000)) * 24 * 3600000
     }
 
     setState({
@@ -164,7 +143,7 @@ export const defaultOnEventDragStart: TimelineProps['onEventDragStart'] = ({even
     let {timePerPixel} = state
     let newInterval = {
         end: state.data?.events[id].interval.end,
-        start: (state.data?.events[id].interval.start.valueOf() || 0) + dx * timePerPixel
+        start: Math.round(((state.data?.events[id].interval.start.valueOf() || 0) + dx * timePerPixel) / (24 * 3600000)) * 24 * 3600000
     }
 
     setState({
@@ -239,11 +218,13 @@ export const defaultOnEventDragEnd: TimelineProps['onEventDragEnd'] = ({eventSta
 
 export const DefaultTimelineProps: Partial<TimelineProps> = {
     animate: true,
+    timeZone: "Etc/UTC",
+    weekStartsOn: 1,
     onCanvasDrag: defaultOnCanvasDrag,
     onCanvasWheel: defaultOnCanvasWheel,
     onCanvasPinch: defaultOnCanvasPinch,
     onEventDrag: defaultOnEventDrag,
     onEventDragEnd: defaultOnEventDragEnd,
     onEventDragStart: defaultOnEventDragStart,
-    sprintConfig: config.stiff
+    springConfig: config.stiff
 }
