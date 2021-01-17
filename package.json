@@ -70,6 +70,7 @@
     "react-redux": "^7.2.2",
     "redux": "^4.0.5",
     "react-use-gesture": "^8.0.1",
+    "reselect": "^4.0.0",
     "rollup-plugin-scss": "^2.6.1",
     "schedule-fns": "../schedule-fns",
     "size-limit": "^4.9.0",

@@ -1,17 +1,13 @@
-export {Timeline, useTimelineState} from './timeline'
-export {DefaultTimelineState} from './defaults'
+export {Timeline} from './timeline'
 export {
-    TimelineState,
-    TimelineData,
     TimelineProps,
     TimelineContextShape,
     TimelineContext,
-    TimelineEvent,
     TimelineStyle,
-    InitialTimelineParameters
+    InitialTimelineParameters,
 } from './definitions'
-export {createDayHeader, createWeekHeader} from "./headers"
-let defaultTimeZone = "Etc/UTC"
+export {createDayHeader, createWeekHeader} from './headers'
+let defaultTimeZone = 'Etc/UTC'
 
 export function setDefaultTimezone(timeZone: string) {
     defaultTimeZone = timeZone
@@ -32,5 +28,5 @@ export {
     YearHeader,
     DecadeHeader,
     CenturyHeader,
-    AutomaticHeader
-} from "./presentational"
+    AutomaticHeader,
+} from './presentational'
