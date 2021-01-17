@@ -2,9 +2,11 @@ import React, {createContext, useContext} from 'react'
 import {SpringValue, useSpring} from 'react-spring'
 import {SpringConstant} from './defaults'
 import {useAnimate, useInitialized, useSize, useStartDate, useTimePerPixel} from './store/selectors'
+import {DefaultConfig, BusinessLogic} from './store/businessLogic'
 
 export const StartDateSpringContext = createContext<SpringValue<Date | number>>(SpringConstant())
 export const TimePerPixelSpringContext = createContext<SpringValue<number>>(SpringConstant())
+export const BusinessLogicContext = createContext<BusinessLogic>(DefaultConfig)
 
 const StartDateAnimationContext: React.FC = ({children}) => {
     let startDate = useStartDate()
@@ -43,11 +45,21 @@ const TimePerPixelAnimationContext: React.FC = ({children}) => {
     </>
 }
 
-export const TimelineAnimationContext: React.FC = ({children}) => {
+const TimelineBusinessLogic: React.FC<{config: BusinessLogic}> = ({children, config}) => {
+    return <>
+        <BusinessLogicContext.Provider value={config}>
+            {children}
+        </BusinessLogicContext.Provider>
+    </>
+}
+
+export const TimelineContext: React.FC<{businessLogic: BusinessLogic}> = ({businessLogic, children}) => {
     return <>
         <StartDateAnimationContext>
             <TimePerPixelAnimationContext>
-                {children}
+                <TimelineBusinessLogic config={businessLogic}>
+                    {children}
+                </TimelineBusinessLogic>
             </TimePerPixelAnimationContext>
         </StartDateAnimationContext>
     </>

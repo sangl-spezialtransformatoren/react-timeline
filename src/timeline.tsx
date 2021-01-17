@@ -3,11 +3,11 @@ import {animated, to} from 'react-spring'
 import useResizeObserver from 'use-resize-observer'
 import {useGesture} from 'react-use-gesture'
 import {DefaultTimelineProps} from './defaults'
-import {TimelineContext, TimelineContextShape, TimelineProps} from './definitions'
+import {DeprecatedTimelineContext, TimelineContextShape, TimelineProps} from './definitions'
 import {Provider, useDispatch} from 'react-redux'
 import {TimelineStore} from './store'
-import {TimelineAnimationContext, useStartDateSpring, useTimePerPixelSpring} from './context'
-import {DefaultConfig} from './store/config'
+import {TimelineContext, useStartDateSpring, useTimePerPixelSpring} from './context'
+import {DefaultConfig} from './store/businessLogic'
 import {useDateZero, useInitialized} from './store/selectors'
 import {createTimelineStore} from './store/reducers/root'
 import {
@@ -41,7 +41,9 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
 
     if (store) {
         return <Provider store={store}>
-            <InnerTimeline {...props} />
+            <TimelineContext businessLogic={config || DefaultConfig}>
+                <InnerTimeline {...props} />
+            </TimelineContext>
         </Provider>
     }
     return <></>
@@ -165,27 +167,25 @@ export const InnerTimeline: React.FC<TimelineProps> = (givenProps) => {
     }
 
     return <>
-        <TimelineAnimationContext>
-            <TimelineContext.Provider value={context}>
-                <div className={'react-timeline'} style={style} ref={ref}>
-                    <animated.svg
-                        viewBox={`0 0 ${width} ${height}`}
-                        className={'react-timeline-svg'}
-                        ref={svgRef}>
+        <DeprecatedTimelineContext.Provider value={context}>
+            <div className={'react-timeline'} style={style} ref={ref}>
+                <animated.svg
+                    viewBox={`0 0 ${width} ${height}`}
+                    className={'react-timeline-svg'}
+                    ref={svgRef}>
 
-                        <SvgFilters />
-                        <DragOffset>
-                            {initialized && <>
-                                {children}
-                              <g transform={'translate(0, 64)'}>
-                                <EventGroups />
-                              </g>
-                            </>
-                            }
-                        </DragOffset>
-                    </animated.svg>
-                </div>
-            </TimelineContext.Provider>
-        </TimelineAnimationContext>
+                    <SvgFilters />
+                    <DragOffset>
+                        {initialized && <>
+                            {children}
+                          <g transform={'translate(0, 64)'}>
+                            <EventGroups />
+                          </g>
+                        </>
+                        }
+                    </DragOffset>
+                </animated.svg>
+            </div>
+        </DeprecatedTimelineContext.Provider>
     </>
 }

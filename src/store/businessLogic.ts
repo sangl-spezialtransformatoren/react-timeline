@@ -1,10 +1,10 @@
 import {startOfDay} from 'date-fns'
 
-export type TimeLineStateConfig = {
+export type BusinessLogic = {
     validateDuringDrag: (data: {id: string, newInterval: Interval}) => {interval?: Interval}
 }
 
-export const DefaultConfig: TimeLineStateConfig = {
+export const DefaultConfig: BusinessLogic = {
     validateDuringDrag: ({newInterval}) => ({
         interval: {
             start: startOfDay(newInterval.start),

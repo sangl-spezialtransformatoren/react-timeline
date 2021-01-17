@@ -1,5 +1,5 @@
 import {StoreShape} from '../shape'
-import {TimeLineStateConfig} from '../config'
+import {BusinessLogic} from '../businessLogic'
 import {animate} from './animate'
 import {events} from './events'
 import {groups} from './groups'
@@ -12,7 +12,7 @@ import {initialized} from './initialized'
 import {combineConfigurableReducers, ConfigurableReducer, PartialReducer} from '../index'
 import {configureStore} from '@reduxjs/toolkit'
 
-export let partialReducers: { [K in keyof StoreShape]: ConfigurableReducer<PartialReducer<StoreShape, any, K>, TimeLineStateConfig> } = {
+export let partialReducers: { [K in keyof StoreShape]: ConfigurableReducer<PartialReducer<StoreShape, any, K>, BusinessLogic> } = {
     animate,
     events,
     groups,
@@ -26,11 +26,11 @@ export let partialReducers: { [K in keyof StoreShape]: ConfigurableReducer<Parti
 
 let combinedReducers = combineConfigurableReducers<StoreShape, any>(partialReducers)
 
-export let rootReducer = (config: TimeLineStateConfig) => {
+export let rootReducer = (config: BusinessLogic) => {
     return combinedReducers(config)
 }
 
-export const createTimelineStore = (config: TimeLineStateConfig, initialState?: StoreShape) => {
+export const createTimelineStore = (config: BusinessLogic, initialState?: StoreShape) => {
     return configureStore<StoreShape>({
         reducer: rootReducer(config),
         preloadedState: initialState,

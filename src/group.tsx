@@ -35,6 +35,7 @@ export const EventGroups: React.FC = () => {
 
 export const EventGroup: React.FC<{groupId: string}> = ({groupId}) => {
     let eventsAndPositions = useGetPositionsInGroup(groupId)
+    console.log(eventsAndPositions)
     return <>
         {Object.entries(eventsAndPositions).map(([eventId, position]) => {
             return <TranslateY y={22 * position}>

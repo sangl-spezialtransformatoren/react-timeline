@@ -1,5 +1,5 @@
 import React, {MutableRefObject, useContext, useRef} from 'react'
-import {TimelineContext} from './definitions'
+import {DeprecatedTimelineContext} from './definitions'
 import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
@@ -34,7 +34,7 @@ export function createEventComponent<T>(component: React.FC<T>): React.FC<Omit<E
             onEventDrag,
             onEventDragStart,
             onEventDragEnd
-        } = useContext(TimelineContext)
+        } = useContext(DeprecatedTimelineContext)
 
 
         let dateZero = useDateZero()

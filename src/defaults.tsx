@@ -12,7 +12,7 @@ import {
     unlockZoomCenter,
     zoom,
 } from './store/actions'
-import {DefaultConfig} from './store/config'
+import {DefaultConfig} from './store/businessLogic'
 
 
 export function SpringConstant<T>() {

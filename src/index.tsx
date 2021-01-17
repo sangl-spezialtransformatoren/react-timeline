@@ -2,7 +2,7 @@ export {Timeline} from './timeline'
 export {
     TimelineProps,
     TimelineContextShape,
-    TimelineContext,
+    DeprecatedTimelineContext,
     TimelineStyle,
     InitialTimelineParameters,
 } from './definitions'

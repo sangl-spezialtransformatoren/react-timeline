@@ -3,7 +3,7 @@ import {Dispatch as ReduxDispatch} from 'redux'
 import {SpringConfig} from 'react-spring'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 import {DefaultTimelineContext} from './defaults'
-import {TimeLineStateConfig} from './store/config'
+import {BusinessLogic} from './store/businessLogic'
 import {StoreShape} from './store/shape'
 
 type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
@@ -17,7 +17,7 @@ export type TimelineProps = {
     initialParameters?: InitialTimelineParameters
     style?: TimelineStyle,
     springConfig?: SpringConfig,
-    config?: TimeLineStateConfig,
+    config?: BusinessLogic,
     onCanvasDrag?: (props: {dispatch: ReduxDispatch, eventState: EventState<'drag'>}) => void
     onCanvasWheel?: (props: {dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'wheel'>}) => void
     onCanvasPinch?: (props: {dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'pinch'>}) => void
@@ -43,4 +43,4 @@ export type TimelineContextShape = {
     onEventDragEnd: TimelineProps['onEventDragEnd']
 }
 
-export const TimelineContext = createContext<TimelineContextShape>(DefaultTimelineContext)
+export const DeprecatedTimelineContext = createContext<TimelineContextShape>(DefaultTimelineContext)

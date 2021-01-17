@@ -1,14 +1,17 @@
 import {EnhancedStore, Middleware, Reducer} from '@reduxjs/toolkit'
 import {Action, AnyAction, Dispatch as ReduxDispatch} from 'redux'
-import {TimeLineStateConfig} from './config'
+import {BusinessLogic} from './businessLogic'
 import {Actions, PayloadActions} from './actions'
 import {useDispatch as useReduxDispatch, useSelector as useReduxSelector} from 'react-redux'
 import {StoreShape} from './shape'
+import {useContext} from 'react'
+import {BusinessLogicContext} from '../context'
 
 export type Dispatch = ReduxDispatch<Actions>
 
-export function useSelector<T>(selector: (state: StoreShape) => T, equalityFn?: (left: T, right: T) => boolean) {
-    return useReduxSelector<StoreShape, T>(selector, equalityFn)
+export function useSelector<TSelected>(selector: (config: BusinessLogic) => ((state: StoreShape) => TSelected), equalityFn?: (left: TSelected, right: TSelected) => boolean): TSelected {
+    let config = useContext(BusinessLogicContext)
+    return useReduxSelector<StoreShape, TSelected>(selector(config), equalityFn)
 }
 
 export function useDispatch(): Dispatch {
@@ -27,8 +30,8 @@ export type GlobalReducer = NonDefaultReducer<StoreShape>
 
 export type PartialReducer<S extends {[k: string]: any}, A extends Action, K extends keyof S> = (state: S | undefined, action: A) => S[K]
 
-export type PartialTimelineReducer<T extends keyof StoreShape> = ConfigurableReducer<PartialReducer<StoreShape, Actions, T>, TimeLineStateConfig>
-export type TimelineReducer = ConfigurableReducer<Reducer<StoreShape, Actions>, TimeLineStateConfig>
+export type PartialTimelineReducer<T extends keyof StoreShape> = ConfigurableReducer<PartialReducer<StoreShape, Actions, T>, BusinessLogic>
+export type TimelineReducer = ConfigurableReducer<Reducer<StoreShape, Actions>, BusinessLogic>
 
 export type PayloadAction<T, V> = {
     type: T,
@@ -36,7 +39,7 @@ export type PayloadAction<T, V> = {
 }
 
 
-export function combineConfigurableReducers<S extends {[k: string]: any}, A extends Action>(reducers: { [K in keyof S]: ConfigurableReducer<PartialReducer<S, A, K>, TimeLineStateConfig> }): TimelineReducer {
+export function combineConfigurableReducers<S extends {[k: string]: any}, A extends Action>(reducers: { [K in keyof S]: ConfigurableReducer<PartialReducer<S, A, K>, BusinessLogic> }): TimelineReducer {
     return (config) => {
         return (state, action) => {
             let result = Object.fromEntries(
