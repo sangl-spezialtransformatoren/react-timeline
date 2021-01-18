@@ -28,6 +28,16 @@ const App = () => {
                 label: 'IT 18.128',
                 group: '2',
             },
+            4: {
+                interval: {start: new Date(), end: new Date().valueOf() + 10 * 3600000},
+                label: 'IT 18.128',
+                group: '2',
+            },
+            5: {
+                interval: {start: new Date(), end: new Date().valueOf() + 10 * 3600000},
+                label: 'IT 18.128',
+                group: '3',
+            },
         },
         groups: {
             '1': {
@@ -44,9 +54,12 @@ const App = () => {
         initialData={initialData}
         initialParameters={initialParameters}
         style={{height: '500px', width: '100%'}}
-        timeZone={'Europe/Berlin'}>
-        <AutomaticHeader />
+        timeZone={'Europe/Berlin'}
+        animate={true}
+        springConfig={{mass: 0.8, tension: 210, friction: 20}}
+    >
+        <AutomaticHeader/>
     </Timeline>
 }
 
-ReactDOM.render(<App />, document.getElementById('root'))
+ReactDOM.render(<App/>, document.getElementById('root'))

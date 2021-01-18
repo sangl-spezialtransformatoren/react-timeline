@@ -1,10 +1,19 @@
-import React, {MutableRefObject, useContext, useRef} from 'react'
-import {DeprecatedTimelineContext} from './definitions'
+import React, {MutableRefObject, useRef} from 'react'
 import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
 import {useTimePerPixelSpring} from './context'
-import {useAnimate, useDateZero, useGetInterval, useInitialized, useSpringConfig} from './store/selectors'
+import {
+    dragEvent,
+    dragEventEnd,
+    dragEventStart,
+    stopEventDrag,
+    stopEventEndDrag,
+    stopEventStartDrag
+} from "./store/actions"
+import {Dispatch as ReduxDispatch} from "redux"
+import {EventState} from "./canvas"
+import {useAnimate, useDateZero, useGetInterval, useInitialized, useSpringConfig} from "./store/hooks"
 
 export type EventPresentationalComponentProps = {
     x: number,
@@ -21,6 +30,44 @@ export type EventComponentProps<T = {}> = {
     id: string
 } & T
 
+
+export const onEventDrag = (dispatch: ReduxDispatch, eventState: EventState<'drag'>, id: any) => {
+    eventState.event.stopPropagation()
+
+    let {movement: [dx], last} = eventState
+
+    dragEvent(dispatch, {id, pixels: dx})
+
+    if (last) {
+        stopEventDrag(dispatch, {id})
+    }
+
+}
+
+export const onEventStartDrag = (dispatch: ReduxDispatch, eventState: EventState<'drag'>, id: any) => {
+    eventState.event.stopPropagation()
+
+    let {movement: [dx], last} = eventState
+
+    dragEventStart(dispatch, {id, pixels: dx})
+
+    if (last) {
+        stopEventStartDrag(dispatch, {id})
+    }
+}
+
+export const onEventEndDrag = (dispatch: ReduxDispatch, eventState: EventState<'drag'>, id: any) => {
+    eventState.event.stopPropagation()
+
+    let {movement: [dx], last} = eventState
+
+    dragEventEnd(dispatch, {id, pixels: dx})
+
+    if (last) {
+        stopEventEndDrag(dispatch, {id})
+    }
+}
+
 export function createEventComponent<T>(component: React.FC<T>): React.FC<Omit<EventComponentProps<T>, keyof EventPresentationalComponentProps>> {
     return ({id}) => {
         let ref = useRef<SVGRectElement>(null)
@@ -29,12 +76,6 @@ export function createEventComponent<T>(component: React.FC<T>): React.FC<Omit<E
         let dispatch = useDispatch()
 
         let interval = useGetInterval(id)
-
-        let {
-            onEventDrag,
-            onEventDragStart,
-            onEventDragEnd
-        } = useContext(DeprecatedTimelineContext)
 
 
         let dateZero = useDateZero()
@@ -55,15 +96,15 @@ export function createEventComponent<T>(component: React.FC<T>): React.FC<Omit<E
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
 
         useGesture({
-            onDrag: eventState => onEventDrag?.({dispatch, eventState, id}),
+            onDrag: eventState => onEventDrag(dispatch, eventState, id),
         }, {domTarget: ref, eventOptions: {passive: false}})
 
         useGesture({
-            onDrag: eventState => onEventDragStart?.({dispatch, eventState, id}),
+            onDrag: eventState => onEventStartDrag(dispatch, eventState, id),
         }, {domTarget: startRef, eventOptions: {passive: false}})
 
         useGesture({
-            onDrag: eventState => onEventDragEnd?.({dispatch, eventState, id}),
+            onDrag: eventState => onEventEndDrag(dispatch, eventState, id),
         }, {domTarget: endRef, eventOptions: {passive: false}})
 
         let PresentationalComponent = animated(component)

@@ -24,7 +24,7 @@ export function makePureInterval(interval: Interval): PureInterval {
 }
 
 
-export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag}) =>
+export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag, validateDuringResize}) =>
     (state, action) => {
         let newState: StoreShape['events'] = state?.events || {}
         switch (action.type) {
@@ -69,14 +69,17 @@ export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag}) =>
                         start: oldInterval.start + dx * timePerPixel,
                         end: oldInterval.end,
                     }
-                    newState = {
-                        ...state?.events,
-                        [id]: {
-                            ...oldEvent,
-                            volatileState: {
-                                interval: newInterval,
+                    let {interval} = validateDuringResize({id, newInterval})
+                    if (interval) {
+                        newState = {
+                            ...state?.events,
+                            [id]: {
+                                ...oldEvent,
+                                volatileState: {
+                                    interval: makePureInterval(interval) || newInterval,
+                                },
                             },
-                        },
+                        }
                     }
                 }
                 break
@@ -92,14 +95,17 @@ export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag}) =>
                         start: oldInterval.start,
                         end: oldInterval.end + dx * timePerPixel,
                     }
-                    newState = {
-                        ...state?.events,
-                        [id]: {
-                            ...oldEvent,
-                            volatileState: {
-                                interval: newInterval,
+                    let {interval} = validateDuringResize({id, newInterval})
+                    if (interval) {
+                        newState = {
+                            ...state?.events,
+                            [id]: {
+                                ...oldEvent,
+                                volatileState: {
+                                    interval: makePureInterval(interval) || newInterval,
+                                },
                             },
-                        },
+                        }
                     }
                 }
                 break

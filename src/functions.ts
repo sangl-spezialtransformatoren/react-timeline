@@ -1,19 +1,27 @@
 import {
-    add,
+    addDays,
     addHours,
     addMinutes,
+    addMonths,
     addQuarters,
+    addWeeks,
     addYears,
     getYear,
     set,
+    startOfDay,
     startOfMonth,
     startOfQuarter,
     startOfWeek,
     startOfYear
 } from "date-fns"
 import {format as dateFnsTzFormat, utcToZonedTime, zonedTimeToUtc} from "date-fns-tz"
+import {defaultMemoize} from "reselect"
+import {shallowEqual} from "react-redux"
 
-function getStartOfDay(date: Date | number, timeZone: string) {
+const memoize = defaultMemoize
+
+function myGetStartOfDay(date: Date | number, timeZone: string) {
+    return startOfDay(date)
     let dayString = format(new Date(date), "yyyy-MM-dd", {timeZone: timeZone}) + "T00:00:00.000"
     return zonedTimeToUtc(dayString, timeZone)
 }
@@ -23,7 +31,9 @@ export type intervalCreatorOptions = {
     weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6
 }
 
-export function generateMinuteIntervals(from: number | Date, to: number | Date, {}: intervalCreatorOptions) {
+export type IntervalCreator = (from: number | Date, to: number | Date, {}: intervalCreatorOptions) => Interval[]
+
+export const generateMinuteIntervals = memoize((from: number | Date, to: number | Date, {}: intervalCreatorOptions) => {
     let currentMinute = set(from, {milliseconds: 0, seconds: 0})
     let minutes: Date[] = [currentMinute]
     while (currentMinute.valueOf() <= to) {
@@ -31,9 +41,9 @@ export function generateMinuteIntervals(from: number | Date, to: number | Date, 
         minutes = [...minutes, currentMinute]
     }
     return minutes.slice(0, -1).map<Interval>((minute, index) => ({start: minute, end: minutes.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateQuarterHourIntervals(from: number | Date, to: number | Date, {}: intervalCreatorOptions) {
+export const generateQuarterHourIntervals = memoize((from: number | Date, to: number | Date, {}: intervalCreatorOptions) => {
     let currentQuarter = set(from, {milliseconds: 0, seconds: 0, minutes: 0})
     let hours: Date[] = [currentQuarter]
     while (currentQuarter.valueOf() <= to) {
@@ -41,9 +51,9 @@ export function generateQuarterHourIntervals(from: number | Date, to: number | D
         hours = [...hours, currentQuarter]
     }
     return hours.slice(0, -1).map<Interval>((hour, index) => ({start: hour, end: hours.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateHourIntervals(from: number | Date, to: number | Date, {}: intervalCreatorOptions) {
+export const generateHourIntervals = memoize((from: number | Date, to: number | Date, {}: intervalCreatorOptions) => {
     let currentHour = set(from, {milliseconds: 0, seconds: 0, minutes: 0})
     let hours: Date[] = [currentHour]
     while (currentHour.valueOf() <= to) {
@@ -51,90 +61,90 @@ export function generateHourIntervals(from: number | Date, to: number | Date, {}
         hours = [...hours, currentHour]
     }
     return hours.slice(0, -1).map<Interval>((hour, index) => ({start: hour, end: hours.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateFourHourIntervals(from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) {
-    let currentHour = getStartOfDay(from, timeZone)
+export const generateFourHourIntervals = memoize((from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) => {
+    let currentHour = myGetStartOfDay(from, timeZone)
     let hours: Date[] = [currentHour]
     while (currentHour.valueOf() <= to) {
         currentHour = addHours(currentHour, 4)
         hours = [...hours, currentHour]
     }
     return hours.slice(0, -1).map<Interval>((hour, index) => ({start: hour, end: hours.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateDayIntervals(from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) {
-    let currentDay = getStartOfDay(from, timeZone)
+export const generateDayIntervals = memoize((from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) => {
+    let currentDay = myGetStartOfDay(from, timeZone)
     let days: Date[] = [currentDay]
     while (currentDay.valueOf() <= to) {
-        currentDay = getStartOfDay(addHours(currentDay, 36), timeZone)
+        currentDay = addDays(currentDay, 1)
         days = [...days, currentDay]
     }
     return days.slice(0, -1).map<Interval>((day, index) => ({start: day, end: days.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateWeekIntervals(from: number | Date, to: number | Date, {
+export const generateWeekIntervals = memoize((from: number | Date, to: number | Date, {
     timeZone,
     weekStartsOn
-}: intervalCreatorOptions) {
-    let currentWeek = getStartOfDay(startOfWeek(from, {weekStartsOn}), timeZone)
+}: intervalCreatorOptions) => {
+    let currentWeek = myGetStartOfDay(startOfWeek(from, {weekStartsOn}), timeZone)
     let weeks: (Date | number)[] = [currentWeek]
     while (currentWeek.valueOf() <= to) {
-        currentWeek = getStartOfDay(add(currentWeek, {days: 7, hours: 12}), timeZone)
+        currentWeek = addWeeks(currentWeek, 1)
         weeks = [...weeks, currentWeek]
     }
     return weeks.slice(0, -1).map<Interval>((week, index) => ({start: week, end: weeks.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateMonthIntervals(from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) {
-    let currentMonth = getStartOfDay(startOfMonth(from), timeZone)
+export const generateMonthIntervals = memoize((from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) => {
+    let currentMonth = myGetStartOfDay(startOfMonth(from), timeZone)
     let months: (Date | number)[] = [currentMonth]
     while (currentMonth.valueOf() <= to) {
-        currentMonth = getStartOfDay(add(currentMonth, {months: 1}), timeZone)
+        currentMonth = addMonths(currentMonth, 1)
         months = [...months, currentMonth]
     }
     return months.slice(0, -1).map<Interval>((week, index) => ({start: week, end: months.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateQuarterIntervals(from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) {
-    let currentQuarter = getStartOfDay(startOfQuarter(from), timeZone)
+export const generateQuarterIntervals = memoize((from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) => {
+    let currentQuarter = myGetStartOfDay(startOfQuarter(from), timeZone)
     let quarters: (Date | number)[] = [currentQuarter]
     while (currentQuarter.valueOf() <= to) {
-        currentQuarter = getStartOfDay(addQuarters(currentQuarter, 1), timeZone)
+        currentQuarter = addQuarters(currentQuarter, 1)
         quarters = [...quarters, currentQuarter]
     }
     return quarters.slice(0, -1).map<Interval>((week, index) => ({start: week, end: quarters.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateYearIntervals(from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) {
-    let currentYear = getStartOfDay(startOfYear(from), timeZone)
+export const generateYearIntervals = memoize((from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) => {
+    let currentYear = myGetStartOfDay(startOfYear(from), timeZone)
     let years: (Date | number)[] = [currentYear]
     while (currentYear.valueOf() <= to) {
-        currentYear = getStartOfDay(addYears(currentYear, 1), timeZone)
+        currentYear = addYears(currentYear, 1)
         years = [...years, currentYear]
     }
     return years.slice(0, -1).map<Interval>((week, index) => ({start: week, end: years.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateDecadeIntervals(from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) {
-    let currentDecade = getStartOfDay(startOfYear(set(from, {year: Math.floor(getYear(from) / 10) * 10})), timeZone)
+export const generateDecadeIntervals = memoize((from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) => {
+    let currentDecade = myGetStartOfDay(startOfYear(set(from, {year: Math.floor(getYear(from) / 10) * 10})), timeZone)
     let decades: (Date | number)[] = [currentDecade]
     while (currentDecade.valueOf() <= to) {
-        currentDecade = getStartOfDay(addYears(currentDecade, 10), timeZone)
+        currentDecade =addYears(currentDecade, 10)
         decades = [...decades, currentDecade]
     }
     return decades.slice(0, -1).map<Interval>((week, index) => ({start: week, end: decades.slice(1)[index]}))
-}
+}, shallowEqual)
 
-export function generateCenturyIntervals(from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) {
-    let currentCentury = getStartOfDay(startOfYear(set(from, {year: Math.floor(getYear(from) / 100) * 100})), timeZone)
+export const generateCenturyIntervals = memoize((from: number | Date, to: number | Date, {timeZone}: intervalCreatorOptions) => {
+    let currentCentury = myGetStartOfDay(startOfYear(set(from, {year: Math.floor(getYear(from) / 100) * 100})), timeZone)
     let century: (Date | number)[] = [currentCentury]
     while (currentCentury.valueOf() <= to) {
-        currentCentury = getStartOfDay(addYears(currentCentury, 100), timeZone)
+        currentCentury =addYears(currentCentury, 100)
         century = [...century, currentCentury]
     }
     return century.slice(0, -1).map<Interval>((week, index) => ({start: week, end: century.slice(1)[index]}))
-}
+}, shallowEqual)
 
 export function format(date: Date | number, formatString: string, {timeZone}: { timeZone: string }) {
     return dateFnsTzFormat(utcToZonedTime(new Date(date), timeZone), formatString, {timeZone})

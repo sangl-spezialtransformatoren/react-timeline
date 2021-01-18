@@ -1,7 +1,8 @@
-import {startOfDay} from 'date-fns'
+import {add, startOfDay} from 'date-fns'
 
 export type BusinessLogic = {
-    validateDuringDrag: (data: {id: string, newInterval: Interval}) => {interval?: Interval}
+    validateDuringDrag: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
+    validateDuringResize: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
 }
 
 export const DefaultConfig: BusinessLogic = {
@@ -11,4 +12,10 @@ export const DefaultConfig: BusinessLogic = {
             end: startOfDay(newInterval.end),
         },
     }),
+    validateDuringResize: ({newInterval}) => ({
+        interval: {
+            start: startOfDay(add(newInterval.start, {hours: 12})),
+            end: startOfDay(add(newInterval.end, {hours: 12})),
+        },
+    })
 }

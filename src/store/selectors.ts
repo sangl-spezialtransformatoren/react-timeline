@@ -1,33 +1,53 @@
-import {useSelector} from './index'
 import {StoreShape, TimelineEvent} from './shape'
-import {shallowEqual} from 'react-redux'
 import {createSelector} from 'reselect'
 import {areIntervalsIntersecting} from 'schedule-fns/lib/src/functions/intervals'
 import {PureInterval} from './reducers/events'
 import {BusinessLogic} from './businessLogic'
-
-export const useAnimate = () => useSelector(() => state => state.animate)
-
-export const useEvents = () => useSelector(() => state => state.events)
-
-export const useGetInterval = (id: string) => useSelector(
-    () => state => {
-        return state.events?.[id].volatileState?.interval || state.events?.[id].interval
-    },
-    shallowEqual,
-)
+import {getDefaultTimeZone} from "../index"
+import {IntervalCreator} from "../functions"
 
 
-const eventSelector = (_: BusinessLogic) => (state: StoreShape) => state.events
+export type TimelineSelector<T> = (config: BusinessLogic) => (state: StoreShape) => T
+
+function distributeEventsVertically(events: Record<string, PureInterval>): Record<string, number> {
+    let positionedEvents: Record<string, { interval: PureInterval, position: number }> = {}
+    for (const [key, interval] of Object.entries(events)) {
+        let positions = Object.values(positionedEvents).filter(
+            (leftEvent) => areIntervalsIntersecting(leftEvent.interval, interval) && leftEvent.interval.end !== interval.start && leftEvent.interval.start !== interval.end,
+        ).map((leftEvent) => leftEvent.position)
+        let position = 0
+        while (positions.includes(position)) {
+            position++
+        }
+        positionedEvents = {...positionedEvents, [key]: {interval, position}}
+    }
+    return Object.fromEntries(Object.entries(positionedEvents).map(([key, data]) => [key, data.position]))
+}
+
+export const eventSelector = (_: BusinessLogic) => (state: StoreShape) => state.events
+export const selectStartDate = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.startDate
+export const selectEndDate = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.startDate.valueOf() + state.size.width * state.timeScale.timePerPixel
+export const selectTimeZone = (_: BusinessLogic) => (state: StoreShape) => state.timeZone
+export const selectWeekStartsOn = (_: BusinessLogic) => (state: StoreShape) => state.weekStartsOn
+export const selectAnimate = (_: BusinessLogic) => (state: StoreShape) => state.animate
+export const selectEvents = (_: BusinessLogic) => (state: StoreShape) => state.events
+export const selectInterval = (id: string) => (_: BusinessLogic) => (state: StoreShape) => state.events?.[id].volatileState?.interval || state.events?.[id].interval
+export const selectInitialized = (_: BusinessLogic) => (state: StoreShape) => state.initialized
+export const selectSize = (_: BusinessLogic) => (state: StoreShape) => state.size
+export const selectSpringConfig = (_: BusinessLogic) => (state: StoreShape) => state.springConfig
+export const selectDateZero = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.dateZero
+export const selectTimePerPixel = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.timePerPixel
+export const selectZoomCenter = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.zoomCenter
+
 
 // Returns [groupId1, groupId2, ...]
-const getGroupIdsFromEvents = (config: BusinessLogic) => createSelector(
+export const getGroupIdsFromEvents = (config: BusinessLogic) => createSelector(
     [eventSelector(config)],
     events => Array.from(new Set(Object.values(events).map(event => event.group))),
 )
 
 // Returns {eventId1: groupId1, eventId2: groupId2, ...}
-const getEventIdToGroupIdMap = (config: BusinessLogic) => createSelector(
+export const getEventIdToGroupIdMap = (config: BusinessLogic) => createSelector(
     [eventSelector(config)],
     (events) => {
         return Object.fromEntries(Object.entries(events).map(([id, event]) => [id, event.group])) as Record<string, string>
@@ -35,7 +55,7 @@ const getEventIdToGroupIdMap = (config: BusinessLogic) => createSelector(
 )
 
 // Returns {groupId1: [eventId1, eventId2], groupId2: [eventId3], ...}
-const getGroupsAndEventIds = (config: BusinessLogic) => createSelector(
+export const getGroupsAndEventIds = (config: BusinessLogic) => createSelector(
     [getGroupIdsFromEvents(config), getEventIdToGroupIdMap(config)],
     (groups, eventIdToGroupMap) => {
         return Object.fromEntries(
@@ -43,8 +63,8 @@ const getGroupsAndEventIds = (config: BusinessLogic) => createSelector(
                 (groupId) => [
                     groupId,
                     Object.entries(eventIdToGroupMap)
-                    .filter(([_, eventGroupId]) => eventGroupId === groupId)
-                    .map(([eventId, _]) => eventId),
+                        .filter(([_, eventGroupId]) => eventGroupId === groupId)
+                        .map(([eventId, _]) => eventId),
                 ],
             ),
         ) as Record<string, string[]>
@@ -60,7 +80,7 @@ export const getEventIntervals = (config: BusinessLogic) => createSelector(
 )
 
 // Returns {groupId1: {eventId1: interval1, eventId2: interval2}, groupId2: {eventId3: interval3}, ...}
-const getGroupsAndEventIntervals = (config: BusinessLogic) => createSelector(
+export const getGroupsAndEventIntervals = (config: BusinessLogic) => createSelector(
     [getGroupsAndEventIds(config), getEventIntervals(config)],
     (groupsAndEventIds, eventIntervals) => {
         return Object.fromEntries(
@@ -77,7 +97,7 @@ const getGroupsAndEventIntervals = (config: BusinessLogic) => createSelector(
 )
 
 // Returns {groupId1: {eventId1: position1, eventId2: position2}, groupId2: {eventId3: position3}, ...}
-const getGroupsAndEventPositions = (config: BusinessLogic) => createSelector(
+export const getGroupsAndEventPositions = (config: BusinessLogic) => createSelector(
     [getGroupsAndEventIntervals(config)],
     (groupsAndEventIntervals) => {
         return Object.fromEntries(Object.entries(groupsAndEventIntervals).map(([groupId, eventIntervals]) => [groupId, distributeEventsVertically(eventIntervals)])) as Record<string, Record<string, number>>
@@ -107,12 +127,8 @@ export const getGroupPositions = (config: BusinessLogic) => createSelector(
     },
 )
 
-export const useGroupPositions = () => useSelector(getGroupPositions, shallowEqual)
 
-export const useGetGroupHeights = () => useSelector(getGroupHeights, shallowEqual)
-
-export const useGetGroupsFromEvents = () => useSelector(getGroupIdsFromEvents, shallowEqual)
-
+// Returns {event1: position1, event2: position2, ...}
 export const getEventsInGroup = (groupId: string) => createSelector(
     eventSelector,
     (events) => {
@@ -120,6 +136,7 @@ export const getEventsInGroup = (groupId: string) => createSelector(
     },
 )
 
+// Returns {groupId1: {eventId1: event1, eventId2: event2}, ...}
 export const getGroupsAndEvents = (config: BusinessLogic) => createSelector(
     getGroupIdsFromEvents(config),
     eventSelector(config),
@@ -128,10 +145,7 @@ export const getGroupsAndEvents = (config: BusinessLogic) => createSelector(
     },
 )
 
-
-export const useGetGroupsAndEvents = () => useSelector(getGroupsAndEvents, shallowEqual)
-
-
+// Returns {eventId1: interval1, eventId2: interval2, ...}
 export const getEventIntervalsInGroup = (groupId: string) => (config: BusinessLogic) => createSelector(
     [eventSelector(config)],
     (events) => {
@@ -139,55 +153,29 @@ export const getEventIntervalsInGroup = (groupId: string) => (config: BusinessLo
     },
 )
 
+// Returns [interval1, interval2, ...]
+export const getHeaderIntervals = (intervalCreator: IntervalCreator, intervalLength: number) => (config: BusinessLogic) => createSelector(
+    [selectStartDate(config), selectEndDate(config), selectTimeZone(config), selectWeekStartsOn(config)],
+    (startDate, endDate, timeZone, weekStartsOn) => {
+        let temporalWidth = (endDate.valueOf() - startDate.valueOf())
 
-function distributeEventsVertically(events: Record<string, PureInterval>): Record<string, number> {
-    let positionedEvents: Record<string, {interval: PureInterval, position: number}> = {}
-    for (const [key, interval] of Object.entries(events)) {
-        let positions = Object.values(positionedEvents).filter(
-            (leftEvent) => areIntervalsIntersecting(leftEvent.interval, interval) && leftEvent.interval.end !== interval.start && leftEvent.interval.start !== interval.end,
-        ).map((leftEvent) => leftEvent.position)
-        let position = 0
-        while (positions.includes(position)) {
-            position++
-        }
-        positionedEvents = {...positionedEvents, [key]: {interval, position}}
+        let from = startDate.valueOf() - 0.5 * temporalWidth
+        let to = endDate.valueOf() + 0.5 * temporalWidth
+
+        let roundedFrom = Math.floor(from / (3 * intervalLength)) * 3 * intervalLength
+        let roundedTo = Math.ceil(to / (3 * intervalLength)) * 3 * intervalLength
+
+        return intervalCreator(roundedFrom, roundedTo, {
+            timeZone: timeZone || getDefaultTimeZone(),
+            weekStartsOn: weekStartsOn || 1,
+        })
     }
-    return Object.fromEntries(Object.entries(positionedEvents).map(([key, data]) => [key, data.position]))
-}
+)
 
+// Returns {eventId1: position1, eventId2: position2, ...}
 export const getPositionsInGroup = (groupId: string) => (config: BusinessLogic) => createSelector(
     [getGroupsAndEventPositions(config)],
     (groupsAndEventPositions) => {
         return groupsAndEventPositions?.[groupId]
     },
 )
-
-export const useGetPositionsInGroup = (groupId: string) => useSelector(getPositionsInGroup(groupId), shallowEqual)
-
-export const useGetVerticalPositions = () => useSelector(_ => state => {
-    return state
-})
-
-export const useInitialized = () => useSelector(_ => state => state.initialized)
-
-export const useSize = () => useSelector(_ => state => state.size)
-
-export const useSpringConfig = () => useSelector(_ => state => state.springConfig)
-
-export const useStartDate = () => useSelector(_ => state => state.timeScale.startDate)
-
-export const useDateZero = () => useSelector(_ => state => state.timeScale.dateZero)
-
-export const useTimePerPixel = () => useSelector(_ => state => state.timeScale.timePerPixel)
-
-export const useEndDate = () => useSelector(
-    _ => state => {
-        return state.timeScale.startDate.valueOf() + state.size.width * state.timeScale.timePerPixel
-    },
-)
-
-export const useZoomCenter = () => useSelector(_ => state => state.timeScale.zoomCenter)
-
-export const useTimeZone = () => useSelector(_ => state => state.timeZone)
-
-export const useWeekStartsOn = () => useSelector(_ => state => state.weekStartsOn)

@@ -1,8 +1,6 @@
 export {Timeline} from './timeline'
 export {
     TimelineProps,
-    TimelineContextShape,
-    DeprecatedTimelineContext,
     TimelineStyle,
     InitialTimelineParameters,
 } from './definitions'

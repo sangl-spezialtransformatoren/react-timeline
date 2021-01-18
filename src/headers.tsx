@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React from 'react'
 import {
     generateCenturyIntervals,
     generateDayIntervals,
@@ -14,18 +14,17 @@ import {
     intervalCreatorOptions,
 } from './functions'
 import {animated, to} from 'react-spring'
-import {getDefaultTimeZone} from './index'
 import {useTimePerPixelSpring} from './context'
-import {useDateZero, useEndDate, useStartDate, useTimeZone, useWeekStartsOn} from './store/selectors'
+import {useDateZero, useGetHeaderIntervals} from "./store/hooks"
 
-type HeaderProps<T = {}> = {x: number, y: number, width: number, height: number} & T
-type TemporalHeaderProps = HeaderProps<{date: Date | number}>
+type HeaderProps<T = {}> = { x: number, y: number, width: number, height: number } & T
+type TemporalHeaderProps = HeaderProps<{ date: Date | number }>
 
-export type HeaderComponent<T> = React.FC<T & {x: number, y: number, width: number, height: number}>
+export type HeaderComponent<T> = React.FC<T & { x: number, y: number, width: number, height: number }>
 export type TemporalHeaderComponent<T = {}> = React.FC<TemporalHeaderProps & T>
 
 function createHeaderElement<T>(component: HeaderComponent<T>) {
-    let HeaderElement: React.FC<{start: Date | number, end: Date | number} & T> = (props) => {
+    let HeaderElement: React.FC<{ start: Date | number, end: Date | number } & T> = (props) => {
         let {start, end, children, ...otherProps} = props
         let timePerPixelSpring = useTimePerPixelSpring()
         let dateZero = useDateZero()
@@ -47,23 +46,7 @@ export function createTemporalHeader<T>(component: HeaderComponent<T>, intervalN
     let TemporalHeader: React.FC<Omit<T, keyof TemporalHeaderProps>> = (props) => {
         let {children, ...otherProps} = props
 
-        let startDate = useStartDate()
-        let endDate = useEndDate()
-        let timeZone = useTimeZone()
-        let weekStartsOn = useWeekStartsOn()
-
-        let [intervals, setIntervals] = useState<Interval[]>([])
-
-        useEffect(() => {
-            let temporalWidth = (endDate.valueOf() - startDate.valueOf())
-            let from = Math.floor((startDate.valueOf() - temporalWidth) / intervalLength) * intervalLength
-            let to = Math.ceil((endDate.valueOf() + temporalWidth) / intervalLength) * intervalLength
-            setIntervals(intervalCreator(from, to, {
-                timeZone: timeZone || getDefaultTimeZone(),
-                weekStartsOn: weekStartsOn || 1,
-            }))
-        }, [startDate, endDate])
-
+        let intervals = useGetHeaderIntervals(intervalCreator, intervalLength)
         return <>
             {intervals.map((interval) => {
                 return <HeaderElement
@@ -75,7 +58,7 @@ export function createTemporalHeader<T>(component: HeaderComponent<T>, intervalN
             })}
         </>
     }
-    return TemporalHeader
+    return React.memo(TemporalHeader)
 }
 
 export function createMinuteHeader<T>(component: TemporalHeaderComponent<T>) {
