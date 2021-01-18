@@ -14,16 +14,14 @@ import {
     startOfWeek,
     startOfYear
 } from "date-fns"
-import {format as dateFnsTzFormat, utcToZonedTime, zonedTimeToUtc} from "date-fns-tz"
+import {format as dateFnsTzFormat, utcToZonedTime} from "date-fns-tz"
 import {defaultMemoize} from "reselect"
 import {shallowEqual} from "react-redux"
 
 const memoize = defaultMemoize
 
-function myGetStartOfDay(date: Date | number, timeZone: string) {
+function myGetStartOfDay(date: Date | number, _: string) {
     return startOfDay(date)
-    let dayString = format(new Date(date), "yyyy-MM-dd", {timeZone: timeZone}) + "T00:00:00.000"
-    return zonedTimeToUtc(dayString, timeZone)
 }
 
 export type intervalCreatorOptions = {
@@ -130,7 +128,7 @@ export const generateDecadeIntervals = memoize((from: number | Date, to: number 
     let currentDecade = myGetStartOfDay(startOfYear(set(from, {year: Math.floor(getYear(from) / 10) * 10})), timeZone)
     let decades: (Date | number)[] = [currentDecade]
     while (currentDecade.valueOf() <= to) {
-        currentDecade =addYears(currentDecade, 10)
+        currentDecade = addYears(currentDecade, 10)
         decades = [...decades, currentDecade]
     }
     return decades.slice(0, -1).map<Interval>((week, index) => ({start: week, end: decades.slice(1)[index]}))
@@ -140,7 +138,7 @@ export const generateCenturyIntervals = memoize((from: number | Date, to: number
     let currentCentury = myGetStartOfDay(startOfYear(set(from, {year: Math.floor(getYear(from) / 100) * 100})), timeZone)
     let century: (Date | number)[] = [currentCentury]
     while (currentCentury.valueOf() <= to) {
-        currentCentury =addYears(currentCentury, 100)
+        currentCentury = addYears(currentCentury, 100)
         century = [...century, currentCentury]
     }
     return century.slice(0, -1).map<Interval>((week, index) => ({start: week, end: century.slice(1)[index]}))

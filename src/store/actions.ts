@@ -26,28 +26,32 @@ export const [setEvents, useSetEvents] = createPayloadActionCreators(SET_EVENTS,
 )
 
 export const DRAG_EVENT = 'dragEvent'
-export type DragEventAction = PayloadAction<typeof DRAG_EVENT, {id: string, pixels: number}>
+export type DragEventAction = PayloadAction<typeof DRAG_EVENT, { id: string, pixels: number }>
 export const [dragEvent, useDragEvent] = createPayloadActionCreators(DRAG_EVENT)
 
 export const DRAG_EVENT_START = 'dragEventStart'
-export type DragEventStartAction = PayloadAction<typeof DRAG_EVENT_START, {id: string, pixels: number}>
+export type DragEventStartAction = PayloadAction<typeof DRAG_EVENT_START, { id: string, pixels: number }>
 export const [dragEventStart, useDragEventStart] = createPayloadActionCreators(DRAG_EVENT_START)
 
 export const DRAG_EVENT_END = 'dragEventEnd'
-export type DragEventEndAction = PayloadAction<typeof DRAG_EVENT_END, {id: string, pixels: number}>
+export type DragEventEndAction = PayloadAction<typeof DRAG_EVENT_END, { id: string, pixels: number }>
 export const [dragEventEnd, useDragEventEnd] = createPayloadActionCreators(DRAG_EVENT_END)
 
 export const STOP_EVENT_DRAG = 'stopEventDrag'
-export type StopEventDragAction = PayloadAction<typeof STOP_EVENT_DRAG, {id: string}>
+export type StopEventDragAction = PayloadAction<typeof STOP_EVENT_DRAG, { id: string }>
 export const [stopEventDrag, useStopEventDrag] = createPayloadActionCreators(STOP_EVENT_DRAG)
 
 export const STOP_EVENT_START_DRAG = 'stopEventStartDrag'
-export type StopEventStartDragAction = PayloadAction<typeof STOP_EVENT_START_DRAG, {id: string}>
+export type StopEventStartDragAction = PayloadAction<typeof STOP_EVENT_START_DRAG, { id: string }>
 export const [stopEventStartDrag, useStopEventStartDrag] = createPayloadActionCreators(STOP_EVENT_START_DRAG)
 
 export const STOP_EVENT_END_DRAG = 'stopEventEndDrag'
-export type StopEventEndDragAction = PayloadAction<typeof STOP_EVENT_END_DRAG, {id: string}>
+export type StopEventEndDragAction = PayloadAction<typeof STOP_EVENT_END_DRAG, { id: string }>
 export const [stopEventEndDrag, useStopEventEndDrag] = createPayloadActionCreators(STOP_EVENT_END_DRAG)
+
+export const CHANGE_GROUP = 'changeGroup'
+export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, { id: string, groupId: string }>
+export const [changeGroup, useChangeGroup] = createPayloadActionCreators(CHANGE_GROUP)
 
 export type EventAction =
     SetEventsAction
@@ -57,6 +61,7 @@ export type EventAction =
     | StopEventDragAction
     | StopEventStartDragAction
     | StopEventEndDragAction
+    | ChangeGroupAction
 
 
 // initialized
@@ -147,5 +152,5 @@ export type Actions =
     | WeekStartsOnAction
     | SpringConfigAction
 
-export type Filter<A> = A extends {type: string, payload: any} ? A : never
+export type Filter<A> = A extends { type: string, payload: any } ? A : never
 export type PayloadActions = Filter<Actions>

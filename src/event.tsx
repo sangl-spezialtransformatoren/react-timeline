@@ -33,7 +33,6 @@ export type EventComponentProps<T = {}> = {
 
 export const onEventDrag = (dispatch: ReduxDispatch, eventState: EventState<'drag'>, id: any) => {
     eventState.event.stopPropagation()
-
     let {movement: [dx], last} = eventState
 
     dragEvent(dispatch, {id, pixels: dx})

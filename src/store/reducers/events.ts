@@ -1,5 +1,6 @@
 import {PartialTimelineReducer} from '../index'
 import {
+    CHANGE_GROUP,
     DRAG_EVENT,
     DRAG_EVENT_END,
     DRAG_EVENT_START,
@@ -24,7 +25,12 @@ export function makePureInterval(interval: Interval): PureInterval {
 }
 
 
-export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag, validateDuringResize}) =>
+export let events: PartialTimelineReducer<'events'> = ({
+                                                           validateDuringDrag,
+                                                           validateDuringResize,
+                                                           validateAfterDrag,
+                                                           validateAfterResize
+                                                       }) =>
     (state, action) => {
         let newState: StoreShape['events'] = state?.events || {}
         switch (action.type) {
@@ -49,7 +55,7 @@ export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag, vali
                             [id]: {
                                 ...oldEvent,
                                 volatileState: {
-                                    interval: makePureInterval(interval) || newInterval,
+                                    interval: makePureInterval(interval),
                                 },
                             },
                         }
@@ -76,7 +82,7 @@ export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag, vali
                             [id]: {
                                 ...oldEvent,
                                 volatileState: {
-                                    interval: makePureInterval(interval) || newInterval,
+                                    interval: makePureInterval(interval),
                                 },
                             },
                         }
@@ -102,7 +108,7 @@ export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag, vali
                             [id]: {
                                 ...oldEvent,
                                 volatileState: {
-                                    interval: makePureInterval(interval) || newInterval,
+                                    interval: makePureInterval(interval),
                                 },
                             },
                         }
@@ -110,21 +116,63 @@ export let events: PartialTimelineReducer<'events'> = ({validateDuringDrag, vali
                 }
                 break
             }
-            case STOP_EVENT_DRAG:
-            case STOP_EVENT_START_DRAG:
-            case STOP_EVENT_END_DRAG:
+            case STOP_EVENT_DRAG: {
                 let id = action.payload.id
                 let event = state?.events?.[id]
                 if (event) {
                     let {volatileState, ...oldEvent} = event
+                    if (volatileState?.interval) {
+                        let {interval} = validateAfterDrag({id, newInterval: volatileState.interval})
+                        if (interval) {
+                            newState = {
+                                ...state?.events,
+                                [id]: {
+                                    ...oldEvent,
+                                    interval: makePureInterval(interval)
+                                },
+                            }
+                        }
+                    }
+                }
+                break
+            }
+            case STOP_EVENT_START_DRAG:
+            case STOP_EVENT_END_DRAG: {
+                let id = action.payload.id
+                let event = state?.events?.[id]
+                if (event) {
+                    let {volatileState, ...oldEvent} = event
+                    if (volatileState?.interval) {
+                        let {interval} = validateAfterResize({id, newInterval: volatileState.interval})
+                        if (interval) {
+                            newState = {
+                                ...state?.events,
+                                [id]: {
+                                    ...oldEvent,
+                                    interval: makePureInterval(interval)
+                                },
+                            }
+                        }
+                    }
+                }
+                break
+            }
+            case CHANGE_GROUP: {
+                let id = action.payload.id
+                let groupId = action.payload.groupId
+
+                let event = state?.events?.[id]
+                if (event) {
                     newState = {
                         ...state?.events,
                         [id]: {
-                            ...oldEvent,
-                            interval: volatileState?.interval || event.interval,
-                        },
+                            ...event,
+                            group: groupId
+                        }
                     }
                 }
+                break
+            }
         }
         return newState
     }

@@ -129,8 +129,8 @@ export const getGroupPositions = (config: BusinessLogic) => createSelector(
 
 
 // Returns {event1: position1, event2: position2, ...}
-export const getEventsInGroup = (groupId: string) => createSelector(
-    eventSelector,
+export const getEventsInGroup = (groupId: string) => (config: BusinessLogic) => createSelector(
+    [eventSelector(config)],
     (events) => {
         return Object.fromEntries(Object.entries(events).filter(([_, event]) => event.group === groupId).map(([key, event]) => [key, event])) as Record<string, TimelineEvent>
     },
