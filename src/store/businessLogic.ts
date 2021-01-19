@@ -1,13 +1,24 @@
 import {add, startOfDay} from 'date-fns'
+import {DefaultEventShape, DefaultGroupShape} from "../definitions"
+import {makePureInterval, PureInterval} from "./reducers/events"
 
-export type BusinessLogic = {
+export type BusinessLogic<Event = DefaultEventShape, _ = DefaultGroupShape> = {
+    mapEventsToIntervals: (events: Record<string, Event>) => Record<string, PureInterval>
+    mapEventsToGroups: (events: Record<string, Event>) => Record<string, string>
     validateDuringDrag: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
     validateDuringResize: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
     validateAfterDrag: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
     validateAfterResize: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
+    orderGroups: (data: { groupIds: string[] }) => { groupIds: string[] }
 }
 
-export const DefaultConfig: BusinessLogic = {
+export const DefaultBusinessLogic: BusinessLogic = {
+    mapEventsToIntervals: (events) => {
+        return Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, makePureInterval(event.interval)]))
+    },
+    mapEventsToGroups: (events) => {
+        return Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, event.groupId]))
+    },
     validateDuringDrag: ({newInterval}) => ({
         interval: {
             start: startOfDay(newInterval.start),
@@ -32,4 +43,7 @@ export const DefaultConfig: BusinessLogic = {
             end: startOfDay(newInterval.end),
         },
     }),
+    orderGroups: ({groupIds}) => ({
+        groupIds: groupIds.sort()
+    })
 }

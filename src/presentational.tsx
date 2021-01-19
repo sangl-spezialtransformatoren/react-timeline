@@ -16,7 +16,21 @@ import {
 } from './headers'
 import {format} from './functions'
 import {createEventComponent, EventComponentType} from './event'
-import {useTimePerPixel, useTimeZone} from "./store/hooks"
+import {useSize, useTimePerPixel, useTimeZone} from "./store/hooks"
+import {createDayGrid, TemporalGridComponent} from "./grid"
+
+const DefaultDayGrid: TemporalGridComponent = ({x, date, width}) => {
+    let {height} = useSize()
+    let [weekend, setWeekend] = useState(false)
+    useEffect(() => {
+        setWeekend(isWeekend(date))
+    }, [date])
+    return <>
+        <rect x={x} y={0} width={weekend ? width : 1} height={height} fill={"rgba(0,0,0,0.1)"}/>
+    </>
+}
+
+export const DayGrid = createDayGrid(DefaultDayGrid)
 
 const DefaultMinuteHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()

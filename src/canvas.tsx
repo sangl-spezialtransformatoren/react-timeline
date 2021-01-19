@@ -26,6 +26,7 @@ import {
 import {EventGroups} from "./group"
 import {DragOffset, SvgFilters} from "./timeline"
 import {useInitialized} from "./store/hooks"
+import {DayGrid} from "./presentational"
 
 
 export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
@@ -46,7 +47,7 @@ export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
         let x = point.matrixTransform(svg.getScreenCTM()?.inverse()).x
 
         let {delta} = eventState
-        let factor = 1 + Math.sign(delta[1]) * 0.002 * Math.min(Math.abs(delta[1]), 100)
+        let factor = 1 + Math.sign(delta[1]) * 0.003 * Math.min(Math.abs(delta[1]), 100)
 
         if (eventState.first) {
             lockZoomCenter(dispatch, x)
@@ -175,7 +176,8 @@ export const TimelineCanvas: React.FC<TimelineProps> = (givenProps) => {
                 <DragOffset>
                     {initialized && <>
                         {children}
-                        <g transform={'translate(0, 64)'}>
+                        <g transform={'translate(0, 60)'}>
+                            <DayGrid />
                             <EventGroups/>
                         </g>
                     </>

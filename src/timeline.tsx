@@ -4,7 +4,7 @@ import {TimelineProps} from './definitions'
 import {Provider} from 'react-redux'
 import {TimelineStore} from './store'
 import {TimelineContext, useStartDateSpring, useTimePerPixelSpring} from './context'
-import {DefaultConfig} from './store/businessLogic'
+import {DefaultBusinessLogic} from './store/businessLogic'
 import {createTimelineStore} from './store/reducers/root'
 import './style.css'
 import {TimelineCanvas} from "./canvas"
@@ -46,15 +46,15 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
     useEffect(() => {
         if (store) {
             let state = store.getState()
-            setStore(createTimelineStore(config || DefaultConfig, state))
+            setStore(createTimelineStore(config || DefaultBusinessLogic, state))
         } else {
-            setStore(createTimelineStore(config || DefaultConfig))
+            setStore(createTimelineStore(config || DefaultBusinessLogic))
         }
     }, [config])
 
     if (store) {
         return <Provider store={store}>
-            <TimelineContext businessLogic={config || DefaultConfig}>
+            <TimelineContext businessLogic={config || DefaultBusinessLogic}>
                 <TimelineCanvas {...props} />
             </TimelineContext>
         </Provider>

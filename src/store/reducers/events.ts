@@ -25,12 +25,13 @@ export function makePureInterval(interval: Interval): PureInterval {
 }
 
 
-export let events: PartialTimelineReducer<'events'> = ({
-                                                           validateDuringDrag,
-                                                           validateDuringResize,
-                                                           validateAfterDrag,
-                                                           validateAfterResize
-                                                       }) =>
+export let events: PartialTimelineReducer<'events'> = (
+    {
+        validateDuringDrag,
+        validateDuringResize,
+        validateAfterDrag,
+        validateAfterResize
+    }) =>
     (state, action) => {
         let newState: StoreShape['events'] = state?.events || {}
         switch (action.type) {

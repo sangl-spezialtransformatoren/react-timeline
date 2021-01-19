@@ -67,8 +67,12 @@ export const onEventEndDrag = (dispatch: ReduxDispatch, eventState: EventState<'
     }
 }
 
-export function createEventComponent<T>(component: React.FC<T>): React.FC<Omit<EventComponentProps<T>, keyof EventPresentationalComponentProps>> {
-    return ({id}) => {
+export function createEventComponent<T>(component: React.FC<T>) {
+    let EventComponent: React.FC<Omit<EventComponentProps<T>, keyof EventPresentationalComponentProps> & { y: number }> = (
+        {
+            id,
+            y
+        }) => {
         let ref = useRef<SVGRectElement>(null)
         let startRef = useRef<SVGRectElement>(null)
         let endRef = useRef<SVGRectElement>(null)
@@ -86,10 +90,10 @@ export function createEventComponent<T>(component: React.FC<T>): React.FC<Omit<E
         let [{ySpring, intervalStartSpring, intervalEndSpring}] = useSpring({
             intervalStartSpring: interval.start,
             intervalEndSpring: interval.end,
-            ySpring: 0,
+            ySpring: y,
             config: springConfig,
             immediate: !animate || !initialized,
-        }, [springConfig, 0, interval.start, interval.end, animate, initialized])
+        }, [springConfig, interval.start, interval.end, animate, initialized, y])
 
         let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
@@ -121,4 +125,5 @@ export function createEventComponent<T>(component: React.FC<T>): React.FC<Omit<E
         // @ts-ignore
         return <PresentationalComponent {...props} />
     }
+    return EventComponent
 }

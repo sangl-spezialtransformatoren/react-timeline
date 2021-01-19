@@ -1,7 +1,8 @@
 import React from 'react'
 import {config, SpringConfig, SpringValue} from 'react-spring'
-import {BusinessLogic, DefaultConfig} from './store/businessLogic'
+import {BusinessLogic, DefaultBusinessLogic} from './store/businessLogic'
 import {StoreShape} from './store/shape'
+import {PureInterval} from "./store/reducers/events"
 
 export type TimelineStyle = {
     width?: React.CSSProperties['width']
@@ -13,7 +14,18 @@ export type InitialTimelineParameters = {
     endDate: Date | number
 }
 
-export type TimelineProps = {
+
+export type DefaultEventShape = {
+    interval: PureInterval,
+    label: string
+    groupId: string
+}
+
+export type DefaultGroupShape = {
+    label: string
+}
+
+export type TimelineProps<Event = DefaultEventShape, Group = DefaultGroupShape> = {
     timeZone?: string
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
     animate?: boolean
@@ -21,14 +33,14 @@ export type TimelineProps = {
     initialParameters?: InitialTimelineParameters
     style?: TimelineStyle,
     springConfig?: SpringConfig,
-    config?: BusinessLogic,
+    config?: BusinessLogic<Event, Group>,
 }
 
 export const DefaultTimelineProps: Partial<TimelineProps> = {
     animate: true,
     timeZone: 'Etc/UTC',
     weekStartsOn: 1,
-    config: DefaultConfig,
+    config: DefaultBusinessLogic,
     springConfig: config.stiff,
 }
 

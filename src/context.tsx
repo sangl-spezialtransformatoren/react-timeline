@@ -1,12 +1,12 @@
 import React, {createContext, useContext} from 'react'
 import {SpringValue, useSpring} from 'react-spring'
-import {BusinessLogic, DefaultConfig} from './store/businessLogic'
+import {BusinessLogic, DefaultBusinessLogic} from './store/businessLogic'
 import {SpringConstant} from "./definitions"
 import {useAnimate, useInitialized, useSize, useSpringConfig, useStartDate, useTimePerPixel} from "./store/hooks"
 
 export const StartDateSpringContext = createContext<SpringValue<Date | number>>(SpringConstant())
 export const TimePerPixelSpringContext = createContext<SpringValue<number>>(SpringConstant())
-export const BusinessLogicContext = createContext<BusinessLogic>(DefaultConfig)
+export const BusinessLogicContext = createContext<BusinessLogic>(DefaultBusinessLogic)
 
 const StartDateAnimationContext: React.FC = ({children}) => {
     let startDate = useStartDate()

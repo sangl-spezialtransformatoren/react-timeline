@@ -16,27 +16,27 @@ const App = () => {
             1: {
                 interval: {start: new Date(), end: new Date().valueOf() + 10 * 3600000},
                 label: 'IT 18.128',
-                group: '1',
+                groupId: '1',
             },
             2: {
                 interval: {start: new Date(), end: new Date().valueOf() + 10 * 3600000},
                 label: 'IT 18.128',
-                group: '1',
+                groupId: '1',
             },
             3: {
                 interval: {start: new Date(), end: new Date().valueOf() + 10 * 3600000},
                 label: 'IT 18.128',
-                group: '2',
+                groupId: '2',
             },
             4: {
                 interval: {start: new Date(), end: new Date().valueOf() + 10 * 3600000},
                 label: 'IT 18.128',
-                group: '2',
+                groupId: '2',
             },
             5: {
                 interval: {start: new Date(), end: new Date().valueOf() + 10 * 3600000},
                 label: 'IT 18.128',
-                group: '3',
+                groupId: '3',
             },
         },
         groups: {
@@ -53,7 +53,7 @@ const App = () => {
     return <Timeline
         initialData={initialData}
         initialParameters={initialParameters}
-        style={{height: '500px', width: '100%'}}
+        style={{height: '100%', width: '100%'}}
         timeZone={'Europe/Berlin'}
         animate={true}
         springConfig={{mass: 0.8, tension: 210, friction: 20}}
