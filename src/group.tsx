@@ -2,7 +2,7 @@ import React from 'react'
 import {EventComponent} from './presentational'
 import {
     useEventAndGroupIds,
-    useEventIdsOrderedByStartDate,
+    useEventIdsOrderedByLayerAndStartDate,
     useEventPositionsInGroup,
     useGroupOffsets,
     useGroupPositions
@@ -10,7 +10,7 @@ import {
 
 
 export const EventGroups: React.FC = () => {
-    let events = useEventIdsOrderedByStartDate().reverse()
+    let events = useEventIdsOrderedByLayerAndStartDate()
     let eventToGroup = useEventAndGroupIds()
     let eventPositions = useEventPositionsInGroup()
     let groupOffsets = useGroupOffsets()

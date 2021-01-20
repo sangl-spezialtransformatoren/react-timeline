@@ -1,5 +1,5 @@
-import {EnhancedStore, Middleware, Reducer} from '@reduxjs/toolkit'
-import {Action, AnyAction, Dispatch as ReduxDispatch} from 'redux'
+import {EnhancedStore, Middleware, Reducer, ThunkDispatch} from '@reduxjs/toolkit'
+import {Action, AnyAction} from 'redux'
 import {BusinessLogic} from './businessLogic'
 import {Actions, PayloadActions} from './actions'
 import {useDispatch as useReduxDispatch, useSelector as useReduxSelector} from 'react-redux'
@@ -7,7 +7,7 @@ import {StoreShape} from './shape'
 import {useContext} from 'react'
 import {BusinessLogicContext} from '../context'
 
-export type Dispatch = ReduxDispatch<Actions>
+export type Dispatch = ThunkDispatch<StoreShape, undefined, Actions>
 
 export function useSelector<TSelected>(selector: (config: BusinessLogic) => ((state: StoreShape) => TSelected), equalityFn?: (left: TSelected, right: TSelected) => boolean): TSelected {
     let config = useContext(BusinessLogicContext)
@@ -61,19 +61,18 @@ export type TimelineStore<M extends ReadonlyArray<Middleware<{}, StoreShape>>> =
 type ExtractAction_<T extends PayloadActions['type'], U extends PayloadActions> = Extract<PayloadActions, U extends {type: T} ? U : never>
 type ExtractAction<T extends PayloadActions['type']> = ExtractAction_<T, PayloadActions>
 
-export function createPayloadActionCreators<T extends PayloadActions['type'], D = ExtractAction<T>['payload']>(type: T, transformData?: (data: D) => ExtractAction<T>['payload']): [(dispatch: Dispatch, data: D) => void, () => (data: D) => void] {
-    let set = (dispatch: Dispatch, data: D) => {
-        let action = {
+export function createPayloadActionCreators<T extends PayloadActions['type'], D = ExtractAction<T>['payload']>(type: T, transformData?: (data: D) => ExtractAction<T>['payload']): [(data: D) => ExtractAction<T>, () => (data: D) => void] {
+    let set = (data: D) => {
+        return {
             type: type,
             payload: transformData ? transformData(data) : data,
         }
-        // @ts-ignore
-        dispatch(action)
     }
     let useSet = () => {
         let dispatch = useDispatch()
         return (payload: D) => {
-            set(dispatch, payload)
+            // @ts-ignore
+            dispatch(set(payload))
         }
     }
     // @ts-ignore

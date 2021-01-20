@@ -1,8 +1,8 @@
 import React, {createContext, useContext} from 'react'
 import {SpringValue, useSpring} from 'react-spring'
 import {BusinessLogic, DefaultBusinessLogic} from './store/businessLogic'
-import {SpringConstant} from "./definitions"
-import {useAnimate, useInitialized, useSize, useSpringConfig, useStartDate, useTimePerPixel} from "./store/hooks"
+import {SpringConstant} from './definitions'
+import {useAnimate, useInitialized, useSize, useSpringConfig, useStartDate, useTimePerPixel} from './store/hooks'
 
 export const StartDateSpringContext = createContext<SpringValue<Date | number>>(SpringConstant())
 export const TimePerPixelSpringContext = createContext<SpringValue<number>>(SpringConstant())
@@ -19,7 +19,7 @@ const StartDateAnimationContext: React.FC = ({children}) => {
     let [{startDateSpring}] = useSpring({
         startDateSpring: startDate,
         immediate: !animate || !initialized,
-        config: springConfig
+        config: springConfig,
     }, [startDate, width])
 
     return <>
@@ -39,7 +39,7 @@ const TimePerPixelAnimationContext: React.FC = ({children}) => {
     let [{timePerPixelSpring}] = useSpring({
         timePerPixelSpring: timePerPixel,
         immediate: !animate || !initialized,
-        config: springConfig
+        config: springConfig,
     }, [timePerPixel])
 
     return <>
@@ -49,7 +49,7 @@ const TimePerPixelAnimationContext: React.FC = ({children}) => {
     </>
 }
 
-const TimelineBusinessLogic: React.FC<{ config: BusinessLogic }> = ({children, config}) => {
+const TimelineBusinessLogic: React.FC<{config: BusinessLogic}> = ({children, config}) => {
     return <>
         <BusinessLogicContext.Provider value={config}>
             {children}
@@ -57,7 +57,7 @@ const TimelineBusinessLogic: React.FC<{ config: BusinessLogic }> = ({children, c
     </>
 }
 
-export const TimelineContext: React.FC<{ businessLogic: BusinessLogic }> = ({businessLogic, children}) => {
+export const TimelineContext: React.FC<{businessLogic: BusinessLogic}> = ({businessLogic, children}) => {
     return <>
         <StartDateAnimationContext>
             <TimePerPixelAnimationContext>
@@ -77,3 +77,6 @@ export const useTimePerPixelSpring = () => {
     return useContext(TimePerPixelSpringContext)
 }
 
+export const useBusinessLogic = () => {
+    return useContext(BusinessLogicContext)
+}

@@ -1,8 +1,9 @@
 import {Action} from 'redux'
 
-import {createPayloadActionCreators, Dispatch, PayloadAction} from './index'
+import {createPayloadActionCreators, PayloadAction} from './index'
 import {StoreShape} from './shape'
-import {makePureInterval} from './reducers/events'
+import {makePureInterval, PureInterval} from './reducers/events'
+import {ThunkAction} from '@reduxjs/toolkit'
 
 // animate
 export const SET_ANIMATE = 'setAnimate'
@@ -25,43 +26,28 @@ export const [setEvents, useSetEvents] = createPayloadActionCreators(SET_EVENTS,
     },
 )
 
-export const DRAG_EVENT = 'dragEvent'
-export type DragEventAction = PayloadAction<typeof DRAG_EVENT, { id: string, pixels: number }>
-export const [dragEvent, useDragEvent] = createPayloadActionCreators(DRAG_EVENT)
-
-export const DRAG_EVENT_START = 'dragEventStart'
-export type DragEventStartAction = PayloadAction<typeof DRAG_EVENT_START, { id: string, pixels: number }>
-export const [dragEventStart, useDragEventStart] = createPayloadActionCreators(DRAG_EVENT_START)
-
-export const DRAG_EVENT_END = 'dragEventEnd'
-export type DragEventEndAction = PayloadAction<typeof DRAG_EVENT_END, { id: string, pixels: number }>
-export const [dragEventEnd, useDragEventEnd] = createPayloadActionCreators(DRAG_EVENT_END)
-
-export const STOP_EVENT_DRAG = 'stopEventDrag'
-export type StopEventDragAction = PayloadAction<typeof STOP_EVENT_DRAG, { id: string }>
-export const [stopEventDrag, useStopEventDrag] = createPayloadActionCreators(STOP_EVENT_DRAG)
-
-export const STOP_EVENT_START_DRAG = 'stopEventStartDrag'
-export type StopEventStartDragAction = PayloadAction<typeof STOP_EVENT_START_DRAG, { id: string }>
-export const [stopEventStartDrag, useStopEventStartDrag] = createPayloadActionCreators(STOP_EVENT_START_DRAG)
-
-export const STOP_EVENT_END_DRAG = 'stopEventEndDrag'
-export type StopEventEndDragAction = PayloadAction<typeof STOP_EVENT_END_DRAG, { id: string }>
-export const [stopEventEndDrag, useStopEventEndDrag] = createPayloadActionCreators(STOP_EVENT_END_DRAG)
+export const MOVE_EVENT_INTERMEDIARY = 'moveEventIntermediary'
+export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, {id: string, interval: PureInterval}>
+export const [moveEventIntermediary, useMoveEventIntermediary] = createPayloadActionCreators(MOVE_EVENT_INTERMEDIARY)
 
 export const CHANGE_GROUP = 'changeGroup'
-export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, { id: string, groupId: string }>
+export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, {id: string, groupId: string}>
 export const [changeGroup, useChangeGroup] = createPayloadActionCreators(CHANGE_GROUP)
+
+export const RESET_DRAG_OR_RESIZE = 'resetDragOrResize'
+export type ResetDragOrResizeAction = PayloadAction<typeof RESET_DRAG_OR_RESIZE, {id: string}>
+export const [resetDragOrResize, useResetDragOrResize] = createPayloadActionCreators(RESET_DRAG_OR_RESIZE)
+
+export const COMMIT_DRAG_OR_RESIZE = 'commitDragOrResize'
+export type CommitDragOrResizeAction = PayloadAction<typeof COMMIT_DRAG_OR_RESIZE, {id: string}>
+export const [commitDragOrResize, useCommitDragOrResize] = createPayloadActionCreators(COMMIT_DRAG_OR_RESIZE)
 
 export type EventAction =
     SetEventsAction
-    | DragEventAction
-    | DragEventStartAction
-    | DragEventEndAction
-    | StopEventDragAction
-    | StopEventStartDragAction
-    | StopEventEndDragAction
     | ChangeGroupAction
+    | ResetDragOrResizeAction
+    | CommitDragOrResizeAction
+    | MoveEventIntermediaryAction
 
 
 // initialized
@@ -108,8 +94,8 @@ export const [lockZoomCenter, useLockZoomCenter] = createPayloadActionCreators(L
 
 export const UNLOCK_ZOOM_CENTER = 'unlockZoomCenter'
 export type UnlockZoomCenterAction = Action<typeof UNLOCK_ZOOM_CENTER>
-export const unlockZoomCenter = (dispatch: Dispatch) => {
-    dispatch({type: UNLOCK_ZOOM_CENTER})
+export const unlockZoomCenter = () => {
+    return {type: UNLOCK_ZOOM_CENTER}
 }
 
 export const ZOOM = 'zoom'
@@ -152,5 +138,7 @@ export type Actions =
     | WeekStartsOnAction
     | SpringConfigAction
 
-export type Filter<A> = A extends { type: string, payload: any } ? A : never
+export type Filter<A> = A extends {type: string, payload: any} ? A : never
 export type PayloadActions = Filter<Actions>
+
+export type Thunk = ThunkAction<void, StoreShape, any, Actions>

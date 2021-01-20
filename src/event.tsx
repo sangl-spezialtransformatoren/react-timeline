@@ -2,18 +2,14 @@ import React, {MutableRefObject, useRef} from 'react'
 import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
-import {useTimePerPixelSpring} from './context'
-import {
-    dragEvent,
-    dragEventEnd,
-    dragEventStart,
-    stopEventDrag,
-    stopEventEndDrag,
-    stopEventStartDrag
-} from "./store/actions"
-import {Dispatch as ReduxDispatch} from "redux"
-import {EventState} from "./canvas"
-import {useAnimate, useDateZero, useGetInterval, useInitialized, useSpringConfig} from "./store/hooks"
+import {useBusinessLogic, useTimePerPixelSpring} from './context'
+import {commitDragOrResize, moveEventIntermediary, resetDragOrResize, Thunk} from './store/actions'
+import {EventState} from './canvas'
+import {useAnimate, useDateZero, useGetInterval, useInitialized, useSpringConfig} from './store/hooks'
+import {Dispatch} from './store'
+import {BusinessLogic} from './store/businessLogic'
+import {selectEvents, selectTimePerPixel} from './store/selectors'
+import {makePureInterval} from './store/reducers/events'
 
 export type EventPresentationalComponentProps = {
     x: number,
@@ -31,47 +27,111 @@ export type EventComponentProps<T = {}> = {
 } & T
 
 
-export const onEventDrag = (dispatch: ReduxDispatch, eventState: EventState<'drag'>, id: any) => {
+export const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
     eventState.event.stopPropagation()
     let {movement: [dx], last} = eventState
 
-    dragEvent(dispatch, {id, pixels: dx})
+    let action: Thunk = async (dispatch, getState) => {
+        let state = getState()
+        let oldInterval = selectEvents(config)(state)[id].interval
+        let timePerPixel = selectTimePerPixel(config)(state)
 
-    if (last) {
-        stopEventDrag(dispatch, {id})
+        let dt = dx * timePerPixel
+        let newInterval = {
+            start: oldInterval.start + dt,
+            end: oldInterval.end + dt,
+        }
+        let {interval} = config.validateDuringDrag({id, newInterval})
+        if (interval) {
+            dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+        }
+        if (last) {
+            try {
+                let {interval} = await config.validateAfterDrag({id, newInterval})
+                if (interval) {
+                    dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+                }
+                dispatch(commitDragOrResize({id}))
+            } catch (e) {
+                dispatch(resetDragOrResize({id}))
+            }
+        }
     }
-
+    dispatch(action)
 }
 
-export const onEventStartDrag = (dispatch: ReduxDispatch, eventState: EventState<'drag'>, id: any) => {
+export const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
     eventState.event.stopPropagation()
 
     let {movement: [dx], last} = eventState
 
-    dragEventStart(dispatch, {id, pixels: dx})
+    let action: Thunk = async (dispatch, getState) => {
+        let state = getState()
+        let oldInterval = selectEvents(config)(state)[id].interval
+        let timePerPixel = selectTimePerPixel(config)(state)
 
-    if (last) {
-        stopEventStartDrag(dispatch, {id})
+        let dt = dx * timePerPixel
+        let newInterval = {
+            start: oldInterval.start + dt,
+            end: oldInterval.end,
+        }
+        let {interval} = config.validateDuringResize({id, newInterval})
+        if (interval) {
+            dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+        }
+        if (last) {
+            try {
+                let {interval} = await config.validateAfterResize({id, newInterval})
+                if (interval) {
+                    dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+                }
+                dispatch(commitDragOrResize({id}))
+            } catch (e) {
+                dispatch(resetDragOrResize({id}))
+            }
+        }
     }
+    dispatch(action)
 }
 
-export const onEventEndDrag = (dispatch: ReduxDispatch, eventState: EventState<'drag'>, id: any) => {
+export const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
     eventState.event.stopPropagation()
-
     let {movement: [dx], last} = eventState
 
-    dragEventEnd(dispatch, {id, pixels: dx})
+    let action: Thunk = async (dispatch, getState) => {
+        let state = getState()
+        let oldInterval = selectEvents(config)(state)[id].interval
+        let timePerPixel = selectTimePerPixel(config)(state)
 
-    if (last) {
-        stopEventEndDrag(dispatch, {id})
+        let dt = dx * timePerPixel
+        let newInterval = {
+            start: oldInterval.start,
+            end: oldInterval.end + dt,
+        }
+        let {interval} = config.validateDuringResize({id, newInterval})
+        if (interval) {
+            dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+        }
+        if (last) {
+            try {
+                let {interval} = await config.validateAfterResize({id, newInterval})
+                if (interval) {
+                    dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+                }
+                dispatch(commitDragOrResize({id}))
+            } catch (e) {
+                dispatch(resetDragOrResize({id}))
+            }
+        }
     }
+    dispatch(action)
 }
 
 export function createEventComponent<T>(component: React.FC<T>) {
-    let EventComponent: React.FC<Omit<EventComponentProps<T>, keyof EventPresentationalComponentProps> & { y: number }> = (
+    let EventComponent: React.FC<Omit<EventComponentProps<T>, keyof EventPresentationalComponentProps> & {y: number}> = (
         {
             id,
-            y
+            y,
         }) => {
         let ref = useRef<SVGRectElement>(null)
         let startRef = useRef<SVGRectElement>(null)
@@ -86,6 +146,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let initialized = useInitialized()
         let springConfig = useSpringConfig()
         let timePerPixelSpring = useTimePerPixelSpring()
+        let businessLogic = useBusinessLogic()
 
         let [{ySpring, intervalStartSpring, intervalEndSpring}] = useSpring({
             intervalStartSpring: interval.start,
@@ -99,15 +160,15 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
 
         useGesture({
-            onDrag: eventState => onEventDrag(dispatch, eventState, id),
+            onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, id),
         }, {domTarget: ref, eventOptions: {passive: false}})
 
         useGesture({
-            onDrag: eventState => onEventStartDrag(dispatch, eventState, id),
+            onDrag: eventState => onEventStartDrag(dispatch, businessLogic, eventState, id),
         }, {domTarget: startRef, eventOptions: {passive: false}})
 
         useGesture({
-            onDrag: eventState => onEventEndDrag(dispatch, eventState, id),
+            onDrag: eventState => onEventEndDrag(dispatch, businessLogic, eventState, id),
         }, {domTarget: endRef, eventOptions: {passive: false}})
 
         let PresentationalComponent = animated(component)

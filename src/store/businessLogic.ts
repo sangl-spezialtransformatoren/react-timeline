@@ -1,28 +1,21 @@
-import {add, startOfDay} from 'date-fns'
-import {DefaultEventShape, DefaultGroupShape} from "../definitions"
-import {makePureInterval, PureInterval} from "./reducers/events"
+import {add, compareAsc, startOfDay} from 'date-fns'
+import {RequiredEventData, RequiredGroupData} from './shape'
 
-export type BusinessLogic<Event = DefaultEventShape, _ = DefaultGroupShape> = {
-    mapEventsToIntervals: (events: Record<string, Event>) => Record<string, PureInterval>
-    mapEventsToGroups: (events: Record<string, Event>) => Record<string, string>
-    validateDuringDrag: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
-    validateDuringResize: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
-    validateAfterDrag: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
-    validateAfterResize: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
-    orderGroups: (data: { groupIds: string[] }) => { groupIds: string[] }
+export type BusinessLogic<E extends RequiredEventData = RequiredEventData, _G extends RequiredGroupData = RequiredGroupData> = {
+    validateDuringDrag: (data: {id: string, newInterval: Interval}) => {interval?: Interval}
+    validateDuringResize: (data: {id: string, newInterval: Interval}) => {interval?: Interval}
+    validateAfterDrag: (data: {id: string, newInterval: Interval}) => Promise<{interval?: Interval}>
+    validateAfterResize: (data: {id: string, newInterval: Interval}) => Promise<{interval?: Interval}>
+    orderGroups: (data: {groupIds: string[]}) => {groupIds: string[]},
+    orderEventsForPositioning: (data: Record<string, E>) => string[],
+    mapEventsToLayer: (data: Record<string, E>) => Record<string, number>
 }
 
 export const DefaultBusinessLogic: BusinessLogic = {
-    mapEventsToIntervals: (events) => {
-        return Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, makePureInterval(event.interval)]))
-    },
-    mapEventsToGroups: (events) => {
-        return Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, event.groupId]))
-    },
     validateDuringDrag: ({newInterval}) => ({
         interval: {
-            start: startOfDay(newInterval.start),
-            end: startOfDay(newInterval.end),
+            start: startOfDay(add(newInterval.start, {hours: 12})),
+            end: startOfDay(add(newInterval.end, {hours: 12})),
         },
     }),
     validateDuringResize: ({newInterval}) => ({
@@ -31,19 +24,29 @@ export const DefaultBusinessLogic: BusinessLogic = {
             end: startOfDay(add(newInterval.end, {hours: 12})),
         },
     }),
-    validateAfterDrag: ({newInterval}) => ({
-        interval: {
-            start: startOfDay(newInterval.start),
-            end: startOfDay(newInterval.end),
-        },
-    }),
-    validateAfterResize: ({newInterval}) => ({
-        interval: {
-            start: startOfDay(newInterval.start),
-            end: startOfDay(newInterval.end),
-        },
-    }),
+    validateAfterDrag: async ({newInterval}) => {
+        return {
+            interval: {
+                start: startOfDay(add(newInterval.start, {hours: 12})),
+                end: startOfDay(add(newInterval.end, {hours: 12})),
+            },
+        }
+    },
+    validateAfterResize: async ({newInterval}) => {
+        return {
+            interval: {
+                start: startOfDay(add(newInterval.start, {hours: 12})),
+                end: startOfDay(add(newInterval.end, {hours: 12})),
+            },
+        }
+    },
     orderGroups: ({groupIds}) => ({
-        groupIds: groupIds.sort()
-    })
+        groupIds: groupIds.sort(),
+    }),
+    orderEventsForPositioning: data => {
+        return Object.entries(data).sort(([_a, EventA], [_b, EventB]) => compareAsc(EventA.interval.start, EventB.interval.start)).map(([eventId]) => eventId)
+    },
+    mapEventsToLayer: data => {
+        return Object.fromEntries(Object.keys(data).map((key, _) => [key, 0])) as Record<string, number>
+    },
 }

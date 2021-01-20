@@ -1,18 +1,22 @@
-import {StoreShape, TimelineEvent} from './shape'
+import {RequiredEventData, RequiredGroupData, StoreShape} from './shape'
 import {createSelector} from 'reselect'
 import {areIntervalsIntersecting} from 'schedule-fns/lib/src/functions/intervals'
 import {PureInterval} from './reducers/events'
 import {BusinessLogic} from './businessLogic'
-import {getDefaultTimeZone} from "../index"
-import {IntervalCreator} from "../functions"
-import {compareAsc} from "date-fns"
+import {getDefaultTimeZone} from '../index'
+import {IntervalCreator} from '../functions'
+import {compareAsc} from 'date-fns'
+import {shallowEqual} from 'react-redux'
 
 
-export type TimelineSelector<T> = (config: BusinessLogic) => (state: StoreShape) => T
+export function select<E extends RequiredEventData, G extends RequiredGroupData, T>(selector: (config: BusinessLogic<E, G>) => (state: StoreShape<E, G>) => T) {
+    return selector
+}
 
-function distributeEventsVertically(events: Record<string, PureInterval>): Record<string, number> {
-    let positionedEvents: Record<string, { interval: PureInterval, position: number }> = {}
-    for (const [key, interval] of Object.entries(events).sort(([_, evtA], [__, evtB]) => compareAsc(evtA.start, evtB.start))) {
+// Positions the given events one after another so they don't overlap
+function distributeEventsVertically(events: [string, PureInterval][]): Record<string, number> {
+    let positionedEvents: Record<string, {interval: PureInterval, position: number}> = {}
+    for (const [key, interval] of events) {
         let positions = Object.values(positionedEvents).filter(
             (leftEvent) => areIntervalsIntersecting(leftEvent.interval, interval) && leftEvent.interval.end !== interval.start && leftEvent.interval.start !== interval.end,
         ).map((leftEvent) => leftEvent.position)
@@ -25,105 +29,130 @@ function distributeEventsVertically(events: Record<string, PureInterval>): Recor
     return Object.fromEntries(Object.entries(positionedEvents).map(([key, data]) => [key, data.position]))
 }
 
-export const eventSelector = (_: BusinessLogic) => (state: StoreShape) => state.events
-export const selectStartDate = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.startDate
-export const selectEndDate = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.startDate.valueOf() + state.size.width * state.timeScale.timePerPixel
-export const selectTimeZone = (_: BusinessLogic) => (state: StoreShape) => state.timeZone
-export const selectWeekStartsOn = (_: BusinessLogic) => (state: StoreShape) => state.weekStartsOn
-export const selectAnimate = (_: BusinessLogic) => (state: StoreShape) => state.animate
-export const selectEvents = (_: BusinessLogic) => (state: StoreShape) => state.events
-export const selectInterval = (id: string) => (_: BusinessLogic) => (state: StoreShape) => state.events?.[id].volatileState?.interval || state.events?.[id].interval
-export const selectInitialized = (_: BusinessLogic) => (state: StoreShape) => state.initialized
-export const selectSize = (_: BusinessLogic) => (state: StoreShape) => state.size
-export const selectSpringConfig = (_: BusinessLogic) => (state: StoreShape) => state.springConfig
-export const selectDateZero = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.dateZero
-export const selectTimePerPixel = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.timePerPixel
-export const selectZoomCenter = (_: BusinessLogic) => (state: StoreShape) => state.timeScale.zoomCenter
+
+// Returns startDate
+export const selectStartDate = select(() => (state) => state.timeScale.startDate)
+
+// Returns endDate
+export const selectEndDate = select(() => (state) => state.timeScale.startDate.valueOf() + state.size.width * state.timeScale.timePerPixel)
+
+// Returns timeZone
+export const selectTimeZone = select(() => (state) => state.timeZone)
+
+// Returns weekStartsOn
+export const selectWeekStartsOn = select(() => (state) => state.weekStartsOn)
+
+// Returns animate
+export const selectAnimate = select(() => (state) => state.animate)
+
+// Returns initialized
+export const selectInitialized = select(() => (state) => state.initialized)
+
+// Returns {width, number, height: number}
+export const selectSize = select(() => (state) => state.size)
+
+// Returns springConfig
+export const selectSpringConfig = select(() => (state) => state.springConfig)
+
+// Returns dateZero
+export const selectDateZero = select(() => (state) => state.timeScale.dateZero)
+
+// Returns timePerPixel
+export const selectTimePerPixel = select(() => (state) => state.timeScale.timePerPixel)
+
+// Returns {eventId1: event, eventId2: event, ...}
+export const selectEvents = select(() => (state) => state.events)
 
 
 // Returns [groupId1, groupId2, ...]
-export const getGroupIdsFromEvents = (config: BusinessLogic) => createSelector(
-    [eventSelector(config)],
+export const selectGroupIds = (config: BusinessLogic) => createSelector(
+    [selectEventIdToGroupIdMap(config)],
     events => {
-        return Array.from(new Set(Object.values(config.mapEventsToGroups(events)))) as string[]
+        return Array.from(new Set(Object.values(events))) as string[]
     },
 )
 
-// Returns {eventId1: groupId1, eventId2: groupId2, ...}
-export const getEventIdToGroupIdMap = (config: BusinessLogic) => createSelector(
-    [eventSelector(config)],
-    (events) => {
-        return Object.fromEntries(Object.entries(events).map(([id, event]) => [id, event.groupId])) as Record<string, string>
-    },
-)
 
 // Returns {groupId1: [eventId1, eventId2], groupId2: [eventId3], ...}
-export const getGroupsAndEventIds = (config: BusinessLogic) => createSelector(
-    [getGroupIdsFromEvents(config), getEventIdToGroupIdMap(config)],
+export const selectMapGroupIdsToEventIds = (config: BusinessLogic) => createSelector(
+    [selectGroupIds(config), selectEventIdToGroupIdMap(config)],
     (groups, eventIdToGroupMap) => {
         return Object.fromEntries(
             groups.map(
                 (groupId) => [
                     groupId,
                     Object.entries(eventIdToGroupMap)
-                        .filter(([_, eventGroupId]) => eventGroupId === groupId)
-                        .map(([eventId, _]) => eventId),
+                    .filter(([_, eventGroupId]) => eventGroupId === groupId)
+                    .map(([eventId, _]) => eventId),
                 ],
             ),
         ) as Record<string, string[]>
     },
 )
 
-// Returns {eventId1: interval1, eventId2: interval2, ...}
-export const getEventIntervals = (config: BusinessLogic) => createSelector(
-    [eventSelector(config)],
+//Returns {eventId1: event1, eventId2, event2, ...}
+export const selectEventsWithVolatileState = (config: BusinessLogic) => createSelector(
+    [selectEvents(config)],
     (events) => {
-        return Object.fromEntries(Object.entries(events).map(([id, event]) => [id, event.volatileState?.interval || event.interval])) as Record<string, PureInterval>
+        return Object.fromEntries(Object.entries(events).map(
+            ([eventId, event]) => {
+                let {volatileState, ...evt} = event
+                return [eventId, {...evt, interval: volatileState?.interval || evt.interval}]
+            }),
+        )
     },
 )
 
-// Returns {groupId1: {eventId1: interval1, eventId2: interval2}, groupId2: {eventId3: interval3}, ...}
-export const selectGroupsAndEventIntervals = (config: BusinessLogic) => createSelector(
-    [getGroupsAndEventIds(config), getEventIntervals(config)],
-    (groupsAndEventIds, eventIntervals) => {
-        return Object.fromEntries(
-            Object.entries(groupsAndEventIds).map(
-                ([groupId, eventIds]) => [
-                    groupId,
-                    Object.fromEntries(
-                        eventIds.map((eventId) => [eventId, eventIntervals[eventId]]),
-                    ),
-                ],
-            ),
-        ) as Record<string, Record<string, PureInterval>>
+// Returns {eventId1: interval1, eventId2: interval2, ...}
+export const selectMapEventIdToVolatileInterval = (config: BusinessLogic) => createSelector(
+    [selectEventsWithVolatileState(config)],
+    (events) => {
+        return Object.fromEntries(Object.entries(events).map(([id, event]) => [id, event.interval])) as Record<string, PureInterval>
     },
 )
 
-// Returns {groupId1: {eventId1: position1, eventId2: position2}, groupId2: {eventId3: position3}, ...}
-export const selectGroupsAndEventPositions = (config: BusinessLogic) => createSelector(
-    [selectGroupsAndEventIntervals(config)],
-    (groupsAndEventIntervals) => {
-        return Object.fromEntries(Object.entries(groupsAndEventIntervals).map(
-            ([groupId, eventIntervals]) => {
-                return [groupId, distributeEventsVertically(eventIntervals)]
-            }
-        )) as Record<string, Record<string, number>>
+// Returns {eventId1: layerNumber1, eventId2: layerNumber2, ...}
+export const selectMapEventToLayerNumber = (config: BusinessLogic) => createSelector(
+    [selectEventsWithVolatileState(config)],
+    (events) => {
+        return config.mapEventsToLayer(events)
     },
 )
 
-// Returns {eventId1: positionInGroup1, eventId2: positionInGroup2, ...}
+// Returns (id: string) => Interval
+export const selectInterval = (id: string) => (config: BusinessLogic) => createSelector(
+    [selectMapEventIdToVolatileInterval(config)],
+    (events) => {
+        return events[id]
+    },
+)
+
+// Returns [layer1, layer2, ...]
+export const selectLayers = (config: BusinessLogic) => createSelector(
+    [selectEvents(config)],
+    (events) => {
+        return Array.from(new Set(Object.values(config.mapEventsToLayer(events))))
+    },
+)
+
+// Returns {eventId1: position1, eventId2: position2, eventId3: position3, ...}
 export const selectEventPositionsInGroup = (config: BusinessLogic) => createSelector(
-    [selectGroupsAndEventPositions(config)],
-    (groupsAndEventPositions) => {
-        return Object.entries(groupsAndEventPositions).reduce((aggregate, [_, eventPositions]) => ({...aggregate, ...eventPositions}), {}) as Record<string, number>
-    }
+    [selectGroupIds(config), selectLayers(config), selectMapEventToLayerNumber(config), selectEventIdToGroupIdMap(config), selectEventsWithVolatileState(config)],
+    (groupIds, layers, mapEventToLayer, mapEventToGroup, events) => {
+        let pairs = groupIds.flatMap(groupId => layers.map(layerId => [groupId, layerId] as [string, number]))
+        let mapEventsToGroupsAndLayers = Object.fromEntries(Object.keys(mapEventToLayer).map(eventId => [eventId, [mapEventToGroup[eventId], mapEventToLayer[eventId]]])) as Record<string, [string, number]>
+        let batches = pairs.map(([groupId, layerId]) => Object.keys(events).filter(eventId => shallowEqual(mapEventsToGroupsAndLayers[eventId], [groupId, layerId])))
+        let orderedBatches = batches.map(batch => config.orderEventsForPositioning(Object.fromEntries(batch.map(eventId => [eventId, events[eventId]]))))
+        let positions = orderedBatches.map(batch => distributeEventsVertically(batch.map(eventId => [eventId, events[eventId].interval]))).reduce((aggregate, element) => ({...aggregate, ...element}), {})
+        return positions as Record<string, number>
+    },
 )
 
 // Returns {groupId1: height1, groupId2: height2, ...}
 export const getGroupHeights = (config: BusinessLogic) => createSelector(
-    [selectGroupsAndEventPositions(config)],
-    (groupsAndEventPositions) => {
-        return Object.fromEntries(Object.entries(groupsAndEventPositions).map(([groupId, eventPositions]) => [groupId, Math.max(...Object.entries(eventPositions).map(([_, position]) => position)) + 1]))
+    [selectMapGroupIdsToEventIds(config), selectEventPositionsInGroup(config)],
+    (mapGroupToEvents, eventPositions) => {
+        return Object.fromEntries(Object.entries(mapGroupToEvents).map(([groupId, events]) => [groupId, Math.max(...events.map(eventId => eventPositions[eventId])) + 1]))
     },
 )
 
@@ -144,34 +173,9 @@ export const getGroupOffsets = (config: BusinessLogic) => createSelector(
 
 // Returns {groupId1: position1, groupId2: position2, ...}
 export const selectGroupPositions = (config: BusinessLogic) => createSelector(
-    [getGroupIdsFromEvents(config)],
+    [selectGroupIds(config)],
     (groupIds) => {
         return Object.fromEntries(config.orderGroups({groupIds}).groupIds.map((groupId, index) => [groupId, index])) as Record<string, number>
-    }
-)
-
-// Returns {event1: position1, event2: position2, ...}
-export const getEventsInGroup = (groupId: string) => (config: BusinessLogic) => createSelector(
-    [eventSelector(config)],
-    (events) => {
-        return Object.fromEntries(Object.entries(events).filter(([_, event]) => event.groupId === groupId).map(([key, event]) => [key, event])) as Record<string, TimelineEvent>
-    },
-)
-
-// Returns {groupId1: {eventId1: event1, eventId2: event2}, ...}
-export const getGroupsAndEvents = (config: BusinessLogic) => createSelector(
-    getGroupIdsFromEvents(config),
-    eventSelector(config),
-    (groups, events) => {
-        return Object.fromEntries(groups.map(groupId => [groupId, Object.fromEntries(Object.entries(events).filter(([_, event]) => event.groupId === groupId).map(([key, event]) => [key, event])) as Record<string, TimelineEvent>]))
-    },
-)
-
-// Returns {eventId1: interval1, eventId2: interval2, ...}
-export const getEventIntervalsInGroup = (groupId: string) => (config: BusinessLogic) => createSelector(
-    [eventSelector(config)],
-    (events) => {
-        return Object.fromEntries(Object.entries(events).filter(([_, event]) => event.groupId === groupId).map(([key, event]) => [key, event.volatileState?.interval || event.interval])) as Record<string, PureInterval>
     },
 )
 
@@ -191,32 +195,24 @@ export const getHeaderIntervals = (intervalCreator: IntervalCreator, intervalLen
             timeZone: timeZone || getDefaultTimeZone(),
             weekStartsOn: weekStartsOn || 1,
         })
-    }
-)
-
-// Returns {eventId1: position1, eventId2: position2, ...}
-export const selectPositionsInGroup = (groupId: string) => (config: BusinessLogic) => createSelector(
-    [selectGroupsAndEventPositions(config)],
-    (groupsAndEventPositions) => {
-        return groupsAndEventPositions?.[groupId]
     },
 )
 
-// Returns [eventId1, eventId2, eventId3]
-export const selectEventIds = (config: BusinessLogic) => createSelector(
-    [selectEvents(config)],
-    (events) => Object.keys(events)
-)
 
 // Returns [eventId1, eventId2, ...]
-export const selectEventIdsOrderedByStartDate = (config: BusinessLogic) => createSelector(
-    [getEventIntervals(config)],
-    (events) => Object.entries(events).sort(([_, intervalA], [__, intervalB]) => compareAsc(intervalA.start, intervalB.start)).map(([eventId]) => eventId)
+export const selectEventIdsOrderedByLayerAndStartDate = (config: BusinessLogic) => createSelector(
+    [selectMapEventIdToVolatileInterval(config), selectMapEventToLayerNumber(config)],
+    (mapEventToInterval, mapEventToLayer) => {
+        let pairs = Object.fromEntries(Object.keys(mapEventToLayer).map(eventId => [eventId, [mapEventToInterval[eventId], mapEventToLayer[eventId]]])) as Record<string, [PureInterval, number]>
+        return Object.entries(pairs).sort(([_, [intervalA, layerA]], [__, [intervalB, layerB]]) => (layerA === layerB) ? compareAsc(intervalA.start, intervalB.start) : layerB - layerA).map(([eventId]) => eventId)
+    },
 )
 
 // Returns {eventId1: groupId1, eventId2: groupId2, ...}
-export const selectEventIdsToGroup = (config: BusinessLogic) => createSelector(
+export const selectEventIdToGroupIdMap = (config: BusinessLogic) => createSelector(
     [selectEvents(config)],
-    (events) => Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, event.groupId])) as Record<string, string>
+    (events) => {
+        return Object.fromEntries(Object.entries(events).map(([eventId, {groupId}]) => [eventId, groupId])) as Record<string, string>
+    },
 )
 

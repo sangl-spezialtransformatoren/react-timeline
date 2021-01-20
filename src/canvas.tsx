@@ -1,12 +1,12 @@
-import React, {RefObject, useEffect, useRef} from "react"
-import useResizeObserver from "use-resize-observer"
-import {useGesture} from "react-use-gesture"
-import {animated} from "react-spring"
-import {Dispatch as ReduxDispatch} from "redux"
-import {useDispatch} from "react-redux"
-import {EventTypes, FullGestureState, Omit, StateKey} from "react-use-gesture/dist/types"
+import React, {RefObject, useEffect, useRef} from 'react'
+import useResizeObserver from 'use-resize-observer'
+import {useGesture} from 'react-use-gesture'
+import {animated} from 'react-spring'
+import {Dispatch as ReduxDispatch} from 'redux'
+import {useDispatch} from 'react-redux'
+import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 
-import {DefaultTimelineProps, TimelineProps} from "./definitions"
+import {DefaultTimelineProps, TimelineProps} from './definitions'
 import {
     dragCanvas,
     lockZoomCenter,
@@ -21,20 +21,20 @@ import {
     useSetTimePerPixel,
     useSetTimeZone,
     useSetWeekStartsOn,
-    zoom
-} from "./store/actions"
-import {EventGroups} from "./group"
-import {DragOffset, SvgFilters} from "./timeline"
-import {useInitialized} from "./store/hooks"
-import {DayGrid} from "./presentational"
+    zoom,
+} from './store/actions'
+import {EventGroups} from './group'
+import {DragOffset, SvgFilters} from './timeline'
+import {useInitialized} from './store/hooks'
+import {DayGrid} from './presentational'
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
     let {pinching} = eventState
     if (!pinching) {
-        dragCanvas(dispatch, eventState.delta[0])
+        dispatch(dragCanvas(eventState.delta[0]))
     }
 }
 
@@ -50,12 +50,12 @@ export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
         let factor = 1 + Math.sign(delta[1]) * 0.003 * Math.min(Math.abs(delta[1]), 100)
 
         if (eventState.first) {
-            lockZoomCenter(dispatch, x)
+            dispatch(lockZoomCenter(x))
         }
         if (eventState.last) {
-            unlockZoomCenter(dispatch)
+            dispatch(unlockZoomCenter())
         } else {
-            zoom(dispatch, factor)
+            dispatch(zoom(factor))
         }
     }
 }
@@ -78,12 +78,12 @@ export const onCanvasPinch = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
         }
 
         if (eventState.first) {
-            lockZoomCenter(dispatch, x)
+            dispatch(lockZoomCenter(x))
         }
         if (eventState.last) {
-            unlockZoomCenter(dispatch)
+            dispatch(unlockZoomCenter())
         } else {
-            zoom(dispatch, factor)
+            dispatch(zoom(factor))
         }
     }
 }
@@ -166,20 +166,20 @@ export const TimelineCanvas: React.FC<TimelineProps> = (givenProps) => {
     }, {domTarget: svgRef, eventOptions: {passive: false}})
 
     return <>
-        <div className={'react-timeline'} style={{touchAction: "pan-y", ...style}} ref={ref}>
+        <div className={'react-timeline'} style={{touchAction: 'pan-y', ...style}} ref={ref}>
             <animated.svg
                 viewBox={`0 0 ${width} ${height}`}
                 className={'react-timeline-svg'}
                 ref={svgRef}>
 
-                <SvgFilters/>
+                <SvgFilters />
                 <DragOffset>
                     {initialized && <>
                         {children}
-                        <g transform={'translate(0, 60)'}>
-                            <DayGrid />
-                            <EventGroups/>
-                        </g>
+                      <g transform={'translate(0, 60)'}>
+                        <DayGrid />
+                        <EventGroups />
+                      </g>
                     </>
                     }
                 </DragOffset>

@@ -1,6 +1,5 @@
 import {PureInterval} from './reducers/events'
 import {SpringConfig} from './reducers/springConfig'
-import {DefaultEventShape, DefaultGroupShape} from "../definitions"
 
 
 export type TimelineEvent = {
@@ -12,11 +11,22 @@ export type TimelineEvent = {
     }
 }
 
-type AdditionalData<T> = T & { volatileState?: { interval: PureInterval } }
+export type RequiredEventData = {
+    interval: PureInterval
+    groupId: string
+}
 
-export type StoreShape<Event = AdditionalData<DefaultEventShape>, Group = DefaultGroupShape> = {
+export type IntervalEventData = {
+    volatileState?: {
+        interval: PureInterval
+    }
+}
+
+export type RequiredGroupData = {}
+
+export type StoreShape<Event extends RequiredEventData = RequiredEventData, Group extends RequiredGroupData = RequiredGroupData> = {
     animate: boolean
-    events: Record<string, Event>
+    events: Record<string, Event & IntervalEventData>
     groups: Record<string, Group>
     initialized: boolean
     size: {

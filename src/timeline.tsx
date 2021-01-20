@@ -7,8 +7,8 @@ import {TimelineContext, useStartDateSpring, useTimePerPixelSpring} from './cont
 import {DefaultBusinessLogic} from './store/businessLogic'
 import {createTimelineStore} from './store/reducers/root'
 import './style.css'
-import {TimelineCanvas} from "./canvas"
-import {useDateZero} from "./store/hooks"
+import {TimelineCanvas} from './canvas'
+import {useDateZero} from './store/hooks'
 
 
 export const DragOffset: React.FC = ({children}) => {
@@ -25,21 +25,21 @@ export const DragOffset: React.FC = ({children}) => {
 export const SvgFilters: React.FC = () => {
     return <defs>
         <filter id="dropshadow" height="130%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-            <feOffset dx="0" dy="0" result="offsetblur"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+            <feOffset dx="0" dy="0" result="offsetblur" />
             <feComponentTransfer>
-                <feFuncA type="linear" slope="0.5"/>
+                <feFuncA type="linear" slope="0.5" />
             </feComponentTransfer>
             <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
             </feMerge>
         </filter>
     </defs>
 }
 
 
-export const Timeline: React.FC<TimelineProps> = (props) => {
+export const Timeline_: React.FC<TimelineProps> = (props) => {
     let {config} = props
     let [store, setStore] = useState<TimelineStore<any>>()
 
@@ -61,3 +61,5 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
     }
     return <></>
 }
+
+export const Timeline = React.memo(Timeline_)
