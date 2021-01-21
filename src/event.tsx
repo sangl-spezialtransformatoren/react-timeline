@@ -11,20 +11,24 @@ import {BusinessLogic} from './store/businessLogic'
 import {selectEvents, selectTimePerPixel} from './store/selectors'
 import {makePureInterval} from './store/reducers/events'
 
-export type EventPresentationalComponentProps = {
+export type PresentationalEventComponentProps = {
     x: number,
     y: number,
     width: number,
     height: number,
+    groupHeight?: number,
     dragHandle: MutableRefObject<any>,
     dragStartHandle: MutableRefObject<any>,
     dragEndHandle: MutableRefObject<any>
 }
-export type EventComponentType<T = {}> = React.FC<EventPresentationalComponentProps & T>
+export type PresentationalEventComponent<T = {}> = React.FC<PresentationalEventComponentProps & T>
 
 export type EventComponentProps<T = {}> = {
     id: string
+    groupHeight?: number
 } & T
+
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
 
 
 export const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
@@ -33,7 +37,8 @@ export const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventStat
 
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
-        let oldInterval = selectEvents(config)(state)[id].interval
+        let event = selectEvents(config)(state)[id]
+        let oldInterval = event.volatileState?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
 
         let dt = dx * timePerPixel
@@ -67,7 +72,8 @@ export const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, even
 
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
-        let oldInterval = selectEvents(config)(state)[id].interval
+        let event = selectEvents(config)(state)[id]
+        let oldInterval = event.volatileState?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
 
         let dt = dx * timePerPixel
@@ -100,7 +106,8 @@ export const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventS
 
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
-        let oldInterval = selectEvents(config)(state)[id].interval
+        let event = selectEvents(config)(state)[id]
+        let oldInterval = event.volatileState?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
 
         let dt = dx * timePerPixel
@@ -128,10 +135,13 @@ export const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventS
 }
 
 export function createEventComponent<T>(component: React.FC<T>) {
-    let EventComponent: React.FC<Omit<EventComponentProps<T>, keyof EventPresentationalComponentProps> & {y: number}> = (
+    let EventComponent: EventComponentType<T> = (
         {
             id,
             y,
+            groupHeight,
+            children,
+            ...otherProps
         }) => {
         let ref = useRef<SVGRectElement>(null)
         let startRef = useRef<SVGRectElement>(null)
@@ -148,13 +158,14 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let timePerPixelSpring = useTimePerPixelSpring()
         let businessLogic = useBusinessLogic()
 
-        let [{ySpring, intervalStartSpring, intervalEndSpring}] = useSpring({
+        let [{ySpring, intervalStartSpring, intervalEndSpring, groupHeightSpring}] = useSpring({
             intervalStartSpring: interval.start,
             intervalEndSpring: interval.end,
             ySpring: y,
+            groupHeightSpring: groupHeight,
             config: springConfig,
             immediate: !animate || !initialized,
-        }, [springConfig, interval.start, interval.end, animate, initialized, y])
+        }, [springConfig, interval.start, interval.end, animate, initialized, y, groupHeight])
 
         let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
@@ -178,9 +189,11 @@ export function createEventComponent<T>(component: React.FC<T>) {
             y: ySpring,
             width: widthSpring,
             height: 20,
+            groupHeight: groupHeightSpring,
             dragHandle: ref,
             dragStartHandle: startRef,
             dragEndHandle: endRef,
+            ...otherProps
         }
 
         // @ts-ignore

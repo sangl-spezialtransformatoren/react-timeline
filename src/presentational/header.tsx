@@ -1,5 +1,3 @@
-import React, {useEffect, useState} from 'react'
-import {isWeekend} from 'date-fns'
 import {
     createCenturyHeader,
     createDayHeader,
@@ -12,25 +10,12 @@ import {
     createQuarterHourHeader,
     createWeekHeader,
     createYearHeader,
-    TemporalHeaderComponent,
-} from './headers'
-import {format} from './functions'
-import {createEventComponent, EventComponentType} from './event'
-import {useSize, useTimePerPixel, useTimeZone} from "./store/hooks"
-import {createDayGrid, TemporalGridComponent} from "./grid"
-
-const DefaultDayGrid: TemporalGridComponent = ({x, date, width}) => {
-    let {height} = useSize()
-    let [weekend, setWeekend] = useState(false)
-    useEffect(() => {
-        setWeekend(isWeekend(date))
-    }, [date])
-    return <>
-        <rect x={x} y={0} width={weekend ? width : 1} height={height} fill={"rgba(0,0,0,0.1)"}/>
-    </>
-}
-
-export const DayGrid = createDayGrid(DefaultDayGrid)
+    TemporalHeaderComponent
+} from "../headers"
+import {useTimePerPixel, useTimeZone} from "../store/hooks"
+import {isWeekend} from "date-fns"
+import React, {useEffect, useState} from "react"
+import {format} from "../functions"
 
 const DefaultMinuteHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
@@ -48,9 +33,7 @@ const DefaultMinuteHeader: TemporalHeaderComponent = ({x, y, width, height, date
         </foreignObject>
     </>
 }
-
 export const MinuteHeader = createMinuteHeader(DefaultMinuteHeader)
-
 const DefaultQuarterHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -68,9 +51,7 @@ const DefaultQuarterHourHeader: TemporalHeaderComponent = ({x, y, width, height,
         </foreignObject>
     </>
 }
-
 export const QuarterHourHeader = createQuarterHourHeader(DefaultQuarterHourHeader)
-
 const DefaultHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -89,9 +70,7 @@ const DefaultHourHeader: TemporalHeaderComponent = ({x, y, width, height, date})
         </foreignObject>
     </>
 }
-
 export const HourHeader = createHourHeader(DefaultHourHeader)
-
 const DefaultFourHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -109,9 +88,7 @@ const DefaultFourHourHeader: TemporalHeaderComponent = ({x, y, width, height, da
         </foreignObject>
     </>
 }
-
 export const FourHourHeader = createFourHourHeader(DefaultFourHourHeader)
-
 const DefaultDayHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
     let color = isWeekend(date) ? 'black' : 'gray'
@@ -129,9 +106,7 @@ const DefaultDayHeader: TemporalHeaderComponent = ({x, y, width, height, date}) 
         </foreignObject>
     </>
 }
-
 export const DayHeader = createDayHeader(DefaultDayHeader)
-
 const DefaultWeekHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -149,9 +124,7 @@ const DefaultWeekHeader: TemporalHeaderComponent = ({x, y, width, height, date})
         </foreignObject>
     </>
 }
-
 export const WeekHeader = createWeekHeader(DefaultWeekHeader)
-
 const DefaultMonthHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -169,9 +142,7 @@ const DefaultMonthHeader: TemporalHeaderComponent = ({x, y, width, height, date}
         </foreignObject>
     </>
 }
-
 export const MonthHeader = createMonthHeader(DefaultMonthHeader)
-
 const DefaultQuarterHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -189,9 +160,7 @@ const DefaultQuarterHeader: TemporalHeaderComponent = ({x, y, width, height, dat
         </foreignObject>
     </>
 }
-
 export const QuarterHeader = createQuarterHeader(DefaultQuarterHeader)
-
 const DefaultYearHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -209,9 +178,7 @@ const DefaultYearHeader: TemporalHeaderComponent = ({x, y, width, height, date})
         </foreignObject>
     </>
 }
-
 export const YearHeader = createYearHeader(DefaultYearHeader)
-
 const DefaultDecadeHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -229,9 +196,7 @@ const DefaultDecadeHeader: TemporalHeaderComponent = ({x, y, width, height, date
         </foreignObject>
     </>
 }
-
 export const DecadeHeader = createDecadeHeader(DefaultDecadeHeader)
-
 const DefaultCenturyHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -249,10 +214,7 @@ const DefaultCenturyHeader: TemporalHeaderComponent = ({x, y, width, height, dat
         </foreignObject>
     </>
 }
-
 export const CenturyHeader = createCenturyHeader(DefaultCenturyHeader)
-
-
 export const AutomaticHeader: React.FC = () => {
     let timePerPixel = useTimePerPixel()
     let minWidth = 30
@@ -325,31 +287,3 @@ export const AutomaticHeader: React.FC = () => {
         }
     </>
 }
-
-export const DefaultEventComponent: EventComponentType = (
-    {
-        x,
-        y,
-        width,
-        height,
-        dragHandle,
-        dragStartHandle,
-        dragEndHandle,
-    }) => {
-    return <g style={{touchAction: "pan-y"}}>
-        <rect ref={dragHandle} fill={'gray'} height={height} style={{paintOrder: 'stroke'}} y={y} x={x}
-              width={width} filter="url(#dropshadow)"/>
-        <rect ref={dragStartHandle} fill={'transparent'} y={y} height={height} x={x} width={10}
-              style={{cursor: 'ew-resize'}}/>
-        <rect ref={dragEndHandle} fill={'transparent'} y={y} height={height} x={x + width} width={10}
-              style={{cursor: 'ew-resize'}}
-              transform={'translate(-10, 0)'}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'}>
-                Test
-            </div>
-        </foreignObject>
-    </g>
-}
-
-export const EventComponent = createEventComponent(DefaultEventComponent)

@@ -8,10 +8,11 @@ import {
     selectDateZero,
     selectEventIdsOrderedByLayerAndStartDate,
     selectEventIdToGroupIdMap,
-    selectEventPositionsInGroup,
+    selectEventPositionsInGroup, selectGroupHeights,
     selectGroupPositions,
     selectInitialized,
     selectInterval,
+    selectMapEventIdToProps,
     selectSize,
     selectSpringConfig,
     selectStartDate,
@@ -25,6 +26,7 @@ export const useGetInterval = (id: string) => useSelector(selectInterval(id), sh
 export const useGroupOffsets = () => useSelector(getGroupOffsets, shallowEqual)
 export const useEventIdsOrderedByLayerAndStartDate = () => useSelector(selectEventIdsOrderedByLayerAndStartDate, shallowEqual)
 export const useEventAndGroupIds = () => useSelector(selectEventIdToGroupIdMap, shallowEqual)
+export const useGroupHeights = () => useSelector(selectGroupHeights, shallowEqual)
 export const useGroupPositions = () => useSelector(selectGroupPositions, shallowEqual)
 export const useGetHeaderIntervals = (intervalCreator: IntervalCreator, intervalLength: number) => useSelector(getHeaderIntervals(intervalCreator, intervalLength), shallowEqual)
 export const useEventPositionsInGroup = () => useSelector(selectEventPositionsInGroup, shallowEqual)
@@ -35,3 +37,4 @@ export const useStartDate = () => useSelector(selectStartDate)
 export const useDateZero = () => useSelector(selectDateZero)
 export const useTimePerPixel = () => useSelector(selectTimePerPixel)
 export const useTimeZone = () => useSelector(selectTimeZone)
+export const useMapEventIdToProps = () => useSelector(selectMapEventIdToProps, shallowEqual)

@@ -5,6 +5,7 @@ import {
     MOVE_EVENT_INTERMEDIARY,
     RESET_DRAG_OR_RESIZE,
     SET_EVENTS,
+    UPDATE_EVENTS,
 } from '../actions'
 import {StoreShape} from '../shape'
 
@@ -28,6 +29,18 @@ export let events: PartialTimelineReducer<'events'> = () =>
         switch (action.type) {
             case SET_EVENTS:
                 return action.payload
+            case UPDATE_EVENTS:
+                let events = action.payload
+                return Object.fromEntries(Object.entries(events).map(
+                    ([eventId, event]) => {
+                        let volatileState = newState?.[eventId]?.volatileState
+                        if (volatileState) {
+                            return [eventId, {...event, volatileState}]
+                        } else {
+                            return [eventId, event]
+                        }
+                    })
+                )
             case MOVE_EVENT_INTERMEDIARY: {
                 let id = action.payload.id
                 let interval = action.payload.interval
@@ -39,6 +52,7 @@ export let events: PartialTimelineReducer<'events'> = () =>
                         [id]: {
                             ...oldEvent,
                             volatileState: {
+                                initialInterval: oldEvent.volatileState?.initialInterval || oldEvent.interval,
                                 interval: interval,
                             },
                         },

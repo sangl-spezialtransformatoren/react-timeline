@@ -16,9 +16,10 @@ export type RequiredEventData = {
     groupId: string
 }
 
-export type IntervalEventData = {
+export type InternalEventData = {
     volatileState?: {
         interval: PureInterval
+        initialInterval: PureInterval
     }
 }
 
@@ -26,7 +27,7 @@ export type RequiredGroupData = {}
 
 export type StoreShape<Event extends RequiredEventData = RequiredEventData, Group extends RequiredGroupData = RequiredGroupData> = {
     animate: boolean
-    events: Record<string, Event & IntervalEventData>
+    events: Record<string, Event & InternalEventData>
     groups: Record<string, Group>
     initialized: boolean
     size: {

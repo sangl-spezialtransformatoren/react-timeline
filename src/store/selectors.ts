@@ -13,18 +13,36 @@ export function select<E extends RequiredEventData, G extends RequiredGroupData,
     return selector
 }
 
+function positionEvent(positionedEvents: Record<string, { interval: PureInterval, position: number }>, interval: PureInterval) {
+    let positions = Object.values(positionedEvents).filter(
+        (leftEvent) => areIntervalsIntersecting(leftEvent.interval, interval) && leftEvent.interval.end !== interval.start && leftEvent.interval.start !== interval.end,
+    ).map((leftEvent) => leftEvent.position)
+    let position = 0
+    while (positions.includes(position)) {
+        position++
+    }
+    return position
+}
+
 // Positions the given events one after another so they don't overlap
-function distributeEventsVertically(events: [string, PureInterval][]): Record<string, number> {
-    let positionedEvents: Record<string, {interval: PureInterval, position: number}> = {}
-    for (const [key, interval] of events) {
-        let positions = Object.values(positionedEvents).filter(
-            (leftEvent) => areIntervalsIntersecting(leftEvent.interval, interval) && leftEvent.interval.end !== interval.start && leftEvent.interval.start !== interval.end,
-        ).map((leftEvent) => leftEvent.position)
-        let position = 0
-        while (positions.includes(position)) {
-            position++
+function distributeEventsVertically(orderedEventIds: string[], mapEventToInterval: Record<string, PureInterval>, placeInSameRow: string[][] = []): Record<string, number> {
+    let positionedEvents: Record<string, { interval: PureInterval, position: number }> = {}
+    for (const eventId of orderedEventIds) {
+        if (Object.keys(positionedEvents).includes(eventId)) {
+            continue
         }
-        positionedEvents = {...positionedEvents, [key]: {interval, position}}
+        let group = placeInSameRow.filter(group => group.includes(eventId))?.[0]
+        let position: number
+        if (!group) {
+            group = [eventId]
+        }
+        position = Math.max(...group.map(eventId => positionEvent(positionedEvents, mapEventToInterval[eventId])))
+        positionedEvents = {
+            ...positionedEvents, ...(Object.fromEntries(group.map(eventId => [eventId, {
+                interval: mapEventToInterval[eventId],
+                position: position
+            }])))
+        }
     }
     return Object.fromEntries(Object.entries(positionedEvents).map(([key, data]) => [key, data.position]))
 }
@@ -63,7 +81,6 @@ export const selectTimePerPixel = select(() => (state) => state.timeScale.timePe
 // Returns {eventId1: event, eventId2: event, ...}
 export const selectEvents = select(() => (state) => state.events)
 
-
 // Returns [groupId1, groupId2, ...]
 export const selectGroupIds = (config: BusinessLogic) => createSelector(
     [selectEventIdToGroupIdMap(config)],
@@ -82,8 +99,8 @@ export const selectMapGroupIdsToEventIds = (config: BusinessLogic) => createSele
                 (groupId) => [
                     groupId,
                     Object.entries(eventIdToGroupMap)
-                    .filter(([_, eventGroupId]) => eventGroupId === groupId)
-                    .map(([eventId, _]) => eventId),
+                        .filter(([_, eventGroupId]) => eventGroupId === groupId)
+                        .map(([eventId, _]) => eventId),
                 ],
             ),
         ) as Record<string, string[]>
@@ -139,17 +156,18 @@ export const selectLayers = (config: BusinessLogic) => createSelector(
 export const selectEventPositionsInGroup = (config: BusinessLogic) => createSelector(
     [selectGroupIds(config), selectLayers(config), selectMapEventToLayerNumber(config), selectEventIdToGroupIdMap(config), selectEventsWithVolatileState(config)],
     (groupIds, layers, mapEventToLayer, mapEventToGroup, events) => {
+        let displayEventsInSameRow = config.displayEventsInSameRow(events)
         let pairs = groupIds.flatMap(groupId => layers.map(layerId => [groupId, layerId] as [string, number]))
         let mapEventsToGroupsAndLayers = Object.fromEntries(Object.keys(mapEventToLayer).map(eventId => [eventId, [mapEventToGroup[eventId], mapEventToLayer[eventId]]])) as Record<string, [string, number]>
         let batches = pairs.map(([groupId, layerId]) => Object.keys(events).filter(eventId => shallowEqual(mapEventsToGroupsAndLayers[eventId], [groupId, layerId])))
         let orderedBatches = batches.map(batch => config.orderEventsForPositioning(Object.fromEntries(batch.map(eventId => [eventId, events[eventId]]))))
-        let positions = orderedBatches.map(batch => distributeEventsVertically(batch.map(eventId => [eventId, events[eventId].interval]))).reduce((aggregate, element) => ({...aggregate, ...element}), {})
+        let positions = orderedBatches.map(batch => distributeEventsVertically(batch, Object.fromEntries(batch.map(eventId => [eventId, events[eventId].interval])), displayEventsInSameRow)).reduce((aggregate, element) => ({...aggregate, ...element}), {})
         return positions as Record<string, number>
     },
 )
 
 // Returns {groupId1: height1, groupId2: height2, ...}
-export const getGroupHeights = (config: BusinessLogic) => createSelector(
+export const selectGroupHeights = (config: BusinessLogic) => createSelector(
     [selectMapGroupIdsToEventIds(config), selectEventPositionsInGroup(config)],
     (mapGroupToEvents, eventPositions) => {
         return Object.fromEntries(Object.entries(mapGroupToEvents).map(([groupId, events]) => [groupId, Math.max(...events.map(eventId => eventPositions[eventId])) + 1]))
@@ -158,7 +176,7 @@ export const getGroupHeights = (config: BusinessLogic) => createSelector(
 
 // Returns {groupId1: offset1, groupId2: offset2, ...}
 export const getGroupOffsets = (config: BusinessLogic) => createSelector(
-    [getGroupHeights(config)],
+    [selectGroupHeights(config)],
     (groupHeights) => {
         return Object.entries(groupHeights).reduce<[Record<string, number>, number]>(
             (aggregate, [groupId, height]) => {
@@ -188,8 +206,8 @@ export const getHeaderIntervals = (intervalCreator: IntervalCreator, intervalLen
         let from = startDate.valueOf() - 0.5 * temporalWidth
         let to = endDate.valueOf() + 0.5 * temporalWidth
 
-        let roundedFrom = Math.floor(from / (3 * intervalLength)) * 3 * intervalLength
-        let roundedTo = Math.ceil(to / (3 * intervalLength)) * 3 * intervalLength
+        let roundedFrom = Math.floor(from / (20 * intervalLength)) * 20 * intervalLength
+        let roundedTo = Math.ceil(to / (20 * intervalLength)) * 20 * intervalLength
 
         return intervalCreator(roundedFrom, roundedTo, {
             timeZone: timeZone || getDefaultTimeZone(),
@@ -204,7 +222,7 @@ export const selectEventIdsOrderedByLayerAndStartDate = (config: BusinessLogic) 
     [selectMapEventIdToVolatileInterval(config), selectMapEventToLayerNumber(config)],
     (mapEventToInterval, mapEventToLayer) => {
         let pairs = Object.fromEntries(Object.keys(mapEventToLayer).map(eventId => [eventId, [mapEventToInterval[eventId], mapEventToLayer[eventId]]])) as Record<string, [PureInterval, number]>
-        return Object.entries(pairs).sort(([_, [intervalA, layerA]], [__, [intervalB, layerB]]) => (layerA === layerB) ? compareAsc(intervalA.start, intervalB.start) : layerB - layerA).map(([eventId]) => eventId)
+        return Object.entries(pairs).sort(([_, [intervalA, layerA]], [__, [intervalB, layerB]]) => (layerA === layerB) ? compareAsc(intervalA.start, intervalB.start) : layerA - layerB).map(([eventId]) => eventId)
     },
 )
 
@@ -216,3 +234,10 @@ export const selectEventIdToGroupIdMap = (config: BusinessLogic) => createSelect
     },
 )
 
+// Returns boolean
+export const selectIsZooming = select(() => (state) => !!state.timeScale.zoomCenter)
+
+export const selectMapEventIdToProps = (config: BusinessLogic) => createSelector(
+    [selectEvents(config)],
+    (events) => config.mapEventsToProps(events)
+)

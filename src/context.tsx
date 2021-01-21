@@ -49,7 +49,7 @@ const TimePerPixelAnimationContext: React.FC = ({children}) => {
     </>
 }
 
-const TimelineBusinessLogic: React.FC<{config: BusinessLogic}> = ({children, config}) => {
+const TimelineBusinessLogic: React.FC<{ config: BusinessLogic }> = ({children, config}) => {
     return <>
         <BusinessLogicContext.Provider value={config}>
             {children}
@@ -57,7 +57,11 @@ const TimelineBusinessLogic: React.FC<{config: BusinessLogic}> = ({children, con
     </>
 }
 
-export const TimelineContext: React.FC<{businessLogic: BusinessLogic}> = ({businessLogic, children}) => {
+export const TimelineContext: React.FC<{ businessLogic: BusinessLogic }> = (
+    {
+        businessLogic,
+        children
+    }) => {
     return <>
         <StartDateAnimationContext>
             <TimePerPixelAnimationContext>
@@ -68,6 +72,7 @@ export const TimelineContext: React.FC<{businessLogic: BusinessLogic}> = ({busin
         </StartDateAnimationContext>
     </>
 }
+
 
 export const useStartDateSpring = () => {
     return useContext(StartDateSpringContext)

@@ -9,6 +9,7 @@ import {createTimelineStore} from './store/reducers/root'
 import './style.css'
 import {TimelineCanvas} from './canvas'
 import {useDateZero} from './store/hooks'
+import {setAnimate, setSpringConfig, setTimeZone, setWeekStartsOn, updateEvents} from "./store/actions"
 
 
 export const DragOffset: React.FC = ({children}) => {
@@ -25,41 +26,73 @@ export const DragOffset: React.FC = ({children}) => {
 export const SvgFilters: React.FC = () => {
     return <defs>
         <filter id="dropshadow" height="130%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-            <feOffset dx="0" dy="0" result="offsetblur" />
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+            <feOffset dx="0" dy="0" result="offsetblur"/>
             <feComponentTransfer>
-                <feFuncA type="linear" slope="0.5" />
+                <feFuncA type="linear" slope="0.5"/>
             </feComponentTransfer>
             <feMerge>
-                <feMergeNode />
-                <feMergeNode in="SourceGraphic" />
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
             </feMerge>
         </filter>
     </defs>
 }
 
 
-export const Timeline_: React.FC<TimelineProps> = (props) => {
-    let {config} = props
+export const Timeline: React.FC<TimelineProps> = (props) => {
+    let {
+        animate,
+        businessLogic,
+        timeZone,
+        weekStartsOn,
+        springConfig,
+        initialData,
+        children,
+        ...otherProps
+    } = props
+
     let [store, setStore] = useState<TimelineStore<any>>()
+
 
     useEffect(() => {
         if (store) {
             let state = store.getState()
-            setStore(createTimelineStore(config || DefaultBusinessLogic, state))
+            setStore(createTimelineStore(businessLogic || DefaultBusinessLogic, state))
         } else {
-            setStore(createTimelineStore(config || DefaultBusinessLogic))
+            setStore(createTimelineStore(businessLogic || DefaultBusinessLogic))
         }
-    }, [config])
+    }, [businessLogic])
+
+    useEffect(() => {
+        (animate !== undefined) && store?.dispatch?.(setAnimate(animate))
+    }, [store, animate])
+
+    useEffect(() => {
+        timeZone && store?.dispatch?.(setTimeZone(timeZone))
+    }, [store, timeZone])
+
+    useEffect(() => {
+        (weekStartsOn !== undefined) && store?.dispatch?.(setWeekStartsOn(weekStartsOn))
+    }, [store, weekStartsOn])
+
+    useEffect(() => {
+        springConfig && store?.dispatch?.(setSpringConfig(springConfig))
+    }, [store, springConfig])
+
+    useEffect(() => {
+        initialData && store?.dispatch?.(updateEvents(initialData.events))
+    }, [store, initialData?.events])
+
 
     if (store) {
         return <Provider store={store}>
-            <TimelineContext businessLogic={config || DefaultBusinessLogic}>
-                <TimelineCanvas {...props} />
+            <TimelineContext businessLogic={businessLogic || DefaultBusinessLogic}>
+                <TimelineCanvas {...otherProps}>
+                    {children}
+                </TimelineCanvas>
             </TimelineContext>
         </Provider>
     }
     return <></>
 }
-
-export const Timeline = React.memo(Timeline_)

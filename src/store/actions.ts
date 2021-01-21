@@ -1,7 +1,7 @@
 import {Action} from 'redux'
 
 import {createPayloadActionCreators, PayloadAction} from './index'
-import {StoreShape} from './shape'
+import {RequiredEventData, StoreShape} from './shape'
 import {makePureInterval, PureInterval} from './reducers/events'
 import {ThunkAction} from '@reduxjs/toolkit'
 
@@ -13,10 +13,12 @@ export const [setAnimate, useSetAnimate] = createPayloadActionCreators(SET_ANIMA
 export type AnimateAction = SetAnimateAction
 
 
+type ExternalEventData = Record<string, RequiredEventData>
+
 // events
 export const SET_EVENTS = 'setEvents'
 export type SetEventsAction = PayloadAction<typeof SET_EVENTS, StoreShape['events']>
-export const [setEvents, useSetEvents] = createPayloadActionCreators(SET_EVENTS, (events: StoreShape['events']) => {
+export const [setEvents, useSetEvents] = createPayloadActionCreators(SET_EVENTS, (events: ExternalEventData) => {
         return Object.fromEntries(
             Object.entries(events).map(
                 ([key, event]) => [key, {
@@ -26,20 +28,33 @@ export const [setEvents, useSetEvents] = createPayloadActionCreators(SET_EVENTS,
     },
 )
 
+export const UPDATE_EVENTS = 'updateEvents'
+export type UpdateEventsAction = PayloadAction<typeof UPDATE_EVENTS, StoreShape['events']>
+export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDATE_EVENTS, (events: ExternalEventData) => {
+        return Object.fromEntries(
+            Object.entries(events).map(
+                ([key, event]) => [key, {
+                    ...event,
+                    interval: makePureInterval(event.interval),
+                }]))
+    },
+)
+
+
 export const MOVE_EVENT_INTERMEDIARY = 'moveEventIntermediary'
-export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, {id: string, interval: PureInterval}>
+export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, { id: string, interval: PureInterval }>
 export const [moveEventIntermediary, useMoveEventIntermediary] = createPayloadActionCreators(MOVE_EVENT_INTERMEDIARY)
 
 export const CHANGE_GROUP = 'changeGroup'
-export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, {id: string, groupId: string}>
+export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, { id: string, groupId: string }>
 export const [changeGroup, useChangeGroup] = createPayloadActionCreators(CHANGE_GROUP)
 
 export const RESET_DRAG_OR_RESIZE = 'resetDragOrResize'
-export type ResetDragOrResizeAction = PayloadAction<typeof RESET_DRAG_OR_RESIZE, {id: string}>
+export type ResetDragOrResizeAction = PayloadAction<typeof RESET_DRAG_OR_RESIZE, { id: string }>
 export const [resetDragOrResize, useResetDragOrResize] = createPayloadActionCreators(RESET_DRAG_OR_RESIZE)
 
 export const COMMIT_DRAG_OR_RESIZE = 'commitDragOrResize'
-export type CommitDragOrResizeAction = PayloadAction<typeof COMMIT_DRAG_OR_RESIZE, {id: string}>
+export type CommitDragOrResizeAction = PayloadAction<typeof COMMIT_DRAG_OR_RESIZE, { id: string }>
 export const [commitDragOrResize, useCommitDragOrResize] = createPayloadActionCreators(COMMIT_DRAG_OR_RESIZE)
 
 export type EventAction =
@@ -48,6 +63,7 @@ export type EventAction =
     | ResetDragOrResizeAction
     | CommitDragOrResizeAction
     | MoveEventIntermediaryAction
+    | UpdateEventsAction
 
 
 // initialized
@@ -138,7 +154,7 @@ export type Actions =
     | WeekStartsOnAction
     | SpringConfigAction
 
-export type Filter<A> = A extends {type: string, payload: any} ? A : never
+export type Filter<A> = A extends { type: string, payload: any } ? A : never
 export type PayloadActions = Filter<Actions>
 
 export type Thunk = ThunkAction<void, StoreShape, any, Actions>

@@ -1,20 +1,27 @@
 import React from 'react'
-import {EventComponent} from './presentational'
 import {
     useEventAndGroupIds,
     useEventIdsOrderedByLayerAndStartDate,
     useEventPositionsInGroup,
+    useGroupHeights,
     useGroupOffsets,
-    useGroupPositions
+    useGroupPositions,
+    useMapEventIdToProps
 } from "./store/hooks"
+import {EventComponent as DefaultEventComponent} from "./presentational/event"
+import {EventComponentType} from "./event"
 
 
-export const EventGroups: React.FC = () => {
+export const TimelineEvents: React.FC<{ EventComponent?: EventComponentType }> = ({EventComponent}) => {
+
     let events = useEventIdsOrderedByLayerAndStartDate()
     let eventToGroup = useEventAndGroupIds()
     let eventPositions = useEventPositionsInGroup()
+    let groupHeights = useGroupHeights()
     let groupOffsets = useGroupOffsets()
     let groupPositions = useGroupPositions()
+    let mapEventIdToProps = useMapEventIdToProps()
+    let Component = EventComponent || DefaultEventComponent
 
     return <>
         {events.map((eventId) => {
@@ -23,7 +30,11 @@ export const EventGroups: React.FC = () => {
             let groupOffset = groupOffsets[groupId]
             let groupPosition = groupPositions[groupId]
             return <React.Fragment key={eventId}>
-                <EventComponent id={eventId} y={4 + 24 * positionInGroup + 24 * groupOffset + 20 * groupPosition}/>
+                <Component
+                    id={eventId}
+                    y={4 + 24 * positionInGroup + 24 * groupOffset + 20 * groupPosition}
+                    groupHeight={24 * groupHeights[groupId] - 4}
+                    {...mapEventIdToProps[eventId]}/>
             </React.Fragment>
         })}
     </>

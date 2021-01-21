@@ -3,33 +3,26 @@ import useResizeObserver from 'use-resize-observer'
 import {useGesture} from 'react-use-gesture'
 import {animated} from 'react-spring'
 import {Dispatch as ReduxDispatch} from 'redux'
-import {useDispatch} from 'react-redux'
+import {shallowEqual, useDispatch} from 'react-redux'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 
-import {DefaultTimelineProps, TimelineProps} from './definitions'
+import {TimelineProps} from './definitions'
 import {
     dragCanvas,
     lockZoomCenter,
     unlockZoomCenter,
-    useSetAnimate,
     useSetDateZero,
-    useSetEvents,
     useSetInitialized,
     useSetSize,
-    useSetSpringConfig,
     useSetStartDate,
     useSetTimePerPixel,
-    useSetTimeZone,
-    useSetWeekStartsOn,
     zoom,
 } from './store/actions'
-import {EventGroups} from './group'
 import {DragOffset, SvgFilters} from './timeline'
 import {useInitialized} from './store/hooks'
-import {DayGrid} from './presentational'
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
     let {pinching} = eventState
@@ -88,61 +81,32 @@ export const onCanvasPinch = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
     }
 }
 
-export const TimelineCanvas: React.FC<TimelineProps> = (givenProps) => {
-    let props = {...DefaultTimelineProps, ...givenProps}
+const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style'>> = (props) => {
     let {
-        animate,
         children,
-        timeZone,
-        weekStartsOn,
         style,
         initialParameters,
-        springConfig,
-        initialData,
     } = props
 
     let dispatch = useDispatch()
     let initialized = useInitialized()
 
-    let setAnimate = useSetAnimate()
     let setDateZero = useSetDateZero()
     let setInitialized = useSetInitialized()
-    let setSpringConfig = useSetSpringConfig()
     let setStartDate = useSetStartDate()
     let setTimePerPixel = useSetTimePerPixel()
     let setSize = useSetSize()
-    let setTimeZone = useSetTimeZone()
-    let setWeekStartsOn = useSetWeekStartsOn()
-    let setEvents = useSetEvents()
 
     const {ref, width, height} = useResizeObserver<HTMLDivElement>()
     let svgRef = useRef<SVGSVGElement>(null)
     let initialStartDate = initialParameters?.startDate
     let initialEndDate = initialParameters?.endDate
 
-    useEffect(() => {
-        setAnimate(animate!)
-    }, [animate])
-
-    useEffect(() => {
-        setTimeZone(timeZone!)
-    }, [timeZone])
-
-    useEffect(() => {
-        setWeekStartsOn(weekStartsOn!)
-    }, [weekStartsOn])
 
     useEffect(() => {
         width && height && setSize({width, height})
     }, [width, height])
 
-    useEffect(() => {
-        setSpringConfig(springConfig)
-    }, [springConfig])
-
-    useEffect(() => {
-        initialData && setEvents(initialData.events)
-    }, [initialData?.events])
 
     // Initialize
     useEffect(() => {
@@ -172,14 +136,10 @@ export const TimelineCanvas: React.FC<TimelineProps> = (givenProps) => {
                 className={'react-timeline-svg'}
                 ref={svgRef}>
 
-                <SvgFilters />
+                <SvgFilters/>
                 <DragOffset>
                     {initialized && <>
                         {children}
-                      <g transform={'translate(0, 60)'}>
-                        <DayGrid />
-                        <EventGroups />
-                      </g>
                     </>
                     }
                 </DragOffset>
@@ -187,3 +147,8 @@ export const TimelineCanvas: React.FC<TimelineProps> = (givenProps) => {
         </div>
     </>
 }
+
+export const TimelineCanvas = React.memo(TimelineCanvas_, (oldProps, newProps) => {
+    let result = Object.keys(newProps).map(key => [key, shallowEqual((oldProps as any)?.[key], (newProps as any)?.[key])])
+    return result.every(x => x)
+})

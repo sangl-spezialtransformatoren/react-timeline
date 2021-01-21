@@ -1,14 +1,16 @@
 import {add, compareAsc, startOfDay} from 'date-fns'
 import {RequiredEventData, RequiredGroupData} from './shape'
 
-export type BusinessLogic<E extends RequiredEventData = RequiredEventData, _G extends RequiredGroupData = RequiredGroupData> = {
-    validateDuringDrag: (data: {id: string, newInterval: Interval}) => {interval?: Interval}
-    validateDuringResize: (data: {id: string, newInterval: Interval}) => {interval?: Interval}
-    validateAfterDrag: (data: {id: string, newInterval: Interval}) => Promise<{interval?: Interval}>
-    validateAfterResize: (data: {id: string, newInterval: Interval}) => Promise<{interval?: Interval}>
-    orderGroups: (data: {groupIds: string[]}) => {groupIds: string[]},
+export type BusinessLogic<E extends RequiredEventData = RequiredEventData, _G extends RequiredGroupData = RequiredGroupData, EventProps extends {} = {}> = {
+    validateDuringDrag: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
+    validateDuringResize: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
+    validateAfterDrag: (data: { id: string, newInterval: Interval }) => Promise<{ interval?: Interval }>
+    validateAfterResize: (data: { id: string, newInterval: Interval }) => Promise<{ interval?: Interval }>
+    orderGroups: (data: { groupIds: string[] }) => { groupIds: string[] },
     orderEventsForPositioning: (data: Record<string, E>) => string[],
-    mapEventsToLayer: (data: Record<string, E>) => Record<string, number>
+    mapEventsToLayer: (data: Record<string, E>) => Record<string, number>,
+    mapEventsToProps: (data: Record<string, E>) => Record<string, EventProps>
+    displayEventsInSameRow: (data: Record<string, E>) => string[][]
 }
 
 export const DefaultBusinessLogic: BusinessLogic = {
@@ -49,4 +51,6 @@ export const DefaultBusinessLogic: BusinessLogic = {
     mapEventsToLayer: data => {
         return Object.fromEntries(Object.keys(data).map((key, _) => [key, 0])) as Record<string, number>
     },
+    mapEventsToProps: data => data,
+    displayEventsInSameRow: _ => []
 }
