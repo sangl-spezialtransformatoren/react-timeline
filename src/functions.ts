@@ -12,11 +12,13 @@ import {
     startOfMonth,
     startOfQuarter,
     startOfWeek,
-    startOfYear
-} from "date-fns"
-import {format as dateFnsTzFormat, utcToZonedTime} from "date-fns-tz"
-import {defaultMemoize} from "reselect"
-import {shallowEqual} from "react-redux"
+    startOfYear,
+} from 'date-fns'
+import {format as dateFnsTzFormat, utcToZonedTime} from 'date-fns-tz'
+import {defaultMemoize} from 'reselect'
+import {shallowEqual} from 'react-redux'
+import React, {MutableRefObject} from 'react'
+import {BodyScrollOptions, disableBodyScroll, enableBodyScroll} from 'body-scroll-lock'
 
 const memoize = defaultMemoize
 
@@ -83,7 +85,7 @@ export const generateDayIntervals = memoize((from: number | Date, to: number | D
 
 export const generateWeekIntervals = memoize((from: number | Date, to: number | Date, {
     timeZone,
-    weekStartsOn
+    weekStartsOn,
 }: intervalCreatorOptions) => {
     let currentWeek = myGetStartOfDay(startOfWeek(from, {weekStartsOn}), timeZone)
     let weeks: (Date | number)[] = [currentWeek]
@@ -144,6 +146,21 @@ export const generateCenturyIntervals = memoize((from: number | Date, to: number
     return century.slice(0, -1).map<Interval>((week, index) => ({start: week, end: century.slice(1)[index]}))
 }, shallowEqual)
 
-export function format(date: Date | number, formatString: string, {timeZone}: { timeZone: string }) {
+export function format(date: Date | number, formatString: string, {timeZone}: {timeZone: string}) {
     return dateFnsTzFormat(utcToZonedTime(new Date(date), timeZone), formatString, {timeZone})
+}
+
+export const useScrollLock = (
+    targetElement?: MutableRefObject<HTMLElement | Element | null | false>,
+    bodyScrollOption?: BodyScrollOptions,
+) => {
+    React.useLayoutEffect(() => {
+        if (!targetElement?.current) {
+            return
+        }
+        disableBodyScroll(targetElement.current, bodyScrollOption)
+        return () => {
+            targetElement.current && enableBodyScroll(targetElement.current)
+        }
+    }, [targetElement?.current])
 }

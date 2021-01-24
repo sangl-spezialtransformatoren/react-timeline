@@ -3,9 +3,23 @@ import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
 import {useBusinessLogic, useTimePerPixelSpring} from './context'
-import {commitDragOrResize, moveEventIntermediary, resetDragOrResize, Thunk} from './store/actions'
+import {
+    commitDragOrResize,
+    moveEventIntermediary,
+    resetDragOrResize,
+    Thunk,
+    toggleEventSelection,
+} from './store/actions'
 import {EventState} from './canvas'
-import {useAnimate, useDateZero, useGetInterval, useInitialized, useSpringConfig} from './store/hooks'
+import {
+    useAnimate,
+    useDateZero,
+    useEventProps,
+    useGetInterval,
+    useInitialized,
+    useIsEventSelected,
+    useSpringConfig,
+} from './store/hooks'
 import {Dispatch} from './store'
 import {BusinessLogic} from './store/businessLogic'
 import {selectEvents, selectTimePerPixel} from './store/selectors'
@@ -16,6 +30,7 @@ export type PresentationalEventComponentProps = {
     y: number,
     width: number,
     height: number,
+    selected: boolean,
     groupHeight?: number,
     dragHandle: MutableRefObject<any>,
     dragStartHandle: MutableRefObject<any>,
@@ -28,12 +43,20 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
 
-
-export const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
+const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
     eventState.event.stopPropagation()
-    let {movement: [dx], last} = eventState
+
+    let {movement: [dx], last, tap} = eventState
+
+    if (tap) {
+        let action: Thunk = async (dispatch) => {
+            dispatch(toggleEventSelection({id}))
+        }
+        dispatch(action)
+        return
+    }
 
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
@@ -65,7 +88,7 @@ export const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventStat
     dispatch(action)
 }
 
-export const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
+const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
     eventState.event.stopPropagation()
 
     let {movement: [dx], last} = eventState
@@ -100,7 +123,7 @@ export const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, even
     dispatch(action)
 }
 
-export const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
+const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
     eventState.event.stopPropagation()
     let {movement: [dx], last} = eventState
 
@@ -143,13 +166,14 @@ export function createEventComponent<T>(component: React.FC<T>) {
             children,
             ...otherProps
         }) => {
-        let ref = useRef<SVGRectElement>(null)
-        let startRef = useRef<SVGRectElement>(null)
-        let endRef = useRef<SVGRectElement>(null)
+        let ref = useRef<SVGGeometryElement>(null)
+        let startRef = useRef<SVGGeometryElement>(null)
+        let endRef = useRef<SVGGeometryElement>(null)
         let dispatch = useDispatch()
 
         let interval = useGetInterval(id)
-
+        let eventProps = useEventProps(id)
+        let selected = useIsEventSelected(id)
 
         let dateZero = useDateZero()
         let animate = useAnimate()
@@ -193,7 +217,9 @@ export function createEventComponent<T>(component: React.FC<T>) {
             dragHandle: ref,
             dragStartHandle: startRef,
             dragEndHandle: endRef,
-            ...otherProps
+            selected,
+            ...eventProps,
+            ...otherProps,
         }
 
         // @ts-ignore

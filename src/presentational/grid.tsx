@@ -10,16 +10,19 @@ import {
     createQuarterHourGrid,
     createWeekGrid,
     createYearGrid,
-    TemporalGridComponent
-} from "../grid"
-import {useSize, useTimePerPixel} from "../store/hooks"
-import React, {useEffect, useState} from "react"
-import {isWeekend} from "date-fns"
+    TemporalGridComponent,
+} from '../grid'
+import {useSize, useTimePerPixel} from '../store/hooks'
+import React, {useEffect, useState} from 'react'
+import {isWeekend} from 'date-fns'
+import {DragOffset} from '../timeline'
+import {GroupsContext} from '../canvas'
+import ReactDOM from 'react-dom'
 
 const DefaultGrid: TemporalGridComponent = ({x}) => {
     let {height} = useSize()
     return <>
-        <rect x={x} y={0} width={1} height={height} fill={"rgba(0,0,0,0.1)"}/>
+        <rect x={x} y={0} width={1} height={height} fill={'rgba(0,0,0,0.1)'} />
     </>
 }
 export const MinuteGrid = createMinuteGrid(DefaultGrid)
@@ -33,7 +36,7 @@ const DefaultDayGrid: TemporalGridComponent = ({x, date, width}) => {
         setWeekend(isWeekend(date))
     }, [date])
     return <>
-        <rect x={x} y={0} width={weekend ? width : 1} height={height} fill={"rgba(0,0,0,0.1)"}/>
+        <rect x={x} y={0} width={weekend ? width : 1} height={height} fill={'rgba(0,0,0,0.1)'} />
     </>
 }
 export const DayGrid = createDayGrid(DefaultDayGrid)
@@ -43,65 +46,84 @@ export const QuarterGrid = createQuarterGrid(DefaultGrid)
 export const YearGrid = createYearGrid(DefaultGrid)
 export const DecadeGrid = createDecadeGrid(DefaultGrid)
 export const CenturyGrid = createCenturyGrid(DefaultGrid)
+
 export const AutomaticGrid: React.FC = () => {
     let timePerPixel = useTimePerPixel()
     let minWidth = 18
-    let intervals = {
-        'minute': {
+
+    let intervals: {name: string, duration: number, component: React.FC}[] = [
+        {
+            name: 'minute',
             duration: 60 * 1000,
             component: MinuteGrid,
         },
-        'quarter-hour': {
+        {
+            name: 'quarter-hour',
             duration: 15 * 60 * 1000,
             component: QuarterHourGrid,
         },
-        'hour': {
+        {
+            name: 'hour',
             duration: 60 * 60 * 1000,
             component: HourGrid,
         },
-        'four-hours': {
+        {
+            name: 'four-hours',
             duration: 4 * 60 * 60 * 1000,
             component: FourHourGrid,
         },
-        'day': {
+        {
+            name: 'day',
             duration: 24 * 60 * 60 * 1000,
             component: DayGrid,
         },
-        'week': {
+        {
+            name: 'week',
             duration: 7 * 24 * 60 * 60 * 1000,
             component: WeekGrid,
         },
-        'month': {
+        {
+            name: 'month',
             duration: 30 * 24 * 60 * 60 * 1000,
             component: MonthGrid,
         },
-        'quarter': {
+        {
+            name: 'quarter',
             duration: 91.25 * 24 * 60 * 60 * 1000,
             component: QuarterGrid,
         },
-        'year': {
+        {
+            name: 'year',
             duration: 365 * 24 * 60 * 60 * 1000,
             component: YearGrid,
         },
-        'decade': {
+        {
+            name: 'decade',
             duration: 10 * 365 * 24 * 60 * 60 * 1000,
             component: DecadeGrid,
         },
-        'century': {
+        {
+            name: 'century',
             duration: 100 * 365 * 24 * 60 * 60 * 1000,
             component: CenturyGrid,
         },
-    }
-    let onlyMinWidths = Object.fromEntries(Object.entries(intervals).filter(([_, {duration}]) => {
-        return duration / timePerPixel > minWidth
-    }))
+    ]
 
-    let components = Object.entries(onlyMinWidths).sort(([_, {duration: duration1}], [__, {duration: duration2}]) => duration1 - duration2).map(([key, {component}]) => [key, component])
-    let [[key1, Grid1], [key2, Grid2], [key3, Grid3]] = components.slice(0, 3)
+    // Returns [false, false, true, true]
+    let biggerThanMinWidth = intervals.map(interval => {
+        return interval.duration / timePerPixel > minWidth
+    })
 
-    return <>
-        {Grid3 && <Grid3 key={key3 as string}/>}
-        {Grid2 && <Grid2 key={key2 as string}/>}
-        {Grid1 && <Grid1 key={key1 as string}/>}
-    </>
+    let show = biggerThanMinWidth.map((value, index) => value && (biggerThanMinWidth?.[index - 3] === false || biggerThanMinWidth?.[index - 3] === undefined))
+    let render = show.map((value, index) => value || !!show?.[index - 1])
+
+    let {grid} = React.useContext(GroupsContext)
+
+    return grid.current ? ReactDOM.createPortal(<>
+        <DragOffset>
+            {intervals.map(({name, component: Component}, index) => {
+                return render[index] && <g visibility={show[index] ? 'show' : 'hidden'} key={name}><Component /></g>
+            })}
+        </DragOffset>
+    </>, grid.current) : null
 }

@@ -4,6 +4,7 @@ import {
     COMMIT_DRAG_OR_RESIZE,
     MOVE_EVENT_INTERMEDIARY,
     RESET_DRAG_OR_RESIZE,
+    TOGGLE_EVENT_SELECTED,
     SET_EVENTS,
     UPDATE_EVENTS,
 } from '../actions'
@@ -39,7 +40,7 @@ export let events: PartialTimelineReducer<'events'> = () =>
                         } else {
                             return [eventId, event]
                         }
-                    })
+                    }),
                 )
             case MOVE_EVENT_INTERMEDIARY: {
                 let id = action.payload.id
@@ -106,6 +107,19 @@ export let events: PartialTimelineReducer<'events'> = () =>
                     }
                 }
                 break
+            }
+            case TOGGLE_EVENT_SELECTED: {
+                let id = action.payload.id
+                let event = state?.events?.[id]
+                if (event) {
+                    newState = {
+                        ...state?.events,
+                        [id]: {
+                            ...event,
+                            selected: !event.selected,
+                        },
+                    }
+                }
             }
         }
         return newState

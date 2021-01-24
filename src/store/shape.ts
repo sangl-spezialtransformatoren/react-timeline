@@ -17,6 +17,7 @@ export type RequiredEventData = {
 }
 
 export type InternalEventData = {
+    selected?: boolean
     volatileState?: {
         interval: PureInterval
         initialInterval: PureInterval

@@ -13,7 +13,7 @@ export function select<E extends RequiredEventData, G extends RequiredGroupData,
     return selector
 }
 
-function positionEvent(positionedEvents: Record<string, { interval: PureInterval, position: number }>, interval: PureInterval) {
+function positionEvent(positionedEvents: Record<string, {interval: PureInterval, position: number}>, interval: PureInterval) {
     let positions = Object.values(positionedEvents).filter(
         (leftEvent) => areIntervalsIntersecting(leftEvent.interval, interval) && leftEvent.interval.end !== interval.start && leftEvent.interval.start !== interval.end,
     ).map((leftEvent) => leftEvent.position)
@@ -26,7 +26,7 @@ function positionEvent(positionedEvents: Record<string, { interval: PureInterval
 
 // Positions the given events one after another so they don't overlap
 function distributeEventsVertically(orderedEventIds: string[], mapEventToInterval: Record<string, PureInterval>, placeInSameRow: string[][] = []): Record<string, number> {
-    let positionedEvents: Record<string, { interval: PureInterval, position: number }> = {}
+    let positionedEvents: Record<string, {interval: PureInterval, position: number}> = {}
     for (const eventId of orderedEventIds) {
         if (Object.keys(positionedEvents).includes(eventId)) {
             continue
@@ -40,8 +40,8 @@ function distributeEventsVertically(orderedEventIds: string[], mapEventToInterva
         positionedEvents = {
             ...positionedEvents, ...(Object.fromEntries(group.map(eventId => [eventId, {
                 interval: mapEventToInterval[eventId],
-                position: position
-            }])))
+                position: position,
+            }]))),
         }
     }
     return Object.fromEntries(Object.entries(positionedEvents).map(([key, data]) => [key, data.position]))
@@ -99,8 +99,8 @@ export const selectMapGroupIdsToEventIds = (config: BusinessLogic) => createSele
                 (groupId) => [
                     groupId,
                     Object.entries(eventIdToGroupMap)
-                        .filter(([_, eventGroupId]) => eventGroupId === groupId)
-                        .map(([eventId, _]) => eventId),
+                    .filter(([_, eventGroupId]) => eventGroupId === groupId)
+                    .map(([eventId, _]) => eventId),
                 ],
             ),
         ) as Record<string, string[]>
@@ -206,8 +206,8 @@ export const getHeaderIntervals = (intervalCreator: IntervalCreator, intervalLen
         let from = startDate.valueOf() - 0.5 * temporalWidth
         let to = endDate.valueOf() + 0.5 * temporalWidth
 
-        let roundedFrom = Math.floor(from / (20 * intervalLength)) * 20 * intervalLength
-        let roundedTo = Math.ceil(to / (20 * intervalLength)) * 20 * intervalLength
+        let roundedFrom = Math.floor(from / (10 * intervalLength)) * 10 * intervalLength
+        let roundedTo = Math.ceil(to / (10 * intervalLength)) * 10 * intervalLength
 
         return intervalCreator(roundedFrom, roundedTo, {
             timeZone: timeZone || getDefaultTimeZone(),
@@ -239,5 +239,22 @@ export const selectIsZooming = select(() => (state) => !!state.timeScale.zoomCen
 
 export const selectMapEventIdToProps = (config: BusinessLogic) => createSelector(
     [selectEvents(config)],
-    (events) => config.mapEventsToProps(events)
+    (events) => config.mapEventsToProps(events),
+)
+
+export const selectEventProps = (eventId: string) => (config: BusinessLogic) => createSelector(
+    [selectMapEventIdToProps(config)],
+    (events) => events[eventId],
+)
+
+// Returns {eventId1: true, eventId2: false, ...}
+export const selectMapEventIdToSelected = (config: BusinessLogic) => createSelector(
+    [selectEvents(config)],
+    (events) => Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, !!event?.selected]),
+    ),
+)
+
+export const selectSelected = (eventId: string) => (config: BusinessLogic) => createSelector(
+    [selectMapEventIdToSelected(config)],
+    (events) => events[eventId],
 )

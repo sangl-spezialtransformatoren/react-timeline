@@ -42,20 +42,24 @@ export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDAT
 
 
 export const MOVE_EVENT_INTERMEDIARY = 'moveEventIntermediary'
-export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, { id: string, interval: PureInterval }>
+export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, {id: string, interval: PureInterval}>
 export const [moveEventIntermediary, useMoveEventIntermediary] = createPayloadActionCreators(MOVE_EVENT_INTERMEDIARY)
 
 export const CHANGE_GROUP = 'changeGroup'
-export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, { id: string, groupId: string }>
+export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, {id: string, groupId: string}>
 export const [changeGroup, useChangeGroup] = createPayloadActionCreators(CHANGE_GROUP)
 
 export const RESET_DRAG_OR_RESIZE = 'resetDragOrResize'
-export type ResetDragOrResizeAction = PayloadAction<typeof RESET_DRAG_OR_RESIZE, { id: string }>
+export type ResetDragOrResizeAction = PayloadAction<typeof RESET_DRAG_OR_RESIZE, {id: string}>
 export const [resetDragOrResize, useResetDragOrResize] = createPayloadActionCreators(RESET_DRAG_OR_RESIZE)
 
 export const COMMIT_DRAG_OR_RESIZE = 'commitDragOrResize'
-export type CommitDragOrResizeAction = PayloadAction<typeof COMMIT_DRAG_OR_RESIZE, { id: string }>
+export type CommitDragOrResizeAction = PayloadAction<typeof COMMIT_DRAG_OR_RESIZE, {id: string}>
 export const [commitDragOrResize, useCommitDragOrResize] = createPayloadActionCreators(COMMIT_DRAG_OR_RESIZE)
+
+export const TOGGLE_EVENT_SELECTED = 'toggleEventSelected'
+export type ToggleEventSelectedAction = PayloadAction<typeof TOGGLE_EVENT_SELECTED, {id: string}>
+export const [toggleEventSelection, useToggleEventSelection] = createPayloadActionCreators(TOGGLE_EVENT_SELECTED)
 
 export type EventAction =
     SetEventsAction
@@ -64,6 +68,7 @@ export type EventAction =
     | CommitDragOrResizeAction
     | MoveEventIntermediaryAction
     | UpdateEventsAction
+    | ToggleEventSelectedAction
 
 
 // initialized
@@ -154,7 +159,7 @@ export type Actions =
     | WeekStartsOnAction
     | SpringConfigAction
 
-export type Filter<A> = A extends { type: string, payload: any } ? A : never
+export type Filter<A> = A extends {type: string, payload: any} ? A : never
 export type PayloadActions = Filter<Actions>
 
 export type Thunk = ThunkAction<void, StoreShape, any, Actions>

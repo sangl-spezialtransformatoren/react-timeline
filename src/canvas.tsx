@@ -18,11 +18,14 @@ import {
     useSetTimePerPixel,
     zoom,
 } from './store/actions'
-import {DragOffset, SvgFilters} from './timeline'
+import {SvgFilters} from './timeline'
 import {useInitialized} from './store/hooks'
+import {useScrollLock} from './functions'
+
+export const GroupsContext = React.createContext<{grid: RefObject<SVGGElement>, header: RefObject<SVGGElement>}>(undefined!)
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
     let {pinching} = eventState
@@ -40,7 +43,7 @@ export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
         let x = point.matrixTransform(svg.getScreenCTM()?.inverse()).x
 
         let {delta} = eventState
-        let factor = 1 + Math.sign(delta[1]) * 0.003 * Math.min(Math.abs(delta[1]), 100)
+        let factor = 1 + Math.sign(delta[1]) * 0.002 * Math.min(Math.abs(delta[1]), 100)
 
         if (eventState.first) {
             dispatch(lockZoomCenter(x))
@@ -102,6 +105,10 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
     let initialStartDate = initialParameters?.startDate
     let initialEndDate = initialParameters?.endDate
 
+    useEffect(() => {
+        document.addEventListener('gesturestart', e => e.preventDefault())
+        document.addEventListener('gesturechange', e => e.preventDefault())
+    }, [])
 
     useEffect(() => {
         width && height && setSize({width, height})
@@ -127,24 +134,32 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
         onDrag: eventState => onCanvasDrag(dispatch, svgRef, eventState),
         onWheel: eventState => onCanvasWheel(dispatch, svgRef, eventState),
         onPinch: eventState => onCanvasPinch(dispatch, svgRef, eventState),
-    }, {domTarget: svgRef, eventOptions: {passive: false}})
+        // @ts-ignore
+    }, {domTarget: svgRef, eventOptions: {passive: false}, drag: {filterTaps: true}})
+
+    useScrollLock(svgRef)
+
+    let gridRef = useRef<SVGGElement>(null)
+    let headerRef = useRef<SVGGElement>(null)
 
     return <>
-        <div className={'react-timeline'} style={{touchAction: 'pan-y', ...style}} ref={ref}>
-            <animated.svg
-                viewBox={`0 0 ${width} ${height}`}
-                className={'react-timeline-svg'}
-                ref={svgRef}>
-
-                <SvgFilters/>
-                <DragOffset>
-                    {initialized && <>
-                        {children}
-                    </>
+        <GroupsContext.Provider value={{grid: gridRef, header: headerRef}}>
+            <div className={'react-timeline'} style={{...style}} ref={ref}>
+                <animated.svg
+                    viewBox={`0 0 ${width} ${height}`}
+                    className={'react-timeline-svg'}
+                    ref={svgRef}>
+                    <SvgFilters />
+                    <g id="react-timeline-grid" ref={gridRef} />
+                    <g id="react-timeline-header" ref={headerRef} />
+                    {
+                        //Mask background so that the pinch event is handled correctly
                     }
-                </DragOffset>
-            </animated.svg>
-        </div>
+                    <rect x={0} y={0} width={width} height={height} fill={'transparent'} />
+                    {initialized && children}
+                </animated.svg>
+            </div>
+        </GroupsContext.Provider>
     </>
 }
 

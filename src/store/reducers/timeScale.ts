@@ -26,10 +26,12 @@ export const timeScale: PartialTimelineReducer<'timeScale'> = () => (state, acti
     let dateZero = timeScaleState.dateZero.valueOf()
     let width = state?.size.width
 
-    if (width && startDate && dateZero && timePerPixel && (Math.abs(startDate - dateZero) > 2 * Math.abs(width * timePerPixel))) {
-        timeScaleState = {
-            ...timeScaleState,
-            dateZero: startDate + width * timePerPixel / 2,
+    if (width !== undefined && startDate && dateZero !== undefined && timePerPixel !== undefined) {
+        if (Math.abs(startDate - dateZero) > 2 * Math.abs(width * timePerPixel)) {
+            timeScaleState = {
+                ...timeScaleState,
+                dateZero: startDate + width * timePerPixel / 2,
+            }
         }
     }
 

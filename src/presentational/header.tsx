@@ -10,22 +10,25 @@ import {
     createQuarterHourHeader,
     createWeekHeader,
     createYearHeader,
-    TemporalHeaderComponent
-} from "../headers"
-import {useTimePerPixel, useTimeZone} from "../store/hooks"
-import {isWeekend} from "date-fns"
-import React, {useEffect, useState} from "react"
-import {format} from "../functions"
+    TemporalHeaderComponent,
+} from '../headers'
+import {useTimePerPixel, useTimeZone} from '../store/hooks'
+import {isWeekend} from 'date-fns'
+import React, {useContext, useEffect, useState} from 'react'
+import {format} from '../functions'
+import {DragOffset} from '../timeline'
+import {GroupsContext} from '../canvas'
+import {createPortal} from 'react-dom'
 
 const DefaultMinuteHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'm', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -37,13 +40,13 @@ export const MinuteHeader = createMinuteHeader(DefaultMinuteHeader)
 const DefaultQuarterHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'm', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -55,14 +58,14 @@ export const QuarterHourHeader = createQuarterHourHeader(DefaultQuarterHourHeade
 const DefaultHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'H', {timeZone}))
     }, [date])
 
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -74,13 +77,13 @@ export const HourHeader = createHourHeader(DefaultHourHeader)
 const DefaultFourHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'H', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -92,13 +95,13 @@ export const FourHourHeader = createFourHourHeader(DefaultFourHourHeader)
 const DefaultDayHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
     let color = isWeekend(date) ? 'black' : 'gray'
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'd', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} fill={color}/>
+        <rect x={x} y={y} width={width} height={height} fill={color} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -110,13 +113,13 @@ export const DayHeader = createDayHeader(DefaultDayHeader)
 const DefaultWeekHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel('KW ' + format(new Date(date), 'w', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -128,13 +131,13 @@ export const WeekHeader = createWeekHeader(DefaultWeekHeader)
 const DefaultMonthHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'MMMM', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -146,13 +149,13 @@ export const MonthHeader = createMonthHeader(DefaultMonthHeader)
 const DefaultQuarterHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'QQQ', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -164,13 +167,13 @@ export const QuarterHeader = createQuarterHeader(DefaultQuarterHeader)
 const DefaultYearHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'yyy', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -182,13 +185,13 @@ export const YearHeader = createYearHeader(DefaultYearHeader)
 const DefaultDecadeHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'yy\'er\'', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -197,16 +200,20 @@ const DefaultDecadeHeader: TemporalHeaderComponent = ({x, y, width, height, date
     </>
 }
 export const DecadeHeader = createDecadeHeader(DefaultDecadeHeader)
+
 const DefaultCenturyHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState("")
+    let [label, setLabel] = useState('')
     useEffect(() => {
-        setLabel(`${parseInt(format(new Date(date), 'yyyy', {timeZone}).substring(0, 2)) + 1}. Jhd.`)
+        let year = format(new Date(date), 'yyyy', {timeZone})
+        let yearInt = parseInt(year.substr(0, 2)) + 1
+        let label = `${yearInt}. Jhd.`
+        setLabel(label)
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height}/>
+        <rect x={x} y={y} width={width} height={height} />
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -218,72 +225,83 @@ export const CenturyHeader = createCenturyHeader(DefaultCenturyHeader)
 export const AutomaticHeader: React.FC = () => {
     let timePerPixel = useTimePerPixel()
     let minWidth = 30
-    let intervals = {
-        'minute': {
+
+    let intervals: {name: string, duration: number, component: React.FC}[] = [
+        {
+            name: 'minute',
             duration: 60 * 1000,
             component: MinuteHeader,
         },
-        'quarter-hour': {
+        {
+            name: 'quarter-hour',
             duration: 15 * 60 * 1000,
             component: QuarterHourHeader,
         },
-        'hour': {
+        {
+            name: 'hour',
             duration: 60 * 60 * 1000,
             component: HourHeader,
         },
-        'four-hours': {
+        {
+            name: 'four-hours',
             duration: 4 * 60 * 60 * 1000,
             component: FourHourHeader,
         },
-        'day': {
+        {
+            name: 'day',
             duration: 24 * 60 * 60 * 1000,
             component: DayHeader,
         },
-        'week': {
+        {
+            name: 'week',
             duration: 7 * 24 * 60 * 60 * 1000,
             component: WeekHeader,
         },
-        'month': {
+        {
+            name: 'month',
             duration: 30 * 24 * 60 * 60 * 1000,
             component: MonthHeader,
         },
-        'quarter': {
+        {
+            name: 'quarter',
             duration: 91.25 * 24 * 60 * 60 * 1000,
             component: QuarterHeader,
         },
-        'year': {
+        {
+            name: 'year',
             duration: 365 * 24 * 60 * 60 * 1000,
             component: YearHeader,
         },
-        'decade': {
+        {
+            name: 'decade',
             duration: 10 * 365 * 24 * 60 * 60 * 1000,
             component: DecadeHeader,
         },
-        'century': {
+        {
+            name: 'century',
             duration: 100 * 365 * 24 * 60 * 60 * 1000,
             component: CenturyHeader,
         },
-    }
-    let onlyMinWidths = Object.fromEntries(Object.entries(intervals).filter(([_, {duration}]) => {
-        return duration / timePerPixel > minWidth
-    }))
+    ]
 
-    let components = Object.entries(onlyMinWidths).sort(([_, {duration: duration1}], [__, {duration: duration2}]) => duration1 - duration2).map(([key, {component}]) => [key, component])
-    let [[key1, Header1], [key2, Header2], [key3, Header3]] = components.slice(0, 3)
+    // Returns [false, false, true, true]
+    let biggerThanMinWidth = intervals.map(interval => {
+        return interval.duration / timePerPixel > minWidth
+    })
 
-    return <>
-        {Header3 &&
-        <g>
-            <Header3 key={key3 as string}/>
-        </g>
-        }
-        {Header2 &&
-        <g transform={'translate(0 20)'}>
-            <Header2 key={key2 as string}/>
-        </g>}
-        {Header1 && <g transform={'translate(0 40)'}>
-            <Header1 key={key1 as string}/>
-        </g>
-        }
-    </>
+    let show = biggerThanMinWidth.map((value, index) => value && (biggerThanMinWidth?.[index - 3] === false || biggerThanMinWidth?.[index - 3] === undefined))
+    let render = show.map((value, index) => value || !!show?.[index - 1])
+    let positions = show.map((_, index) => show.slice(0, index).filter(x => x).length)
+
+    let {header} = useContext(GroupsContext)
+
+    return header.current ? createPortal(<DragOffset>
+        {intervals.map(({name, component: Component}, index) => {
+            return render[index] &&
+              <g key={name} transform={`translate(0 ${60 - 20 * positions[index + 1]})`}
+                 visibility={show[index] ? 'show' : 'hidden'}>
+                <Component />
+              </g>
+        })}
+    </DragOffset>, header.current) : null
 }
