@@ -11,6 +11,7 @@ import {
     selectEventPositionsInGroup,
     selectEventProps,
     selectGroupHeights,
+    selectGroupIds,
     selectGroupPositions,
     selectInitialized,
     selectInterval,
@@ -43,3 +44,4 @@ export const useTimeZone = () => useSelector(selectTimeZone)
 export const useMapEventIdToProps = () => useSelector(selectMapEventIdToProps, shallowEqual)
 export const useEventProps = (eventId: string) => useSelector(selectEventProps(eventId), shallowEqual)
 export const useIsEventSelected = (eventId: string) => useSelector(selectSelected(eventId), shallowEqual)
+export const useGroupIds = () => useSelector(selectGroupIds, shallowEqual)

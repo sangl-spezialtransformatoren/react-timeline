@@ -10,15 +10,16 @@ export const DefaultEventComponent: PresentationalEventComponent = (
         dragHandle,
         dragStartHandle,
         dragEndHandle,
+        selected
     }) => {
     return <g style={{touchAction: "pan-y"}}>
         <rect ref={dragHandle} fill={'gray'} height={height} style={{paintOrder: 'stroke'}} y={y} x={x}
               width={width} filter="url(#dropshadow)"/>
-        <rect ref={dragStartHandle} fill={'transparent'} y={y} height={height} x={x} width={10}
-              style={{cursor: 'ew-resize'}}/>
-        <rect ref={dragEndHandle} fill={'transparent'} y={y} height={height} x={x + width} width={10}
+        <rect ref={dragStartHandle} fill={'rgba(0,0,0,0.1)'} y={y} height={height} x={x} width={10}
+              style={{cursor: 'ew-resize'}} visibility={selected ? "display" : "hidden"}/>
+        <rect ref={dragEndHandle} fill={'rgba(0,0,0,0.1)'} y={y} height={height} x={x + width} width={10}
               style={{cursor: 'ew-resize'}}
-              transform={'translate(-10, 0)'}/>
+              transform={'translate(-10, 0)'} visibility={selected ? "display" : "hidden"}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'}>
                 Test

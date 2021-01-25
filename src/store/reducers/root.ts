@@ -31,8 +31,9 @@ export let rootReducer = (config: BusinessLogic) => {
 }
 
 export const createTimelineStore = (config: BusinessLogic, initialState?: StoreShape) => {
+    let reducer = rootReducer(config)
     return configureStore<StoreShape>({
-        reducer: rootReducer(config),
+        reducer,
         preloadedState: initialState,
     })
 }

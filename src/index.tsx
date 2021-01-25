@@ -1,5 +1,3 @@
-export {DragOffset} from './timeline'
-
 export {Timeline} from './timeline'
 export {
     TimelineProps,
@@ -34,3 +32,6 @@ export {HourHeader} from './presentational/header'
 export {QuarterHourHeader} from './presentational/header'
 export {MinuteHeader} from './presentational/header'
 export {Now} from './presentational/now'
+export {makePureInterval} from "./store/reducers/events"
+export {DragOffset} from './timeline'
+export {RequiredEventData, RequiredGroupData} from "./store/shape"

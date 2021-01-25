@@ -3,13 +3,7 @@ import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
 import {useBusinessLogic, useTimePerPixelSpring} from './context'
-import {
-    commitDragOrResize,
-    moveEventIntermediary,
-    resetDragOrResize,
-    Thunk,
-    toggleEventSelection,
-} from './store/actions'
+import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary,} from './store/actions'
 import {EventState} from './canvas'
 import {
     useAnimate,
@@ -22,8 +16,7 @@ import {
 } from './store/hooks'
 import {Dispatch} from './store'
 import {BusinessLogic} from './store/businessLogic'
-import {selectEvents, selectTimePerPixel} from './store/selectors'
-import {makePureInterval} from './store/reducers/events'
+import {selectEvents, selectNumberOfSelectedEvents, selectSelectedEvents, selectTimePerPixel} from './store/selectors'
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -43,12 +36,11 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
     eventState.event.stopPropagation()
-
-    let {movement: [dx], last, tap} = eventState
+    let {movement: [dx], last, tap, distance} = eventState
 
     if (tap) {
         let action: Thunk = async (dispatch) => {
@@ -57,31 +49,59 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
         dispatch(action)
         return
     }
+    if (distance === 0) {
+        return
+    }
 
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
-        let event = selectEvents(config)(state)[id]
-        let oldInterval = event.volatileState?.initialInterval || event.interval
-        let timePerPixel = selectTimePerPixel(config)(state)
+        let numberOfSelectedEvents = selectNumberOfSelectedEvents(config)(state)
+        let allEvents = selectEvents(config)(state)
 
+        let selectedEvents
+        if (numberOfSelectedEvents === 0) {
+            selectedEvents = {[id]: allEvents[id]}
+        } else {
+            selectedEvents = selectSelectedEvents(config)(state)
+            if (!selectedEvents?.[id]?.selected) {
+                return
+            }
+        }
+
+        let timePerPixel = selectTimePerPixel(config)(state)
         let dt = dx * timePerPixel
-        let newInterval = {
-            start: oldInterval.start + dt,
-            end: oldInterval.end + dt,
-        }
-        let {interval} = config.validateDuringDrag({id, newInterval})
-        if (interval) {
-            dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
-        }
-        if (last) {
-            try {
-                let {interval} = await config.validateAfterDrag({id, newInterval})
-                if (interval) {
-                    dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+        let newIntervals = Object.fromEntries(Object.entries(selectedEvents).map(
+            ([eventId, event]) => {
+                let oldInterval = event.volatileState?.initialInterval || event.interval
+                let newInterval = {
+                    start: oldInterval.start + dt,
+                    end: oldInterval.end + dt,
                 }
-                dispatch(commitDragOrResize({id}))
+                return [eventId, newInterval]
+            })
+        )
+
+        if (!last) {
+            let {events: newEvents} = config.validateDuringDrag({
+                manipulatedEventId: id,
+                newIntervals,
+                events: allEvents
+            })
+            if (newEvents) {
+                dispatch(updateEventsIntermediary({events: newEvents}))
+            }
+        } else {
+            try {
+                let {events: newEvents} = await config.validateAfterDrag({
+                    manipulatedEventId: id,
+                    newIntervals,
+                    events: allEvents
+                })
+                if (newEvents) {
+                    dispatch(updateEvents({events: newEvents}))
+                }
             } catch (e) {
-                dispatch(resetDragOrResize({id}))
+                dispatch(resetDragOrResize())
             }
         }
     }
@@ -91,32 +111,51 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
 const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
     eventState.event.stopPropagation()
 
-    let {movement: [dx], last} = eventState
+    let {movement: [dx], last, tap} = eventState
 
-    let action: Thunk = async (dispatch, getState) => {
+    if (tap) {
+        return
+    }
+
+    let action: Thunk = async (dispatch: Dispatch, getState) => {
         let state = getState()
         let event = selectEvents(config)(state)[id]
+
+        let selectedEvents = selectSelectedEvents(config)(state)
+        if (!selectedEvents[id]) {
+            return
+        }
+
         let oldInterval = event.volatileState?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
+        let events = selectEvents(config)(state)
 
         let dt = dx * timePerPixel
         let newInterval = {
             start: oldInterval.start + dt,
             end: oldInterval.end,
         }
-        let {interval} = config.validateDuringResize({id, newInterval})
-        if (interval) {
-            dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
-        }
-        if (last) {
+        if (!last) {
+            let {events: newEvents} = config.validateDuringResize({
+                manipulatedEventId: id,
+                newIntervals: {[id]: newInterval},
+                events
+            })
+            if (newEvents) {
+                dispatch(updateEventsIntermediary({events: newEvents}))
+            }
+        } else {
             try {
-                let {interval} = await config.validateAfterResize({id, newInterval})
-                if (interval) {
-                    dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+                let {events: newEvents} = await config.validateAfterResize({
+                    manipulatedEventId: id,
+                    newIntervals: {[id]: newInterval},
+                    events
+                })
+                if (newEvents) {
+                    dispatch(updateEvents({events: newEvents}))
                 }
-                dispatch(commitDragOrResize({id}))
             } catch (e) {
-                dispatch(resetDragOrResize({id}))
+                dispatch(resetDragOrResize())
             }
         }
     }
@@ -125,32 +164,52 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
 
 const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
     eventState.event.stopPropagation()
-    let {movement: [dx], last} = eventState
+    let {movement: [dx], last, tap} = eventState
+
+    if (tap) {
+        return
+    }
 
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
         let event = selectEvents(config)(state)[id]
+
+        let selectedEvents = selectSelectedEvents(config)(state)
+        if (!selectedEvents[id]) {
+            return
+        }
+
         let oldInterval = event.volatileState?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
+        let events = selectEvents(config)(state)
 
         let dt = dx * timePerPixel
         let newInterval = {
             start: oldInterval.start,
             end: oldInterval.end + dt,
         }
-        let {interval} = config.validateDuringResize({id, newInterval})
-        if (interval) {
-            dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
-        }
-        if (last) {
+
+        if (!last) {
+            let {events: newEvents} = config.validateDuringResize({
+                manipulatedEventId: id,
+                newIntervals: {[id]: newInterval},
+                events
+            })
+            if (newEvents) {
+                dispatch(updateEventsIntermediary({events: newEvents}))
+            }
+        } else {
             try {
-                let {interval} = await config.validateAfterResize({id, newInterval})
-                if (interval) {
-                    dispatch(moveEventIntermediary({id, interval: makePureInterval(interval)}))
+                let {events: newEvents} = await config.validateAfterResize({
+                    manipulatedEventId: id,
+                    newIntervals: {[id]: newInterval},
+                    events
+                })
+                if (newEvents) {
+                    dispatch(updateEvents({events: newEvents}))
                 }
-                dispatch(commitDragOrResize({id}))
             } catch (e) {
-                dispatch(resetDragOrResize({id}))
+                dispatch(resetDragOrResize())
             }
         }
     }

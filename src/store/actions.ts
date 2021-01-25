@@ -28,9 +28,9 @@ export const [setEvents, useSetEvents] = createPayloadActionCreators(SET_EVENTS,
     },
 )
 
-export const UPDATE_EVENTS = 'updateEvents'
-export type UpdateEventsAction = PayloadAction<typeof UPDATE_EVENTS, StoreShape['events']>
-export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDATE_EVENTS, (events: ExternalEventData) => {
+export const MERGE_NEW_EVENT_DATA = 'mergeNewEventData'
+export type MergeNewEventDataAction = PayloadAction<typeof MERGE_NEW_EVENT_DATA, StoreShape['events']>
+export const [mergeNewEventData, useMergeNewEventData] = createPayloadActionCreators(MERGE_NEW_EVENT_DATA, (events: ExternalEventData) => {
         return Object.fromEntries(
             Object.entries(events).map(
                 ([key, event]) => [key, {
@@ -42,33 +42,47 @@ export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDAT
 
 
 export const MOVE_EVENT_INTERMEDIARY = 'moveEventIntermediary'
-export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, {id: string, interval: PureInterval}>
+export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, { id: string, interval: PureInterval }>
 export const [moveEventIntermediary, useMoveEventIntermediary] = createPayloadActionCreators(MOVE_EVENT_INTERMEDIARY)
 
+export const UPDATE_EVENTS_INTERMEDIARY = 'updateEventsIntermediary'
+export type UpdateEventsIntermediaryAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS_INTERMEDIARY, { events: Record<string, E> }>
+export const [updateEventsIntermediary, useUpdateEventsIntermediary] = createPayloadActionCreators(UPDATE_EVENTS_INTERMEDIARY)
+
+export const UPDATE_EVENTS = 'updateEvents'
+export type UpdateEventsAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS, { events: Record<string, E> }>
+export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDATE_EVENTS)
+
 export const CHANGE_GROUP = 'changeGroup'
-export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, {id: string, groupId: string}>
+export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, { id: string, groupId: string }>
 export const [changeGroup, useChangeGroup] = createPayloadActionCreators(CHANGE_GROUP)
 
 export const RESET_DRAG_OR_RESIZE = 'resetDragOrResize'
-export type ResetDragOrResizeAction = PayloadAction<typeof RESET_DRAG_OR_RESIZE, {id: string}>
-export const [resetDragOrResize, useResetDragOrResize] = createPayloadActionCreators(RESET_DRAG_OR_RESIZE)
-
-export const COMMIT_DRAG_OR_RESIZE = 'commitDragOrResize'
-export type CommitDragOrResizeAction = PayloadAction<typeof COMMIT_DRAG_OR_RESIZE, {id: string}>
-export const [commitDragOrResize, useCommitDragOrResize] = createPayloadActionCreators(COMMIT_DRAG_OR_RESIZE)
+export type ResetDragOrResizeAction = Action<typeof RESET_DRAG_OR_RESIZE>
+export const resetDragOrResize = () => {
+    return {type: RESET_DRAG_OR_RESIZE} as ResetDragOrResizeAction
+}
 
 export const TOGGLE_EVENT_SELECTED = 'toggleEventSelected'
-export type ToggleEventSelectedAction = PayloadAction<typeof TOGGLE_EVENT_SELECTED, {id: string}>
+export type ToggleEventSelectedAction = PayloadAction<typeof TOGGLE_EVENT_SELECTED, { id: string }>
 export const [toggleEventSelection, useToggleEventSelection] = createPayloadActionCreators(TOGGLE_EVENT_SELECTED)
 
-export type EventAction =
+export const DESELECT_ALL_EVENTS = 'deselectAllEvents'
+export type DeselectAllEventsAction = Action<typeof DESELECT_ALL_EVENTS>
+export const deselectAllEvents = () => {
+    return {type: DESELECT_ALL_EVENTS}
+}
+
+export type EventAction<E extends RequiredEventData = RequiredEventData> =
     SetEventsAction
     | ChangeGroupAction
     | ResetDragOrResizeAction
-    | CommitDragOrResizeAction
     | MoveEventIntermediaryAction
-    | UpdateEventsAction
+    | MergeNewEventDataAction
     | ToggleEventSelectedAction
+    | UpdateEventsIntermediaryAction<E>
+    | UpdateEventsAction<E>
+    | DeselectAllEventsAction
 
 
 // initialized
@@ -159,7 +173,7 @@ export type Actions =
     | WeekStartsOnAction
     | SpringConfigAction
 
-export type Filter<A> = A extends {type: string, payload: any} ? A : never
+export type Filter<A> = A extends { type: string, payload: any } ? A : never
 export type PayloadActions = Filter<Actions>
 
 export type Thunk = ThunkAction<void, StoreShape, any, Actions>

@@ -8,6 +8,7 @@ import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/di
 
 import {TimelineProps} from './definitions'
 import {
+    deselectAllEvents,
     dragCanvas,
     lockZoomCenter,
     unlockZoomCenter,
@@ -18,18 +19,24 @@ import {
     useSetTimePerPixel,
     zoom,
 } from './store/actions'
-import {SvgFilters} from './timeline'
+import {DragOffset, SvgFilters} from './timeline'
 import {useInitialized} from './store/hooks'
 import {useScrollLock} from './functions'
 
-export const GroupsContext = React.createContext<{grid: RefObject<SVGGElement>, header: RefObject<SVGGElement>}>(undefined!)
+export const GroupsContext = React.createContext<{ grid: RefObject<SVGGElement>, header: RefObject<SVGGElement> }>(undefined!)
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
-    let {pinching} = eventState
-    if (!pinching) {
+    let {distance, pinching, tap} = eventState
+    if (pinching) {
+        return
+    }
+    if (tap) {
+        dispatch(deselectAllEvents())
+    }
+    if (distance > 0) {
         dispatch(dragCanvas(eventState.delta[0]))
     }
 }
@@ -149,14 +156,17 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
                     viewBox={`0 0 ${width} ${height}`}
                     className={'react-timeline-svg'}
                     ref={svgRef}>
-                    <SvgFilters />
-                    <g id="react-timeline-grid" ref={gridRef} />
-                    <g id="react-timeline-header" ref={headerRef} />
+                    <SvgFilters/>
+                    <DragOffset>
+                        <g id="react-timeline-grid" ref={gridRef}/>
+                        <g id="react-timeline-header" ref={headerRef}/>
+                    </DragOffset>
                     {
                         //Mask background so that the pinch event is handled correctly
                     }
-                    <rect x={0} y={0} width={width} height={height} fill={'transparent'} />
+                    <rect x={0} y={0} width={width} height={height} fill={'transparent'}/>
                     {initialized && children}
+
                 </animated.svg>
             </div>
         </GroupsContext.Provider>

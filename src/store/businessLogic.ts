@@ -1,11 +1,12 @@
-import {add, compareAsc, startOfDay} from 'date-fns'
+import {compareAsc} from 'date-fns'
 import {RequiredEventData, RequiredGroupData} from './shape'
+import {makePureInterval} from "./reducers/events"
 
 export type BusinessLogic<E extends RequiredEventData = RequiredEventData, _G extends RequiredGroupData = RequiredGroupData, EventProps extends {} = E> = {
-    validateDuringDrag: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
-    validateDuringResize: (data: { id: string, newInterval: Interval }) => { interval?: Interval }
-    validateAfterDrag: (data: { id: string, newInterval: Interval }) => Promise<{ interval?: Interval }>
-    validateAfterResize: (data: { id: string, newInterval: Interval }) => Promise<{ interval?: Interval }>
+    validateDuringDrag: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E> }) => { events?: Record<string, E> }
+    validateDuringResize: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E> }) => { events?: Record<string, E> }
+    validateAfterDrag: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E> }) => Promise<{ events?: Record<string, E> }>
+    validateAfterResize: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E> }) => Promise<{ events?: Record<string, E> }>
     orderGroups: (data: { groupIds: string[] }) => { groupIds: string[] },
     orderEventsForPositioning: (data: Record<string, E>) => string[],
     mapEventsToLayer: (data: Record<string, E>) => Record<string, number>,
@@ -14,32 +15,52 @@ export type BusinessLogic<E extends RequiredEventData = RequiredEventData, _G ex
 }
 
 export const DefaultBusinessLogic: BusinessLogic = {
-    validateDuringDrag: ({newInterval}) => ({
-        interval: {
-            start: startOfDay(add(newInterval.start, {hours: 12})),
-            end: startOfDay(add(newInterval.end, {hours: 12})),
-        },
-    }),
-    validateDuringResize: ({newInterval}) => ({
-        interval: {
-            start: startOfDay(add(newInterval.start, {hours: 12})),
-            end: startOfDay(add(newInterval.end, {hours: 12})),
-        },
-    }),
-    validateAfterDrag: async ({newInterval}) => {
+    validateDuringDrag: ({newIntervals, events}) => {
+        let newEvents = Object.fromEntries(Object.entries(events).map(([eventId, event]) => {
+            if (newIntervals[eventId]) {
+                return [eventId, {...event, interval: makePureInterval(newIntervals[eventId])}]
+            } else {
+                return [eventId, event]
+            }
+        }))
         return {
-            interval: {
-                start: startOfDay(add(newInterval.start, {hours: 12})),
-                end: startOfDay(add(newInterval.end, {hours: 12})),
-            },
+            events: newEvents
         }
     },
-    validateAfterResize: async ({newInterval}) => {
+    validateDuringResize: ({newIntervals, events}) => {
+        let newEvents = Object.fromEntries(Object.entries(events).map(([eventId, event]) => {
+            if (newIntervals[eventId]) {
+                return [eventId, {...event, interval: makePureInterval(newIntervals[eventId])}]
+            } else {
+                return [eventId, event]
+            }
+        }))
         return {
-            interval: {
-                start: startOfDay(add(newInterval.start, {hours: 12})),
-                end: startOfDay(add(newInterval.end, {hours: 12})),
-            },
+            events: newEvents
+        }
+    },
+    validateAfterDrag: async ({newIntervals, events}) => {
+        let newEvents = Object.fromEntries(Object.entries(events).map(([eventId, event]) => {
+            if (newIntervals[eventId]) {
+                return [eventId, {...event, interval: makePureInterval(newIntervals[eventId])}]
+            } else {
+                return [eventId, event]
+            }
+        }))
+        return {
+            events: newEvents
+        }
+    },
+    validateAfterResize: async ({newIntervals, events}) => {
+        let newEvents = Object.fromEntries(Object.entries(events).map(([eventId, event]) => {
+            if (newIntervals[eventId]) {
+                return [eventId, {...event, interval: makePureInterval(newIntervals[eventId])}]
+            } else {
+                return [eventId, event]
+            }
+        }))
+        return {
+            events: newEvents
         }
     },
     orderGroups: ({groupIds}) => ({

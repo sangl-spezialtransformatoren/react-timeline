@@ -16,7 +16,6 @@ import {useTimePerPixel, useTimeZone} from '../store/hooks'
 import {isWeekend} from 'date-fns'
 import React, {useContext, useEffect, useState} from 'react'
 import {format} from '../functions'
-import {DragOffset} from '../timeline'
 import {GroupsContext} from '../canvas'
 import {createPortal} from 'react-dom'
 
@@ -28,7 +27,7 @@ const DefaultMinuteHeader: TemporalHeaderComponent = ({x, y, width, height, date
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -46,7 +45,7 @@ const DefaultQuarterHourHeader: TemporalHeaderComponent = ({x, y, width, height,
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height} fill={"light-gray"}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -65,7 +64,7 @@ const DefaultHourHeader: TemporalHeaderComponent = ({x, y, width, height, date})
 
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -83,7 +82,7 @@ const DefaultFourHourHeader: TemporalHeaderComponent = ({x, y, width, height, da
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -101,7 +100,7 @@ const DefaultDayHeader: TemporalHeaderComponent = ({x, y, width, height, date}) 
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} fill={color} />
+        <rect x={x} y={y} width={width} height={height} fill={color}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -110,6 +109,7 @@ const DefaultDayHeader: TemporalHeaderComponent = ({x, y, width, height, date}) 
     </>
 }
 export const DayHeader = createDayHeader(DefaultDayHeader)
+
 const DefaultWeekHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
 
@@ -119,7 +119,7 @@ const DefaultWeekHeader: TemporalHeaderComponent = ({x, y, width, height, date})
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -137,7 +137,7 @@ const DefaultMonthHeader: TemporalHeaderComponent = ({x, y, width, height, date}
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -155,7 +155,7 @@ const DefaultQuarterHeader: TemporalHeaderComponent = ({x, y, width, height, dat
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -173,7 +173,7 @@ const DefaultYearHeader: TemporalHeaderComponent = ({x, y, width, height, date})
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -191,7 +191,7 @@ const DefaultDecadeHeader: TemporalHeaderComponent = ({x, y, width, height, date
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -213,7 +213,7 @@ const DefaultCenturyHeader: TemporalHeaderComponent = ({x, y, width, height, dat
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} />
+        <rect x={x} y={y} width={width} height={height}/>
         <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
             <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
                 {label}
@@ -226,7 +226,7 @@ export const AutomaticHeader: React.FC = () => {
     let timePerPixel = useTimePerPixel()
     let minWidth = 30
 
-    let intervals: {name: string, duration: number, component: React.FC}[] = [
+    let intervals: { name: string, duration: number, component: React.FC }[] = [
         {
             name: 'minute',
             duration: 60 * 1000,
@@ -295,13 +295,13 @@ export const AutomaticHeader: React.FC = () => {
 
     let {header} = useContext(GroupsContext)
 
-    return header.current ? createPortal(<DragOffset>
+    return header.current ? createPortal(<>
         {intervals.map(({name, component: Component}, index) => {
             return render[index] &&
-              <g key={name} transform={`translate(0 ${60 - 20 * positions[index + 1]})`}
-                 visibility={show[index] ? 'show' : 'hidden'}>
-                <Component />
-              </g>
+                <g key={name} transform={`translate(0 ${60 - 20 * positions[index + 1]})`}
+                   visibility={show[index] ? 'show' : 'hidden'}>
+                    <Component/>
+                </g>
         })}
-    </DragOffset>, header.current) : null
+    </>, header.current) : null
 }

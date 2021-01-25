@@ -15,14 +15,13 @@ import {
 import {useSize, useTimePerPixel} from '../store/hooks'
 import React, {useEffect, useState} from 'react'
 import {isWeekend} from 'date-fns'
-import {DragOffset} from '../timeline'
 import {GroupsContext} from '../canvas'
 import ReactDOM from 'react-dom'
 
 const DefaultGrid: TemporalGridComponent = ({x}) => {
     let {height} = useSize()
     return <>
-        <rect x={x} y={0} width={1} height={height} fill={'rgba(0,0,0,0.1)'} />
+        <rect x={x} y={0} width={1} height={height} fill={'rgba(0,0,0,0.1)'}/>
     </>
 }
 export const MinuteGrid = createMinuteGrid(DefaultGrid)
@@ -36,7 +35,7 @@ const DefaultDayGrid: TemporalGridComponent = ({x, date, width}) => {
         setWeekend(isWeekend(date))
     }, [date])
     return <>
-        <rect x={x} y={0} width={weekend ? width : 1} height={height} fill={'rgba(0,0,0,0.1)'} />
+        <rect x={x} y={0} width={weekend ? width : 1} height={height} fill={'rgba(0,0,0,0.1)'}/>
     </>
 }
 export const DayGrid = createDayGrid(DefaultDayGrid)
@@ -51,7 +50,7 @@ export const AutomaticGrid: React.FC = () => {
     let timePerPixel = useTimePerPixel()
     let minWidth = 18
 
-    let intervals: {name: string, duration: number, component: React.FC}[] = [
+    let intervals: { name: string, duration: number, component: React.FC }[] = [
         {
             name: 'minute',
             duration: 60 * 1000,
@@ -120,10 +119,8 @@ export const AutomaticGrid: React.FC = () => {
     let {grid} = React.useContext(GroupsContext)
 
     return grid.current ? ReactDOM.createPortal(<>
-        <DragOffset>
-            {intervals.map(({name, component: Component}, index) => {
-                return render[index] && <g visibility={show[index] ? 'show' : 'hidden'} key={name}><Component /></g>
-            })}
-        </DragOffset>
+        {intervals.map(({name, component: Component}, index) => {
+            return render[index] && <g visibility={show[index] ? 'show' : 'hidden'} key={name}><Component/></g>
+        })}
     </>, grid.current) : null
 }

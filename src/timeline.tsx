@@ -9,7 +9,7 @@ import {createTimelineStore} from './store/reducers/root'
 import './style.css'
 import {TimelineCanvas} from './canvas'
 import {useDateZero} from './store/hooks'
-import {setAnimate, setSpringConfig, setTimeZone, setWeekStartsOn, updateEvents} from "./store/actions"
+import {setAnimate, setSpringConfig, setTimeZone, setWeekStartsOn, mergeNewEventData} from "./store/actions"
 
 
 export const DragOffset: React.FC = ({children}) => {
@@ -81,7 +81,7 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
     }, [store, springConfig])
 
     useEffect(() => {
-        initialData && store?.dispatch?.(updateEvents(initialData.events))
+        initialData && store?.dispatch?.(mergeNewEventData(initialData.events))
     }, [store, initialData?.events])
 
 
