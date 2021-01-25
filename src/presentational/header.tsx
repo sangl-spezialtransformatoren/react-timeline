@@ -298,7 +298,7 @@ export const AutomaticHeader: React.FC = () => {
     return header.current ? createPortal(<>
         {intervals.map(({name, component: Component}, index) => {
             return render[index] &&
-                <g key={name} transform={`translate(0 ${60 - 20 * positions[index + 1]})`}
+                <g key={name} transform={`translate(0 ${80 - 20 * positions[index + 1]})`}
                    visibility={show[index] ? 'show' : 'hidden'}>
                     <Component/>
                 </g>

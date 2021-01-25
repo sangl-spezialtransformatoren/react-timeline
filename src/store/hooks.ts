@@ -12,7 +12,8 @@ import {
     selectEventProps,
     selectGroupHeights,
     selectGroupIds,
-    selectGroupPositions,
+    selectGroupIndices,
+    selectHeaderHeight,
     selectInitialized,
     selectInterval,
     selectMapEventIdToProps,
@@ -31,7 +32,7 @@ export const useGroupOffsets = () => useSelector(getGroupOffsets, shallowEqual)
 export const useEventIdsOrderedByLayerAndStartDate = () => useSelector(selectEventIdsOrderedByLayerAndStartDate, shallowEqual)
 export const useEventAndGroupIds = () => useSelector(selectEventIdToGroupIdMap, shallowEqual)
 export const useGroupHeights = () => useSelector(selectGroupHeights, shallowEqual)
-export const useGroupPositions = () => useSelector(selectGroupPositions, shallowEqual)
+export const useGroupPositions = () => useSelector(selectGroupIndices, shallowEqual)
 export const useGetHeaderIntervals = (intervalCreator: IntervalCreator, intervalLength: number) => useSelector(getHeaderIntervals(intervalCreator, intervalLength), shallowEqual)
 export const useEventPositionsInGroup = () => useSelector(selectEventPositionsInGroup, shallowEqual)
 export const useInitialized = () => useSelector(selectInitialized)
@@ -45,3 +46,4 @@ export const useMapEventIdToProps = () => useSelector(selectMapEventIdToProps, s
 export const useEventProps = (eventId: string) => useSelector(selectEventProps(eventId), shallowEqual)
 export const useIsEventSelected = (eventId: string) => useSelector(selectSelected(eventId), shallowEqual)
 export const useGroupIds = () => useSelector(selectGroupIds, shallowEqual)
+export const useHeaderHeight = () => useSelector(selectHeaderHeight)

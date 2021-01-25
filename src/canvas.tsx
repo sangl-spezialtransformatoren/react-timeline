@@ -13,6 +13,7 @@ import {
     lockZoomCenter,
     unlockZoomCenter,
     useSetDateZero,
+    useSetHeaderHeight,
     useSetInitialized,
     useSetSize,
     useSetStartDate,
@@ -20,13 +21,13 @@ import {
     zoom,
 } from './store/actions'
 import {DragOffset, SvgFilters} from './timeline'
-import {useInitialized} from './store/hooks'
+import {useHeaderHeight, useInitialized} from './store/hooks'
 import {useScrollLock} from './functions'
 
-export const GroupsContext = React.createContext<{ grid: RefObject<SVGGElement>, header: RefObject<SVGGElement> }>(undefined!)
+export const GroupsContext = React.createContext<{grid: RefObject<SVGGElement>, header: RefObject<SVGGElement>}>(undefined!)
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
     let {distance, pinching, tap} = eventState
@@ -149,6 +150,24 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
     let gridRef = useRef<SVGGElement>(null)
     let headerRef = useRef<SVGGElement>(null)
 
+    let setHeaderHeight = useSetHeaderHeight()
+    let headerObserver = useRef(new ResizeObserver(entries => {
+        let firstEntry = entries[0]
+        let bbox = firstEntry.target.getBoundingClientRect()
+        let headerHeight = bbox.height + bbox.top
+        setHeaderHeight(headerHeight)
+    }))
+
+    useEffect(() => {
+        if (headerRef.current) {
+            headerObserver.current.observe(headerRef.current)
+        }
+        return () => {
+            headerObserver.current.disconnect()
+        }
+    }, [headerRef])
+    let headerHeight = useHeaderHeight()
+
     return <>
         <GroupsContext.Provider value={{grid: gridRef, header: headerRef}}>
             <div className={'react-timeline'} style={{...style}} ref={ref}>
@@ -156,17 +175,18 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
                     viewBox={`0 0 ${width} ${height}`}
                     className={'react-timeline-svg'}
                     ref={svgRef}>
-                    <SvgFilters/>
+                    <SvgFilters />
                     <DragOffset>
-                        <g id="react-timeline-grid" ref={gridRef}/>
-                        <g id="react-timeline-header" ref={headerRef}/>
+                        <g id="react-timeline-grid" ref={gridRef} />
+                        <g id="react-timeline-header" ref={headerRef} />
                     </DragOffset>
                     {
                         //Mask background so that the pinch event is handled correctly
                     }
-                    <rect x={0} y={0} width={width} height={height} fill={'transparent'}/>
-                    {initialized && children}
-
+                    <rect x={0} y={0} width={width} height={height} fill={'transparent'} />
+                    <g transform={`translate(0 ${headerHeight})`}>
+                        {initialized && children}
+                    </g>
                 </animated.svg>
             </div>
         </GroupsContext.Provider>

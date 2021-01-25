@@ -11,6 +11,7 @@ import {size} from './size'
 import {initialized} from './initialized'
 import {combineConfigurableReducers, ConfigurableReducer, PartialReducer} from '../index'
 import {configureStore} from '@reduxjs/toolkit'
+import {presentational} from './presentational'
 
 export let partialReducers: { [K in keyof StoreShape]: ConfigurableReducer<PartialReducer<StoreShape, any, K>, BusinessLogic> } = {
     animate,
@@ -22,6 +23,7 @@ export let partialReducers: { [K in keyof StoreShape]: ConfigurableReducer<Parti
     springConfig,
     size,
     initialized,
+    presentational,
 }
 
 let combinedReducers = combineConfigurableReducers<StoreShape, any>(partialReducers)
