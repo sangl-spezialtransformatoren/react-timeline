@@ -1,9 +1,9 @@
-import {RefObject, useEffect, useRef, useState} from "react"
+import {RefObject, useEffect, useRef, useState} from 'react'
 
-type Size = { x: number, y: number, width: number, height: number }
+type Size = {x: number, y: number, width: number, height: number}
 export const useResizeObserver = <E extends SVGElement | HTMLElement, >() => {
     let ref = useRef<E>(null)
-    let [size, setSize] = useState<Size>()
+    let [size, setSize] = useState<Size>({x: 0, y: 0, width: 0, height: 0})
     let observer = useRef(new ResizeObserver(entries => {
         let firstEntry = entries[0]
         let bbox = firstEntry.target.getBoundingClientRect()

@@ -1,17 +1,19 @@
 import {compareAsc} from 'date-fns'
 import {RequiredEventData, RequiredGroupData} from './shape'
-import {makePureInterval} from "./reducers/events"
+import {makePureInterval} from './reducers/events'
 
-export type BusinessLogic<E extends RequiredEventData = RequiredEventData, _G extends RequiredGroupData = RequiredGroupData, EventProps extends {} = E> = {
-    validateDuringDrag: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, newGroups: Record<string, string>, events: Record<string, E> }) => { events?: Record<string, E> }
-    validateDuringResize: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E> }) => { events?: Record<string, E> }
-    validateAfterDrag: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, newGroups: Record<string, string>, events: Record<string, E> }) => Promise<{ events?: Record<string, E> }>
-    validateAfterResize: (data: { manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E> }) => Promise<{ events?: Record<string, E> }>
-    orderGroups: (data: { groupIds: string[] }) => { groupIds: string[] },
+export type BusinessLogic<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData, EventProps extends {} = E> = {
+    validateDuringDrag: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, newGroups: Record<string, string>, events: Record<string, E>}) => {events?: Record<string, E>}
+    validateAfterDrag: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, newGroups: Record<string, string>, events: Record<string, E>}) => Promise<{events?: Record<string, E>}>
+    validateDuringResize: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E>}) => {events?: Record<string, E>}
+    validateAfterResize: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E>}) => Promise<{events?: Record<string, E>}>
+    orderGroups: (data: {groupIds: string[]}) => {groupIds: string[]},
     orderEventsForPositioning: (data: Record<string, E>) => string[],
     mapEventsToLayer: (data: Record<string, E>) => Record<string, number>,
     mapEventsToProps: (data: Record<string, E>) => Record<string, EventProps>
     displayEventsInSameRow: (data: Record<string, E>) => string[][]
+    mergeNewEvents: (currentEvents: Record<string, E>, newEvents: Record<string, E>) => Record<string, E>
+    mergeNewGroups: (currentGroups: Record<string, G>, newGroups: Record<string, G>) => Record<string, G>
 }
 
 export const DefaultBusinessLogic: BusinessLogic = {
@@ -23,8 +25,8 @@ export const DefaultBusinessLogic: BusinessLogic = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: makePureInterval(interval)
-                }
+                    interval: makePureInterval(interval),
+                },
             }
         }
 
@@ -33,13 +35,13 @@ export const DefaultBusinessLogic: BusinessLogic = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    groupId: groupId
-                }
+                    groupId: groupId,
+                },
             }
         }
 
         return {
-            events: newEvents
+            events: newEvents,
         }
     },
     validateDuringResize: ({newIntervals, events}) => {
@@ -50,14 +52,14 @@ export const DefaultBusinessLogic: BusinessLogic = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: makePureInterval(interval)
-                }
+                    interval: makePureInterval(interval),
+                },
             }
         }
 
 
         return {
-            events: newEvents
+            events: newEvents,
         }
     },
     validateAfterDrag: async ({newIntervals, newGroups, events}) => {
@@ -68,8 +70,8 @@ export const DefaultBusinessLogic: BusinessLogic = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: makePureInterval(interval)
-                }
+                    interval: makePureInterval(interval),
+                },
             }
         }
 
@@ -78,13 +80,13 @@ export const DefaultBusinessLogic: BusinessLogic = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    groupId: groupId
-                }
+                    groupId: groupId,
+                },
             }
         }
 
         return {
-            events: newEvents
+            events: newEvents,
         }
     },
     validateAfterResize: async ({newIntervals, events}) => {
@@ -95,13 +97,13 @@ export const DefaultBusinessLogic: BusinessLogic = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: makePureInterval(interval)
-                }
+                    interval: makePureInterval(interval),
+                },
             }
         }
 
         return {
-            events: newEvents
+            events: newEvents,
         }
     },
     orderGroups: ({groupIds}) => ({
@@ -114,5 +116,7 @@ export const DefaultBusinessLogic: BusinessLogic = {
         return Object.fromEntries(Object.keys(data).map((key, _) => [key, 0])) as Record<string, number>
     },
     mapEventsToProps: data => data,
-    displayEventsInSameRow: _ => []
+    displayEventsInSameRow: _ => [],
+    mergeNewEvents: (_, newEvents) => newEvents,
+    mergeNewGroups: (_, newGroups) => newGroups,
 }

@@ -12,11 +12,15 @@ import {initialized} from './initialized'
 import {combineConfigurableReducers, ConfigurableReducer, PartialReducer} from '../index'
 import {configureStore} from '@reduxjs/toolkit'
 import {presentational} from './presentational'
+import {internalEventData} from './internalEventData'
+import {internalGroupData} from './internalGroupData'
 
 export let partialReducers: { [K in keyof StoreShape]: ConfigurableReducer<PartialReducer<StoreShape, any, K>, BusinessLogic> } = {
     animate,
     events,
+    internalEventData,
     groups,
+    internalGroupData,
     timeScale,
     timeZone,
     weekStartsOn,

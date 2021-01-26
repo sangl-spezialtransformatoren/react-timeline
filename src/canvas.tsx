@@ -1,9 +1,8 @@
 import React, {RefObject, useEffect, useRef} from 'react'
-import useResizeObserver from 'use-resize-observer'
 import {useGesture} from 'react-use-gesture'
 import {animated} from 'react-spring'
 import {Dispatch as ReduxDispatch} from 'redux'
-import {shallowEqual, useDispatch} from 'react-redux'
+import {useDispatch} from 'react-redux'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 
 import {TimelineProps} from './definitions'
@@ -21,13 +20,15 @@ import {
     zoom,
 } from './store/actions'
 import {SvgFilters} from './timeline'
-import {useHeaderHeight, useInitialized} from './store/hooks'
+import {useInitialized} from './store/hooks'
 import {useScrollLock} from './functions'
+import {useResizeObserver} from './hooks'
+import isEqual from 'react-fast-compare'
 
-export const GroupsContext = React.createContext<{ grid: RefObject<SVGGElement>, header: RefObject<SVGGElement> }>(undefined!)
+export const GroupsContext = React.createContext<{grid: RefObject<SVGGElement>, header: RefObject<SVGGElement>}>(undefined!)
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
     let {distance, pinching, tap} = eventState
@@ -108,7 +109,7 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
     let setTimePerPixel = useSetTimePerPixel()
     let setSize = useSetSize()
 
-    const {ref, width, height} = useResizeObserver<HTMLDivElement>()
+    let [ref, {width, height}] = useResizeObserver<HTMLDivElement>()
     let svgRef = useRef<SVGSVGElement>(null)
     let initialStartDate = initialParameters?.startDate
     let initialEndDate = initialParameters?.endDate
@@ -133,7 +134,7 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
             setTimePerPixel(timePerPixel)
             setTimeout(() => {
                 setInitialized(true)
-            }, 10)
+            }, 50)
         }
     }, [initialStartDate, initialEndDate, initialized, width])
 
@@ -148,25 +149,13 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
     useScrollLock(svgRef)
 
     let gridRef = useRef<SVGGElement>(null)
-    let headerRef = useRef<SVGGElement>(null)
 
     let setHeaderHeight = useSetHeaderHeight()
-    let headerObserver = useRef(new ResizeObserver(entries => {
-        let firstEntry = entries[0]
-        let bbox = firstEntry.target.getBoundingClientRect()
-        let headerHeight = bbox.height + bbox.top
-        setHeaderHeight(headerHeight)
-    }))
+    let [headerRef, {height: headerHeight}] = useResizeObserver<SVGGElement>()
 
     useEffect(() => {
-        if (headerRef.current) {
-            headerObserver.current.observe(headerRef.current)
-        }
-        return () => {
-            headerObserver.current.disconnect()
-        }
-    }, [headerRef])
-    let headerHeight = useHeaderHeight()
+        setHeaderHeight(headerHeight)
+    }, [headerHeight])
 
     return <>
         <GroupsContext.Provider value={{grid: gridRef, header: headerRef}}>
@@ -175,13 +164,13 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
                     viewBox={`0 0 ${width} ${height}`}
                     className={'react-timeline-svg'}
                     ref={svgRef}>
-                    <SvgFilters/>
-                    <g id="react-timeline-grid" ref={gridRef}/>
-                    <g id="react-timeline-header" ref={headerRef}/>
+                    <SvgFilters />
+                    <g id="react-timeline-grid" ref={gridRef} />
+                    <g id="react-timeline-header" ref={headerRef} />
                     {
                         //Mask background so that the pinch event is handled correctly
                     }
-                    <rect x={0} y={0} width={width} height={height} fill={'transparent'}/>
+                    <rect x={0} y={0} width={width} height={height} fill={'transparent'} />
                     <g transform={`translate(0 ${headerHeight})`}>
                         {initialized && children}
                     </g>
@@ -191,7 +180,4 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
     </>
 }
 
-export const TimelineCanvas = React.memo(TimelineCanvas_, (oldProps, newProps) => {
-    let result = Object.keys(newProps).map(key => [key, shallowEqual((oldProps as any)?.[key], (newProps as any)?.[key])])
-    return result.every(x => x)
-})
+export const TimelineCanvas = React.memo(TimelineCanvas_, isEqual)

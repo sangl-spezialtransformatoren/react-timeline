@@ -3,12 +3,13 @@ import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
 import {useBusinessLogic, useTimePerPixelSpring} from './context'
-import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary,} from './store/actions'
+import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary} from './store/actions'
 import {EventState} from './canvas'
 import {
     useAnimate,
     useDateZero,
-    useEventProps, useGetInterval,
+    useEventProps,
+    useGetInterval,
     useInitialized,
     useIsEventSelected,
     useSpringConfig,
@@ -18,6 +19,7 @@ import {BusinessLogic} from './store/businessLogic'
 import {
     selectEvents,
     selectGroupPositions,
+    selectInternalEventData,
     selectNumberOfSelectedEvents,
     selectSelectedEvents,
     selectTimePerPixel,
@@ -40,10 +42,11 @@ export type PresentationalEventComponent<T = {}> = React.FC<PresentationalEventC
 
 export type EventComponentProps<T = {}> = {
     id: string
+    eventHeight?: number
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
     eventState.event.stopPropagation()
@@ -64,13 +67,14 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
         let state = getState()
         let numberOfSelectedEvents = selectNumberOfSelectedEvents(config)(state)
         let allEvents = selectEvents(config)(state)
+        let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents
         if (numberOfSelectedEvents === 0) {
             selectedEvents = {[id]: allEvents[id]}
         } else {
             selectedEvents = selectSelectedEvents(config)(state)
-            if (!selectedEvents?.[id]?.selected) {
+            if (!Object.keys(selectedEvents).includes(id)) {
                 return
             }
         }
@@ -79,7 +83,7 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
         let dt = dx * timePerPixel
         let newIntervals = Object.fromEntries(Object.entries(selectedEvents).map(
             ([eventId, event]) => {
-                let oldInterval = event.volatileState?.initialInterval || event.interval
+                let oldInterval = internalEventData?.[eventId]?.initialInterval || event.interval
                 let newInterval = {
                     start: oldInterval.start + dt,
                     end: oldInterval.end + dt,
@@ -90,7 +94,7 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
 
         let y = xy[1]
         let groupPositions = selectGroupPositions(config)(state)
-        let newGroupId: string = ""
+        let newGroupId: string = ''
         for (let [groupId, position] of Object.entries(groupPositions)) {
             if (groupId !== allEvents[id].groupId && y > position.y && y < (position.y + position.height)) {
                 newGroupId = groupId
@@ -98,7 +102,7 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
             }
         }
         let newGroups: Record<string, string> = {}
-        if (newGroupId !== "") {
+        if (newGroupId !== '') {
             newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, newGroupId]))
         }
 
@@ -144,13 +148,14 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
     let action: Thunk = async (dispatch: Dispatch, getState) => {
         let state = getState()
         let event = selectEvents(config)(state)[id]
+        let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents = selectSelectedEvents(config)(state)
         if (!selectedEvents[id]) {
             return
         }
 
-        let oldInterval = event.volatileState?.initialInterval || event.interval
+        let oldInterval = internalEventData?.[id]?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
         let events = selectEvents(config)(state)
 
@@ -197,13 +202,14 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
         let event = selectEvents(config)(state)[id]
+        let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents = selectSelectedEvents(config)(state)
         if (!selectedEvents[id]) {
             return
         }
 
-        let oldInterval = event.volatileState?.initialInterval || event.interval
+        let oldInterval = internalEventData?.[id]?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
         let events = selectEvents(config)(state)
 
@@ -245,6 +251,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
         {
             id,
             y,
+            eventHeight = 20,
             groupHeight,
             children,
             ...otherProps
@@ -296,7 +303,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
             x: xSpring,
             y: ySpring,
             width: widthSpring,
-            height: 20,
+            height: eventHeight,
             groupHeight: groupHeightSpring,
             dragHandle: ref,
             dragStartHandle: startRef,
@@ -304,7 +311,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
             eventId: id,
             selected,
             ...eventProps,
-            ...otherProps
+            ...otherProps,
         }
 
         // @ts-ignore

@@ -9,7 +9,14 @@ import {createTimelineStore} from './store/reducers/root'
 import './style.css'
 import {TimelineCanvas} from './canvas'
 import {useDateZero} from './store/hooks'
-import {setAnimate, setSpringConfig, setTimeZone, setWeekStartsOn, mergeNewEventData} from "./store/actions"
+import {
+    mergeNewEventData,
+    mergeNewGroupData,
+    setAnimate,
+    setSpringConfig,
+    setTimeZone,
+    setWeekStartsOn,
+} from './store/actions'
 
 
 export const DragOffset: React.FC = ({children}) => {
@@ -26,14 +33,14 @@ export const DragOffset: React.FC = ({children}) => {
 export const SvgFilters: React.FC = () => {
     return <defs>
         <filter id="dropshadow" height="130%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-            <feOffset dx="0" dy="0" result="offsetblur"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+            <feOffset dx="0" dy="0" result="offsetblur" />
             <feComponentTransfer>
-                <feFuncA type="linear" slope="0.5"/>
+                <feFuncA type="linear" slope="0.5" />
             </feComponentTransfer>
             <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
             </feMerge>
         </filter>
     </defs>
@@ -82,6 +89,7 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
 
     useEffect(() => {
         initialData && store?.dispatch?.(mergeNewEventData(initialData.events))
+        initialData && store?.dispatch?.(mergeNewGroupData(initialData.groups))
     }, [store, initialData?.events])
 
 

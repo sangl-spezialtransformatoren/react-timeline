@@ -25,6 +25,7 @@ const DefaultGrid: TemporalGridComponent = ({x}) => {
         <rect x={x} y={0} width={1} height={height} fill={'rgba(0,0,0,0.1)'}/>
     </>
 }
+
 export const MinuteGrid = createMinuteGrid(DefaultGrid)
 export const QuarterHourGrid = createQuarterHourGrid(DefaultGrid)
 export const HourGrid = createHourGrid(DefaultGrid)

@@ -1,6 +1,6 @@
 import 'react-app-polyfill/ie11'
 import * as React from 'react'
-import {Ref} from 'react'
+import {Ref, useEffect, useState} from 'react'
 import * as ReactDOM from 'react-dom'
 import {
     AutomaticGrid,
@@ -24,9 +24,9 @@ import {addDays, addHours, startOfDay} from 'date-fns'
 
 type EventData =
     RequiredEventData
-    & { label: string, vacation?: boolean, link: string, buffer?: boolean }
-type GroupData = RequiredGroupData & { label: string }
-type EventComponentProps = { label: string, vacation?: boolean }
+    & {label: string, vacation?: boolean, link: string, buffer?: boolean, manipulated?: boolean}
+type GroupData = RequiredGroupData & {label: string}
+type EventComponentProps = {label: string, vacation?: boolean}
 
 export const mergeRefs = <T, >(...refs: Array<Ref<T>>) => (ref: T) => {
     refs.forEach((resolvableRef) => {
@@ -57,9 +57,9 @@ let MyEventComponent: PresentationalEventComponent<EventComponentProps> = (
     if (vacation) {
         let ref = mergeRefs(dragEndHandle, dragHandle, dragStartHandle)
         return <g style={{touchAction: 'pan-y'}}>
-            <g ref={ref}/>
-            <rect fill={'rgba(0,0,0,0.3)'} y={y} height={groupHeight} x={x} width={width}/>
-            <foreignObject y={y} height={groupHeight} x={x} width={width}
+            <g ref={ref} />
+            <rect fill={'rgba(0,0,0,0.3)'} y={y - 12} height={groupHeight} x={x} width={width} />
+            <foreignObject y={y - 12} height={groupHeight} x={x} width={width}
                            style={{pointerEvents: 'none', textAlign: 'center', verticalAlign: 'middle'}}>
                 <div className={'react-timeline-event'}>
                     Urlaub
@@ -69,21 +69,21 @@ let MyEventComponent: PresentationalEventComponent<EventComponentProps> = (
     } else if (buffer) {
         let ref = mergeRefs(dragEndHandle, dragHandle, dragStartHandle)
         return <g>
-            <g ref={ref}/>
-            <line x1={x} x2={x + width - 3} y1={y + height / 2} y2={y + height / 2} stroke={'black'}/>
-            <circle cx={x + width} cy={y + height / 2} stroke={'black'} r={3} fill={'none'}/>
+            <g ref={ref} />
+            <line x1={x} x2={x + width - 3} y1={y + height / 2} y2={y + height / 2} stroke={'black'} />
+            <circle cx={x + width} cy={y + height / 2} stroke={'black'} r={3} fill={'none'} />
         </g>
     } else {
         return <g style={{touchAction: 'pan-y'}}>
-            <rect ref={dragHandle} fill={selected ? 'rgba(255,0,0,0.8)' : 'rgba(0,0,0,0.8)'} height={height}
+            <rect ref={dragHandle} fill={selected ? 'rgba(255,0,0,0.8)' : 'rgba(240,10,0,0.8)'} height={height}
                   style={{paintOrder: 'stroke'}} y={y} x={x}
                   rx={3} ry={3}
-                  width={width} filter="url(#dropshadow)"/>
+                  width={width} filter="url(#dropshadow)" />
             <rect ref={dragStartHandle} fill={'rgba(0,0,0,0.2)'} y={y} height={height} x={x} width={10}
-                  style={{cursor: 'ew-resize'}} visibility={selected ? 'display' : 'hidden'}/>
+                  style={{cursor: 'ew-resize'}} visibility={selected ? 'display' : 'hidden'} />
             <rect ref={dragEndHandle} fill={'rgba(0,0,0,0.2)'} y={y} height={height} x={x + width} width={10}
                   style={{cursor: 'ew-resize'}}
-                  transform={'translate(-10, 0)'} visibility={selected ? 'display' : 'hidden'}/>
+                  transform={'translate(-10, 0)'} visibility={selected ? 'display' : 'hidden'} />
             <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none', padding: 2}}>
                 <div className={'react-timeline-event'}>
                     {label}
@@ -119,8 +119,8 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval
-                }
+                    interval: validatedInterval,
+                },
             }
 
             let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
@@ -131,9 +131,9 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                         ...newEvents[eventId],
                         interval: {
                             ...newEvents[eventId].interval,
-                            start: validatedInterval.end
-                        }
-                    }
+                            start: validatedInterval.end,
+                        },
+                    },
                 }
             }
         }
@@ -146,8 +146,8 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                     ...newEvents,
                     [eventId]: {
                         ...newEvents[eventId],
-                        groupId: newGroupId
-                    }
+                        groupId: newGroupId,
+                    },
                 }
             }
         }
@@ -167,8 +167,9 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval
-                }
+                    interval: validatedInterval,
+                    manipulated: true,
+                },
             }
 
             let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
@@ -179,14 +180,22 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                         ...newEvents[eventId],
                         interval: {
                             ...newEvents[eventId].interval,
-                            start: validatedInterval.end
-                        }
-                    }
+                            start: validatedInterval.end,
+                        },
+                        manipulated: true,
+                    },
                 }
             }
         }
         for (let [eventId, newGroupId] of Object.entries(newGroups)) {
-            newEvents[eventId].groupId = newGroupId
+            newEvents = {
+                ...newEvents,
+                [eventId]: {
+                    ...newEvents[eventId],
+                    groupId: newGroupId,
+                    manipulated: true,
+                },
+            }
 
             let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
             for (let eventId of Object.keys(linkedEvents)) {
@@ -194,8 +203,9 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                     ...newEvents,
                     [eventId]: {
                         ...newEvents[eventId],
-                        groupId: newGroupId
-                    }
+                        groupId: newGroupId,
+                        manipulated: true,
+                    },
                 }
             }
         }
@@ -215,8 +225,8 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval
-                }
+                    interval: validatedInterval,
+                },
             }
 
             let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
@@ -227,9 +237,9 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                         ...newEvents[eventId],
                         interval: {
                             ...newEvents[eventId].interval,
-                            start: validatedInterval.end
-                        }
-                    }
+                            start: validatedInterval.end,
+                        },
+                    },
                 }
             }
         }
@@ -249,8 +259,9 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval
-                }
+                    interval: validatedInterval,
+                    manipulated: true,
+                },
             }
 
             let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
@@ -261,14 +272,28 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
                         ...newEvents[eventId],
                         interval: {
                             ...newEvents[eventId].interval,
-                            start: validatedInterval.end
-                        }
-                    }
+                            start: validatedInterval.end,
+                        },
+                        manipulated: true,
+                    },
                 }
             }
         }
         return {events: newEvents}
     },
+    mergeNewEvents: (currentEvents, newEvents) => {
+        return Object.fromEntries(Object.keys(newEvents).map(eventId => {
+            if (currentEvents?.[eventId]?.manipulated) {
+                return [eventId, {
+                    ...currentEvents[eventId],
+                    label: newEvents[eventId].label,
+                }]
+            } else {
+                return [eventId, newEvents[eventId]]
+            }
+        }))
+    },
+    mergeNewGroups: (_, newGroups) => newGroups,
 
 }
 
@@ -279,8 +304,9 @@ const App = () => {
         endDate: addDays(date, 28).valueOf(),
     }
 
+    let [x, setX] = useState(0)
 
-    let initialData: { events: Record<string, EventData>, groups: Record<string, GroupData> } = {
+    let initialData: {events: Record<string, EventData>, groups: Record<string, GroupData>} = {
         events: {
             '1': {
                 interval: {start: date, end: date.valueOf() + 100 * 3600000},
@@ -316,9 +342,9 @@ const App = () => {
             },
             '5': {
                 interval: {start: date, end: date.valueOf() + 10 * 3600000},
-                label: 'IT 18.128',
+                label: `${x}`,
                 groupId: '3',
-                link: '5',
+                link: `5`,
             },
         },
         groups: {
@@ -326,11 +352,22 @@ const App = () => {
                 label: '1',
             },
             '2': {
-                label: '2',
+                label: `${x}`,
+            },
+            '3': {
+                label: '3',
+            },
+            '4': {
+                label: '4',
             },
         },
 
     }
+    useEffect(() => {
+        setInterval(() => {
+            setX(x => x + 1)
+        }, 2000)
+    }, [])
 
     return <Timeline
         initialData={initialData}
@@ -341,14 +378,14 @@ const App = () => {
         springConfig={{mass: 0.8, tension: 210, friction: 20}}
         businessLogic={businessLogic}
     >
-        <AutomaticGrid/>
-        <AutomaticHeader/>
-        <TimelineEvents EventComponent={EventComponent}/>
+        <AutomaticGrid />
+        <AutomaticHeader />
+        <TimelineEvents EventComponent={EventComponent} />
         <DragOffset>
-            <Now/>
+            <Now />
         </DragOffset>
 
     </Timeline>
 }
 
-ReactDOM.render(<App/>, document.getElementById('root'))
+ReactDOM.render(<App />, document.getElementById('root'))

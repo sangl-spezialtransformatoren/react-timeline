@@ -73,13 +73,18 @@ export const timeScale: PartialTimelineReducer<'timeScale'> = () => (state, acti
 
         case ZOOM:
             if (zoomCenter) {
-                let factor = action.payload
-                let newTimePerPixel = timePerPixel * factor
-                let newStartDate = (timePerPixel - newTimePerPixel) * zoomCenter.valueOf() / timePerPixel + startDate.valueOf() * newTimePerPixel / timePerPixel
-                return {
-                    ...timeScaleState,
-                    timePerPixel: newTimePerPixel,
-                    startDate: newStartDate,
+                if (state?.size.width) {
+                    let factor = action.payload
+                    let newTimePerPixel = timePerPixel * factor
+                    let newStartDate = (timePerPixel - newTimePerPixel) * zoomCenter.valueOf() / timePerPixel + startDate.valueOf() * newTimePerPixel / timePerPixel
+                    let newEndDate = newStartDate + state.size.width * timePerPixel
+                    if (((newTimePerPixel > timePerPixel) && (newEndDate - newStartDate < 1.0e+12)) || ((newTimePerPixel < timePerPixel) && (newEndDate - newStartDate) > 300000)) {
+                        return {
+                            ...timeScaleState,
+                            timePerPixel: newTimePerPixel,
+                            startDate: newStartDate,
+                        }
+                    }
                 }
             }
     }

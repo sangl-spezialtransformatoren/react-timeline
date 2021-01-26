@@ -16,8 +16,8 @@ import {useSetGroupPosition} from './store/actions'
 import {EventComponent as DefaultEventComponent} from './presentational/event'
 import {EventComponentType} from './event'
 import {DragOffset} from './timeline'
-import {useResizeObserver} from "./hooks"
-import {animated, useSpring} from "react-spring"
+import {useResizeObserver} from './hooks'
+import {animated, useSpring} from 'react-spring'
 
 export type GroupPresentationalProps = {
     width: number,
@@ -40,7 +40,15 @@ export const GroupBackgroundElement: React.FC<GroupPresentationalProps> = ({widt
 
 const AnimatedGroupElement = animated(GroupBackgroundElement)
 
-export const GroupBackground: React.FC<{ groupId: string }> = ({groupId}) => {
+export type GroupBackgroundProps = {
+    groupId: string,
+    eventHeight?: number
+    eventDistance?: number,
+    groupPadding?: number
+}
+export const GroupBackground: React.FC<GroupBackgroundProps> = (
+    {groupId, eventHeight = 20, eventDistance = 4, groupPadding = 20},
+) => {
     let groupHeights = useGroupHeights()
     let groupOffsets = useGroupOffsets()
     let groupIndices = useGroupIndices()
@@ -64,18 +72,30 @@ export const GroupBackground: React.FC<{ groupId: string }> = ({groupId}) => {
 
 
     let [{ySpring, heightSpring}] = useSpring({
-        ySpring: 24 * groupOffsets[groupId] + 20 * groupIndices[groupId] - 10,
-        heightSpring: !last ? 24 * groupHeights[groupId] + 20 : height - 24 * groupOffsets[groupId] + 20 * groupIndices[groupId] - 10,
+        ySpring: eventHeight * groupOffsets[groupId] + eventDistance * (groupOffsets[groupId] - groupIndices[groupId]) + groupPadding * groupIndices[groupId],
+        heightSpring: !last ? eventHeight * groupHeights[groupId] + eventDistance * Math.max(groupHeights[groupId] - 1, 0) + groupPadding : height - eventHeight * groupOffsets[groupId] + eventDistance * (groupOffsets[groupId] - groupIndices[groupId]) + groupPadding * groupIndices[groupId],
         config: springConfig,
         immediate: !animate || !initialized,
     }, [springConfig, groupOffsets[groupId], groupIndices[groupId], animate, initialized, groupHeights[groupId], height])
 
     return <g ref={ref}><AnimatedGroupElement y={ySpring} height={heightSpring} width={width}
-                                              color={groupIndices[groupId] % 2 === 1 ? "rgba(0,0,0,0.05)" : "transparent"}/>
+                                              color={groupIndices[groupId] % 2 === Object.keys(groupIndices).length % 2 ? 'rgba(0,0,0,0.05)' : 'transparent'} />
     </g>
 }
 
-export const TimelineEvents: React.FC<{ EventComponent?: EventComponentType }> = ({EventComponent}) => {
+export type TimelineGroupProps = {
+    EventComponent?: EventComponentType
+    eventHeight?: number
+    eventDistance?: number,
+    groupPadding?: number
+}
+export const TimelineEvents: React.FC<TimelineGroupProps> = (
+    {
+        EventComponent,
+        eventHeight = 20,
+        eventDistance = 8,
+        groupPadding = 24,
+    }) => {
 
     let events = useEventIdsOrderedByLayerAndStartDate()
     let groups = useGroupIds()
@@ -88,7 +108,8 @@ export const TimelineEvents: React.FC<{ EventComponent?: EventComponentType }> =
 
 
     return <>
-        {groups.map(groupId => <GroupBackground groupId={groupId} key={groupId}/>)}
+        {groups.map(groupId => <GroupBackground groupId={groupId} key={groupId} eventHeight={eventHeight}
+                                                eventDistance={eventDistance} groupPadding={groupPadding} />)}
         <DragOffset>
             {events.map((eventId) => {
                 let groupId = eventToGroup[eventId]
@@ -98,8 +119,9 @@ export const TimelineEvents: React.FC<{ EventComponent?: EventComponentType }> =
                 return <React.Fragment key={eventId}>
                     <Component
                         id={eventId}
-                        y={4 + 24 * positionInGroup + 24 * groupOffset + 20 * groupPosition}
-                        groupHeight={24 * groupHeights[groupId] - 4}/>
+                        eventHeight={eventHeight}
+                        y={groupPadding / 2 + (eventHeight + eventDistance) * positionInGroup + eventHeight * groupOffset + eventDistance * (groupOffset - groupPosition) + groupPadding * groupPosition}
+                        groupHeight={eventHeight * groupHeights[groupId] + eventDistance * Math.max(groupHeights[groupId] - 1, 0) + groupPadding} />
                 </React.Fragment>
             })}
         </DragOffset>

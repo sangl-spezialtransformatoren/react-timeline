@@ -1,17 +1,10 @@
 import {PartialTimelineReducer} from '../index'
-import {SET_GROUP_POSITION} from '../actions'
+import {MERGE_NEW_GROUP_DATA} from '../actions'
 
 export const groups: PartialTimelineReducer<'groups'> = () => (state, action) => {
     switch (action.type) {
-        case SET_GROUP_POSITION: {
-            let {groupId, ...position} = action.payload
-            return {
-                ...state?.groups,
-                [groupId]: {
-                    ...state?.groups?.[groupId],
-                    position,
-                },
-            }
+        case MERGE_NEW_GROUP_DATA: {
+            return action.payload
         }
     }
     return state?.groups || {}
