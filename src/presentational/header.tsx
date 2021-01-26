@@ -12,216 +12,93 @@ import {
     createYearHeader,
     TemporalHeaderComponent,
 } from '../headers'
-import {useTimePerPixel, useTimeZone} from '../store/hooks'
+import {useSize, useTimePerPixel, useTimeZone} from '../store/hooks'
 import {isWeekend} from 'date-fns'
 import React, {useContext, useEffect, useState} from 'react'
 import {format} from '../functions'
 import {GroupsContext} from '../canvas'
 import {createPortal} from 'react-dom'
+import {DragOffset} from "../timeline"
 
-const DefaultMinuteHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'm', {timeZone}))
-    }, [date])
+let headerColor = "rgba(250, 250, 250, 1)"
 
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
+function createLabelTemporalHeader(mapDateToLabel: (date: Date | number, optionalData: {
+    timeZone: string,
+    width: number,
+    height: number
+}) => string): TemporalHeaderComponent {
+    return ({x, y, width, height, date}) => {
+        let [label, setLabel] = useState('')
+        let timeZone = useTimeZone()
+        useEffect(() => {
+            setLabel(mapDateToLabel(date, {timeZone, width, height}))
+        }, [date, width, height])
+
+        return <>
+            <rect x={x} y={y} width={width} height={height} fill={headerColor} stroke={headerColor}/>
+            <text x={x + width / 2} y={y + height - 8} textAnchor={'middle'} fontFamily={"sans-serif"}>{label}</text>
+        </>
+    }
 }
+
+const DefaultMinuteHeader: TemporalHeaderComponent = createLabelTemporalHeader((date, {timeZone}) => format(new Date(date), 'm', {timeZone}))
 export const MinuteHeader = createMinuteHeader(DefaultMinuteHeader)
-const DefaultQuarterHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'm', {timeZone}))
-    }, [date])
-
-    return <>
-        <rect x={x} y={y} width={width} height={height} fill={"light-gray"}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultQuarterHourHeader: TemporalHeaderComponent = createLabelTemporalHeader((date, {timeZone}) => format(new Date(date), 'm', {timeZone}))
 export const QuarterHourHeader = createQuarterHourHeader(DefaultQuarterHourHeader)
-const DefaultHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
-
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'H', {timeZone}))
-    }, [date])
 
 
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultHourHeader: TemporalHeaderComponent = createLabelTemporalHeader((date, {timeZone}) => format(new Date(date), 'H', {timeZone}))
 export const HourHeader = createHourHeader(DefaultHourHeader)
-const DefaultFourHourHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'H', {timeZone}))
-    }, [date])
 
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultFourHourHeader: TemporalHeaderComponent = createLabelTemporalHeader((date, {timeZone}) => format(new Date(date), 'H', {timeZone}))
 export const FourHourHeader = createFourHourHeader(DefaultFourHourHeader)
+
 const DefaultDayHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
     let timeZone = useTimeZone()
-    let color = isWeekend(date) ? 'black' : 'gray'
+    let color = isWeekend(date) ? 'gray' : 'black'
     let [label, setLabel] = useState('')
     useEffect(() => {
         setLabel(format(new Date(date), 'd', {timeZone}))
     }, [date])
 
     return <>
-        <rect x={x} y={y} width={width} height={height} fill={color}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
+        <rect x={x} y={y} width={width} height={height} fill={headerColor}/>
+        <text x={x + width / 2} y={y + height - 8} textAnchor={'middle'} fill={color}
+              fontFamily={"sans-serif"}>{label}</text>
     </>
 }
 export const DayHeader = createDayHeader(DefaultDayHeader)
 
-const DefaultWeekHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
-
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel('KW ' + format(new Date(date), 'w', {timeZone}))
-    }, [date])
-
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultWeekHeader = createLabelTemporalHeader((date, {
+    timeZone,
+    width
+}) => width > 50 ? 'KW ' + format(new Date(date), 'w', {timeZone}) : format(new Date(date), 'w', {timeZone}))
 export const WeekHeader = createWeekHeader(DefaultWeekHeader)
-const DefaultMonthHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'MMMM', {timeZone}))
-    }, [date])
-
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultMonthHeader = createLabelTemporalHeader((date, {
+    timeZone,
+    width
+}) => width > 100 ? format(new Date(date), 'MMMM', {timeZone}) : format(new Date(date), 'MMM', {timeZone}))
 export const MonthHeader = createMonthHeader(DefaultMonthHeader)
-const DefaultQuarterHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'QQQ', {timeZone}))
-    }, [date])
-
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultQuarterHeader = createLabelTemporalHeader((date, {timeZone}) => format(new Date(date), 'QQQ', {timeZone}))
 export const QuarterHeader = createQuarterHeader(DefaultQuarterHeader)
-const DefaultYearHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'yyy', {timeZone}))
-    }, [date])
-
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultYearHeader = createLabelTemporalHeader((date, {timeZone}) => format(new Date(date), 'yyy', {timeZone}))
 export const YearHeader = createYearHeader(DefaultYearHeader)
-const DefaultDecadeHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
 
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        setLabel(format(new Date(date), 'yy\'er\'', {timeZone}))
-    }, [date])
-
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultDecadeHeader = createLabelTemporalHeader((date, {timeZone}) => format(new Date(date), 'yy\'er\'', {timeZone}))
 export const DecadeHeader = createDecadeHeader(DefaultDecadeHeader)
 
-const DefaultCenturyHeader: TemporalHeaderComponent = ({x, y, width, height, date}) => {
-    let timeZone = useTimeZone()
-
-    let [label, setLabel] = useState('')
-    useEffect(() => {
-        let year = format(new Date(date), 'yyyy', {timeZone})
-        let yearInt = parseInt(year.substr(0, 2)) + 1
-        let label = `${yearInt}. Jhd.`
-        setLabel(label)
-    }, [date])
-
-    return <>
-        <rect x={x} y={y} width={width} height={height}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'} style={{textAlign: 'center'}}>
-                {label}
-            </div>
-        </foreignObject>
-    </>
-}
+const DefaultCenturyHeader = createLabelTemporalHeader((date, {timeZone}) => {
+    let year = format(new Date(date), 'yyyy', {timeZone})
+    let yearInt = parseInt(year.substr(0, 2)) + 1
+    return `${yearInt}. Jhd.`
+})
 export const CenturyHeader = createCenturyHeader(DefaultCenturyHeader)
+
 export const AutomaticHeader: React.FC = () => {
     let timePerPixel = useTimePerPixel()
     let minWidth = 30
@@ -292,16 +169,22 @@ export const AutomaticHeader: React.FC = () => {
     let show = biggerThanMinWidth.map((value, index) => value && (biggerThanMinWidth?.[index - 3] === false || biggerThanMinWidth?.[index - 3] === undefined))
     let render = show.map((value, index) => value || !!show?.[index - 1])
     let positions = show.map((_, index) => show.slice(0, index).filter(x => x).length)
+    let {width} = useSize()
 
     let {header} = useContext(GroupsContext)
 
-    return header.current ? createPortal(<>
-        {intervals.map(({name, component: Component}, index) => {
-            return render[index] &&
-                <g key={name} transform={`translate(0 ${80 - 20 * positions[index + 1]})`}
-                   visibility={show[index] ? 'show' : 'hidden'}>
-                    <Component/>
-                </g>
-        })}
-    </>, header.current) : null
+    return <>{header.current ? createPortal(<>
+        <DragOffset>
+            {intervals.map(({name, component: Component}, index) => {
+                return render[index] &&
+                    <g key={name} transform={`translate(0 ${75 - 25 * positions[index + 1]})`}
+                       visibility={show[index] ? 'show' : 'hidden'}>
+                        <Component/>
+                    </g>
+            })}
+        </DragOffset>
+        <rect x={0} y={75} width={width} height={1} fill={"lightgray"}/>
+
+    </>, header.current) : null}
+    </>
 }

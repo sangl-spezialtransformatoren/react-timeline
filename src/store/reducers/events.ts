@@ -53,7 +53,8 @@ export let events: PartialTimelineReducer<'events'> = () =>
                         if (event) {
                             return [eventId, {
                                 ...staticData,
-                                interval: event.interval
+                                interval: event.interval,
+                                groupId: event.groupId
                             }]
                         } else {
                             return [eventId, oldEvent]
@@ -128,7 +129,8 @@ export let events: PartialTimelineReducer<'events'> = () =>
                                 ...oldEvent,
                                 volatileState: {
                                     initialInterval: oldEvent.volatileState?.initialInterval || oldEvent.interval,
-                                    interval: event.interval
+                                    interval: event.interval,
+                                    groupId: event.groupId
                                 }
                             }]
                         } else {

@@ -21,9 +21,12 @@ import {
 import 'react-timeline/bundle.css'
 import {addDays, addHours, startOfDay} from 'date-fns'
 
-type EventData = RequiredEventData & {label: string, vacation?: boolean, link: string, buffer?: boolean}
-type GroupData = RequiredGroupData & {label: string}
-type EventComponentProps = {label: string, vacation?: boolean}
+
+type EventData =
+    RequiredEventData
+    & { label: string, vacation?: boolean, link: string, buffer?: boolean }
+type GroupData = RequiredGroupData & { label: string }
+type EventComponentProps = { label: string, vacation?: boolean }
 
 export const mergeRefs = <T, >(...refs: Array<Ref<T>>) => (ref: T) => {
     refs.forEach((resolvableRef) => {
@@ -54,8 +57,8 @@ let MyEventComponent: PresentationalEventComponent<EventComponentProps> = (
     if (vacation) {
         let ref = mergeRefs(dragEndHandle, dragHandle, dragStartHandle)
         return <g style={{touchAction: 'pan-y'}}>
-            <g ref={ref} />
-            <rect fill={'rgba(0,0,0,0.3)'} y={y} height={groupHeight} x={x} width={width} />
+            <g ref={ref}/>
+            <rect fill={'rgba(0,0,0,0.3)'} y={y} height={groupHeight} x={x} width={width}/>
             <foreignObject y={y} height={groupHeight} x={x} width={width}
                            style={{pointerEvents: 'none', textAlign: 'center', verticalAlign: 'middle'}}>
                 <div className={'react-timeline-event'}>
@@ -66,21 +69,22 @@ let MyEventComponent: PresentationalEventComponent<EventComponentProps> = (
     } else if (buffer) {
         let ref = mergeRefs(dragEndHandle, dragHandle, dragStartHandle)
         return <g>
-            <g ref={ref} />
-            <line x1={x} x2={x + width - 3} y1={y + height / 2} y2={y + height / 2} stroke={'black'} />
-            <circle cx={x + width} cy={y + height / 2} stroke={'black'} r={3} fill={'none'} />
+            <g ref={ref}/>
+            <line x1={x} x2={x + width - 3} y1={y + height / 2} y2={y + height / 2} stroke={'black'}/>
+            <circle cx={x + width} cy={y + height / 2} stroke={'black'} r={3} fill={'none'}/>
         </g>
     } else {
         return <g style={{touchAction: 'pan-y'}}>
             <rect ref={dragHandle} fill={selected ? 'rgba(255,0,0,0.8)' : 'rgba(0,0,0,0.8)'} height={height}
                   style={{paintOrder: 'stroke'}} y={y} x={x}
-                  width={width} filter="url(#dropshadow)" />
+                  rx={3} ry={3}
+                  width={width} filter="url(#dropshadow)"/>
             <rect ref={dragStartHandle} fill={'rgba(0,0,0,0.2)'} y={y} height={height} x={x} width={10}
-                  style={{cursor: 'ew-resize'}} visibility={selected ? 'display' : 'hidden'} />
+                  style={{cursor: 'ew-resize'}} visibility={selected ? 'display' : 'hidden'}/>
             <rect ref={dragEndHandle} fill={'rgba(0,0,0,0.2)'} y={y} height={height} x={x + width} width={10}
                   style={{cursor: 'ew-resize'}}
-                  transform={'translate(-10, 0)'} visibility={selected ? 'display' : 'hidden'} />
-            <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
+                  transform={'translate(-10, 0)'} visibility={selected ? 'display' : 'hidden'}/>
+            <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none', padding: 2}}>
                 <div className={'react-timeline-event'}>
                     {label}
                 </div>
@@ -101,121 +105,165 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
         let links = Array.from(new Set(Object.keys(events).map(eventId => events[eventId].link)))
         return links.map(link => Object.keys(events).filter(eventId => events[eventId].link === link))
     },
-    validateDuringDrag: ({events, newIntervals}) => {
-        let newEvents = events
+    validateDuringDrag: ({events, newIntervals, newGroups}) => {
+        let newEvents = {...events}
         for (let [eventId, newInterval] of Object.entries(newIntervals)) {
+            let start = startOfDay(addHours(newInterval.start, 12))
+            let startPlus1Day = startOfDay(addDays(start, 1))
+            let end = startOfDay(addHours(newInterval.end, 12))
             let validatedInterval = makePureInterval({
-                start: startOfDay(addHours(newInterval.start, 12)),
-                end: startOfDay(addHours(newInterval.end, 12)),
+                start: start,
+                end: Math.max(end.valueOf(), startPlus1Day.valueOf()),
             })
             newEvents = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval,
-                },
+                    interval: validatedInterval
+                }
             }
+
+            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
+            for (let eventId of Object.keys(linkedEvents)) {
+                newEvents = {
+                    ...newEvents,
+                    [eventId]: {
+                        ...newEvents[eventId],
+                        interval: {
+                            ...newEvents[eventId].interval,
+                            start: validatedInterval.end
+                        }
+                    }
+                }
+            }
+        }
+        for (let [eventId, newGroupId] of Object.entries(newGroups)) {
+            newEvents[eventId].groupId = newGroupId
+
             let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
             for (let [eventId, event] of Object.entries(linkedEvents)) {
                 newEvents = {
                     ...newEvents,
                     [eventId]: {
-                        ...event,
-                        interval: {
-                            ...event.interval,
-                            start: validatedInterval.end,
-                        },
-                    },
+                        ...newEvents[eventId],
+                        groupId: newGroupId
+                    }
                 }
             }
         }
         return {events: newEvents}
     },
-    validateAfterDrag: async ({events, newIntervals}) => {
-        let newEvents = events
+    validateAfterDrag: async ({events, newIntervals, newGroups}) => {
+        let newEvents = {...events}
         for (let [eventId, newInterval] of Object.entries(newIntervals)) {
+            let start = startOfDay(addHours(newInterval.start, 12))
+            let startPlus1Day = startOfDay(addDays(start, 1))
+            let end = startOfDay(addHours(newInterval.end, 12))
             let validatedInterval = makePureInterval({
-                start: startOfDay(addHours(newInterval.start, 12)),
-                end: startOfDay(addHours(newInterval.end, 12)),
+                start: start,
+                end: Math.max(end.valueOf(), startPlus1Day.valueOf()),
             })
-            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
             newEvents = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval,
-                },
+                    interval: validatedInterval
+                }
             }
-            for (let [eventId, event] of Object.entries(linkedEvents)) {
+
+            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
+            for (let eventId of Object.keys(linkedEvents)) {
                 newEvents = {
                     ...newEvents,
                     [eventId]: {
-                        ...event,
+                        ...newEvents[eventId],
                         interval: {
-                            ...event.interval,
-                            start: validatedInterval.end,
-                        },
-                    },
+                            ...newEvents[eventId].interval,
+                            start: validatedInterval.end
+                        }
+                    }
+                }
+            }
+        }
+        for (let [eventId, newGroupId] of Object.entries(newGroups)) {
+            newEvents[eventId].groupId = newGroupId
+
+            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
+            for (let eventId of Object.keys(linkedEvents)) {
+                newEvents = {
+                    ...newEvents,
+                    [eventId]: {
+                        ...newEvents[eventId],
+                        groupId: newGroupId
+                    }
                 }
             }
         }
         return {events: newEvents}
     },
     validateDuringResize: ({events, newIntervals}) => {
-        let newEvents = events
+        let newEvents = {...events}
         for (let [eventId, newInterval] of Object.entries(newIntervals)) {
+            let start = startOfDay(addHours(newInterval.start, 12))
+            let startPlus1Day = startOfDay(addDays(start, 1))
+            let end = startOfDay(addHours(newInterval.end, 12))
             let validatedInterval = makePureInterval({
-                start: startOfDay(addHours(newInterval.start, 12)),
-                end: startOfDay(addHours(newInterval.end, 12)),
+                start: start,
+                end: Math.max(end.valueOf(), startPlus1Day.valueOf()),
             })
-            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
             newEvents = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval,
-                },
+                    interval: validatedInterval
+                }
             }
-            for (let [eventId, event] of Object.entries(linkedEvents)) {
+
+            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
+            for (let eventId of Object.keys(linkedEvents)) {
                 newEvents = {
                     ...newEvents,
                     [eventId]: {
-                        ...event,
+                        ...newEvents[eventId],
                         interval: {
-                            ...event.interval,
-                            start: validatedInterval.end,
-                        },
-                    },
+                            ...newEvents[eventId].interval,
+                            start: validatedInterval.end
+                        }
+                    }
                 }
             }
         }
         return {events: newEvents}
     },
     validateAfterResize: async ({events, newIntervals}) => {
-        let newEvents = events
+        let newEvents = {...events}
         for (let [eventId, newInterval] of Object.entries(newIntervals)) {
+            let start = startOfDay(addHours(newInterval.start, 12))
+            let startPlus1Day = startOfDay(addDays(start, 1))
+            let end = startOfDay(addHours(newInterval.end, 12))
             let validatedInterval = makePureInterval({
-                start: startOfDay(addHours(newInterval.start, 12)),
-                end: startOfDay(addHours(newInterval.end, 12)),
+                start: start,
+                end: Math.max(end.valueOf(), startPlus1Day.valueOf()),
             })
-            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
             newEvents = {
                 ...newEvents,
                 [eventId]: {
                     ...newEvents[eventId],
-                    interval: validatedInterval,
-                },
+                    interval: validatedInterval
+                }
             }
-            for (let [eventId, event] of Object.entries(linkedEvents)) {
+
+            let linkedEvents = Object.fromEntries(Object.entries(newEvents).filter(([linkedEventId, linkedEvent]) => linkedEvent.link === eventId && linkedEventId !== eventId))
+            for (let eventId of Object.keys(linkedEvents)) {
                 newEvents = {
                     ...newEvents,
                     [eventId]: {
-                        ...event,
+                        ...newEvents[eventId],
                         interval: {
-                            ...event.interval,
-                            start: validatedInterval.end,
-                        },
-                    },
+                            ...newEvents[eventId].interval,
+                            start: validatedInterval.end
+                        }
+                    }
                 }
             }
         }
@@ -232,7 +280,7 @@ const App = () => {
     }
 
 
-    let initialData: {events: Record<string, EventData>, groups: Record<string, GroupData>} = {
+    let initialData: { events: Record<string, EventData>, groups: Record<string, GroupData> } = {
         events: {
             '1': {
                 interval: {start: date, end: date.valueOf() + 100 * 3600000},
@@ -293,14 +341,14 @@ const App = () => {
         springConfig={{mass: 0.8, tension: 210, friction: 20}}
         businessLogic={businessLogic}
     >
-        <AutomaticGrid />
-        <AutomaticHeader />
-        <TimelineEvents EventComponent={EventComponent} />
+        <AutomaticGrid/>
+        <AutomaticHeader/>
+        <TimelineEvents EventComponent={EventComponent}/>
         <DragOffset>
-            <Now />
+            <Now/>
         </DragOffset>
 
     </Timeline>
 }
 
-ReactDOM.render(<App />, document.getElementById('root'))
+ReactDOM.render(<App/>, document.getElementById('root'))

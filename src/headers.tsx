@@ -32,7 +32,7 @@ function createHeaderElement<T>(component: HeaderComponent<T>) {
         let x = to([timePerPixelSpring], (timePerPixel) => ((start.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf()))
         let y = 0
         let width = to([timePerPixelSpring], (timePerPixel) => (end.valueOf() - start.valueOf()) / timePerPixel)
-        let height = 20
+        let height = 25
 
         let AnimatedHeader = animated(component)
         // @ts-ignore

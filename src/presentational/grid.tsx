@@ -17,6 +17,7 @@ import React, {useEffect, useState} from 'react'
 import {isWeekend} from 'date-fns'
 import {GroupsContext} from '../canvas'
 import ReactDOM from 'react-dom'
+import {DragOffset} from "../timeline"
 
 const DefaultGrid: TemporalGridComponent = ({x}) => {
     let {height} = useSize()
@@ -35,7 +36,8 @@ const DefaultDayGrid: TemporalGridComponent = ({x, date, width}) => {
         setWeekend(isWeekend(date))
     }, [date])
     return <>
-        <rect x={x} y={0} width={weekend ? width : 1} height={height} fill={'rgba(0,0,0,0.1)'}/>
+        <rect x={x} y={0} width={1} height={height} fill={weekend ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.1)'}/>
+        {weekend && <rect x={x} y={0} width={width} height={height} fill={'rgba(0,0,0,0.02)'}/>}
     </>
 }
 export const DayGrid = createDayGrid(DefaultDayGrid)
@@ -119,8 +121,10 @@ export const AutomaticGrid: React.FC = () => {
     let {grid} = React.useContext(GroupsContext)
 
     return grid.current ? ReactDOM.createPortal(<>
-        {intervals.map(({name, component: Component}, index) => {
-            return render[index] && <g visibility={show[index] ? 'show' : 'hidden'} key={name}><Component/></g>
-        })}
+        <DragOffset>
+            {intervals.map(({name, component: Component}, index) => {
+                return render[index] && <g visibility={show[index] ? 'show' : 'hidden'} key={name}><Component/></g>
+            })}
+        </DragOffset>
     </>, grid.current) : null
 }

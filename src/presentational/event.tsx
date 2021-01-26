@@ -20,11 +20,6 @@ export const DefaultEventComponent: PresentationalEventComponent = (
         <rect ref={dragEndHandle} fill={'rgba(0,0,0,0.1)'} y={y} height={height} x={x + width} width={10}
               style={{cursor: 'ew-resize'}}
               transform={'translate(-10, 0)'} visibility={selected ? "display" : "hidden"}/>
-        <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none'}}>
-            <div className={'react-timeline-event'}>
-                Test
-            </div>
-        </foreignObject>
     </g>
 }
 export const EventComponent = createEventComponent(DefaultEventComponent)

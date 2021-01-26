@@ -5,7 +5,7 @@ import {
     getGroupOffsets,
     getHeaderIntervals,
     selectAnimate,
-    selectDateZero,
+    selectDateZero, selectEvent,
     selectEventIdsOrderedByLayerAndStartDate,
     selectEventIdToGroupIdMap,
     selectEventPositionsInGroup,
@@ -26,13 +26,14 @@ import {
 } from './selectors'
 
 
+export const useEvent = (eventId: string) => useSelector(selectEvent(eventId), shallowEqual)
 export const useAnimate = () => useSelector(selectAnimate)
 export const useGetInterval = (id: string) => useSelector(selectInterval(id), shallowEqual)
 export const useGroupOffsets = () => useSelector(getGroupOffsets, shallowEqual)
 export const useEventIdsOrderedByLayerAndStartDate = () => useSelector(selectEventIdsOrderedByLayerAndStartDate, shallowEqual)
 export const useEventAndGroupIds = () => useSelector(selectEventIdToGroupIdMap, shallowEqual)
 export const useGroupHeights = () => useSelector(selectGroupHeights, shallowEqual)
-export const useGroupPositions = () => useSelector(selectGroupIndices, shallowEqual)
+export const useGroupIndices = () => useSelector(selectGroupIndices, shallowEqual)
 export const useGetHeaderIntervals = (intervalCreator: IntervalCreator, intervalLength: number) => useSelector(getHeaderIntervals(intervalCreator, intervalLength), shallowEqual)
 export const useEventPositionsInGroup = () => useSelector(selectEventPositionsInGroup, shallowEqual)
 export const useInitialized = () => useSelector(selectInitialized)

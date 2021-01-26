@@ -3,20 +3,12 @@ import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
 import {useBusinessLogic, useTimePerPixelSpring} from './context'
-import {
-    changeGroup,
-    resetDragOrResize,
-    Thunk,
-    toggleEventSelection,
-    updateEvents,
-    updateEventsIntermediary,
-} from './store/actions'
+import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary,} from './store/actions'
 import {EventState} from './canvas'
 import {
     useAnimate,
     useDateZero,
-    useEventProps,
-    useGetInterval,
+    useEventProps, useGetInterval,
     useInitialized,
     useIsEventSelected,
     useSpringConfig,
@@ -37,6 +29,8 @@ export type PresentationalEventComponentProps = {
     width: number,
     height: number,
     selected: boolean,
+    groupId: string,
+    eventId: string,
     groupHeight?: number,
     dragHandle: MutableRefObject<any>,
     dragStartHandle: MutableRefObject<any>,
@@ -49,7 +43,7 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
     eventState.event.stopPropagation()
@@ -66,7 +60,7 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
         return
     }
 
-    let xAction: Thunk = async (dispatch, getState) => {
+    let action: Thunk = async (dispatch, getState) => {
         let state = getState()
         let numberOfSelectedEvents = selectNumberOfSelectedEvents(config)(state)
         let allEvents = selectEvents(config)(state)
@@ -94,10 +88,26 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
             }),
         )
 
+        let y = xy[1]
+        let groupPositions = selectGroupPositions(config)(state)
+        let newGroupId: string = ""
+        for (let [groupId, position] of Object.entries(groupPositions)) {
+            if (groupId !== allEvents[id].groupId && y > position.y && y < (position.y + position.height)) {
+                newGroupId = groupId
+                break
+            }
+        }
+        let newGroups: Record<string, string> = {}
+        if (newGroupId !== "") {
+            newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, newGroupId]))
+        }
+
+
         if (!last) {
             let {events: newEvents} = config.validateDuringDrag({
                 manipulatedEventId: id,
-                newIntervals,
+                newIntervals: newIntervals,
+                newGroups: newGroups,
                 events: allEvents,
             })
             if (newEvents) {
@@ -107,7 +117,8 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
             try {
                 let {events: newEvents} = await config.validateAfterDrag({
                     manipulatedEventId: id,
-                    newIntervals,
+                    newIntervals: newIntervals,
+                    newGroups: newGroups,
                     events: allEvents,
                 })
                 if (newEvents) {
@@ -118,21 +129,7 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
             }
         }
     }
-    dispatch(xAction)
-
-    let y = xy[1]
-    let yAction: Thunk = (dispatch: Dispatch, getState) => {
-        let state = getState()
-        let groupPositions = selectGroupPositions(config)(state)
-        let events = selectEvents(config)(state)
-        for (let [groupId, position] of Object.entries(groupPositions)) {
-            if (groupId !== events[id].groupId && y > position.y && y < (position.y + position.height)) {
-                dispatch(changeGroup({id: id, groupId: groupId}))
-                break
-            }
-        }
-    }
-    dispatch(yAction)
+    dispatch(action)
 }
 
 const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
@@ -294,6 +291,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
 
         let PresentationalComponent = animated(component)
 
+
         let props = {
             x: xSpring,
             y: ySpring,
@@ -303,9 +301,10 @@ export function createEventComponent<T>(component: React.FC<T>) {
             dragHandle: ref,
             dragStartHandle: startRef,
             dragEndHandle: endRef,
+            eventId: id,
             selected,
             ...eventProps,
-            ...otherProps,
+            ...otherProps
         }
 
         // @ts-ignore

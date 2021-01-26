@@ -20,14 +20,14 @@ import {
     useSetTimePerPixel,
     zoom,
 } from './store/actions'
-import {DragOffset, SvgFilters} from './timeline'
+import {SvgFilters} from './timeline'
 import {useHeaderHeight, useInitialized} from './store/hooks'
 import {useScrollLock} from './functions'
 
-export const GroupsContext = React.createContext<{grid: RefObject<SVGGElement>, header: RefObject<SVGGElement>}>(undefined!)
+export const GroupsContext = React.createContext<{ grid: RefObject<SVGGElement>, header: RefObject<SVGGElement> }>(undefined!)
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
     let {distance, pinching, tap} = eventState
@@ -175,15 +175,13 @@ const TimelineCanvas_: React.FC<Pick<TimelineProps, 'initialParameters' | 'style
                     viewBox={`0 0 ${width} ${height}`}
                     className={'react-timeline-svg'}
                     ref={svgRef}>
-                    <SvgFilters />
-                    <DragOffset>
-                        <g id="react-timeline-grid" ref={gridRef} />
-                        <g id="react-timeline-header" ref={headerRef} />
-                    </DragOffset>
+                    <SvgFilters/>
+                    <g id="react-timeline-grid" ref={gridRef}/>
+                    <g id="react-timeline-header" ref={headerRef}/>
                     {
                         //Mask background so that the pinch event is handled correctly
                     }
-                    <rect x={0} y={0} width={width} height={height} fill={'transparent'} />
+                    <rect x={0} y={0} width={width} height={height} fill={'transparent'}/>
                     <g transform={`translate(0 ${headerHeight})`}>
                         {initialized && children}
                     </g>
