@@ -42,19 +42,19 @@ export const [mergeNewEventData, useMergeNewEventData] = createPayloadActionCrea
 
 
 export const MOVE_EVENT_INTERMEDIARY = 'moveEventIntermediary'
-export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, { id: string, interval: PureInterval }>
+export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, {id: string, interval: PureInterval}>
 export const [moveEventIntermediary, useMoveEventIntermediary] = createPayloadActionCreators(MOVE_EVENT_INTERMEDIARY)
 
 export const UPDATE_EVENTS_INTERMEDIARY = 'updateEventsIntermediary'
-export type UpdateEventsIntermediaryAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS_INTERMEDIARY, { events: Record<string, E> }>
+export type UpdateEventsIntermediaryAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS_INTERMEDIARY, {events: Record<string, E>}>
 export const [updateEventsIntermediary, useUpdateEventsIntermediary] = createPayloadActionCreators(UPDATE_EVENTS_INTERMEDIARY)
 
 export const UPDATE_EVENTS = 'updateEvents'
-export type UpdateEventsAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS, { events: Record<string, E> }>
+export type UpdateEventsAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS, {events: Record<string, E>}>
 export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDATE_EVENTS)
 
 export const CHANGE_GROUP = 'changeGroup'
-export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, { id: string, groupId: string }>
+export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, {id: string, groupId: string}>
 export const [changeGroup, useChangeGroup] = createPayloadActionCreators(CHANGE_GROUP)
 
 export const RESET_DRAG_OR_RESIZE = 'resetDragOrResize'
@@ -64,7 +64,7 @@ export const resetDragOrResize = () => {
 }
 
 export const TOGGLE_EVENT_SELECTED = 'toggleEventSelected'
-export type ToggleEventSelectedAction = PayloadAction<typeof TOGGLE_EVENT_SELECTED, { id: string }>
+export type ToggleEventSelectedAction = PayloadAction<typeof TOGGLE_EVENT_SELECTED, {id: string}>
 export const [toggleEventSelection, useToggleEventSelection] = createPayloadActionCreators(TOGGLE_EVENT_SELECTED)
 
 export const DESELECT_ALL_EVENTS = 'deselectAllEvents'
@@ -86,7 +86,7 @@ export type EventAction<E extends RequiredEventData = RequiredEventData> =
 
 // groups
 export const SET_GROUP_POSITION = 'setGroupPosition'
-export type SetGroupPositionAction = PayloadAction<typeof SET_GROUP_POSITION, { groupId: string, x: number, y: number, width: number, height: number }>
+export type SetGroupPositionAction = PayloadAction<typeof SET_GROUP_POSITION, {groupId: string, x: number, y: number, width: number, height: number}>
 export const [setGroupPosition, useSetGroupPosition] = createPayloadActionCreators(SET_GROUP_POSITION)
 
 export const MERGE_NEW_GROUP_DATA = 'mergeNewGroupData'
@@ -176,7 +176,11 @@ export const SET_HEADER_HEIGHT = 'setHeaderHeight'
 export type SetHeaderHeightAction = PayloadAction<typeof SET_HEADER_HEIGHT, number>
 export const [setHeaderHeight, useSetHeaderHeight] = createPayloadActionCreators(SET_HEADER_HEIGHT)
 
-export type PresentationalAction = SetHeaderHeightAction
+export const SET_SCROLL_OFFSET = 'setScrollOffset'
+export type SetScrollOffsetAction = PayloadAction<typeof SET_SCROLL_OFFSET, number>
+export const [setScrollOffset, useSetScrollOffset] = createPayloadActionCreators(SET_SCROLL_OFFSET)
+
+export type PresentationalAction = SetHeaderHeightAction | SetScrollOffsetAction
 
 // All actions
 export type Actions =
@@ -191,7 +195,7 @@ export type Actions =
     | PresentationalAction
     | GroupAction
 
-export type Filter<A> = A extends { type: string, payload: any } ? A : never
+export type Filter<A> = A extends {type: string, payload: any} ? A : never
 export type PayloadActions = Filter<Actions>
 
 export type Thunk = ThunkAction<void, StoreShape, any, Actions>

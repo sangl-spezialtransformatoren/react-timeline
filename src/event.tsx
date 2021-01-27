@@ -19,8 +19,10 @@ import {BusinessLogic} from './store/businessLogic'
 import {
     selectEvents,
     selectGroupPositions,
+    selectHeaderHeight,
     selectInternalEventData,
     selectNumberOfSelectedEvents,
+    selectScrollOffset,
     selectSelectedEvents,
     selectTimePerPixel,
 } from './store/selectors'
@@ -46,14 +48,14 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
     eventState.event.stopPropagation()
     let {movement: [dx], last, tap, distance, xy, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
         let action: Thunk = async (dispatch) => {
@@ -65,11 +67,11 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function (e) {
+        document.ontouchmove = function(e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
     }
@@ -105,8 +107,9 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
                 return [eventId, newInterval]
             }),
         )
-
-        let y = xy[1]
+        let scrollOffset = selectScrollOffset(config)(state)
+        let headerHeight = selectHeaderHeight(config)(state)
+        let y = xy[1] + scrollOffset - headerHeight
         let groupPositions = selectGroupPositions(config)(state)
         let newGroupId: string = ''
         for (let [groupId, position] of Object.entries(groupPositions)) {
@@ -300,15 +303,15 @@ export function createEventComponent<T>(component: React.FC<T>) {
 
         useGesture({
             onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, id),
-        }, {domTarget: ref, eventOptions: {passive: false}})
+        }, {domTarget: ref})
 
         useGesture({
             onDrag: eventState => onEventStartDrag(dispatch, businessLogic, eventState, id),
-        }, {domTarget: startRef, eventOptions: {passive: false}})
+        }, {domTarget: startRef})
 
         useGesture({
             onDrag: eventState => onEventEndDrag(dispatch, businessLogic, eventState, id),
-        }, {domTarget: endRef, eventOptions: {passive: false}})
+        }, {domTarget: endRef})
 
         let PresentationalComponent = animated(component)
 

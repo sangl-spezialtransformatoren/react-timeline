@@ -22,15 +22,15 @@ import {SvgFilters} from './timeline'
 import {useInitialized} from './store/hooks'
 import {useResizeObserver} from './hooks'
 import isEqual from 'react-fast-compare'
-import {TimelineLayers} from "./layers"
+import {TimelineLayers} from './layers'
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
     let {distance, pinching, tap} = eventState
 
-    document.ontouchmove = function () {
+    document.ontouchmove = function() {
         return true
     }
 
@@ -46,8 +46,17 @@ export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement
 }
 
 export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'wheel'>) => {
-    let svg = svgRef?.current
+    if (!eventState.altKey) {
+        document.ontouchmove = function() {
+            return true
+        }
+        return
+    }
+    document.ontouchmove = function(e) {
+        e.preventDefault()
+    }
 
+    let svg = svgRef?.current
     if (svg !== undefined && svg !== null) {
         let point = svg.createSVGPoint()
         point.x = eventState.event.clientX
@@ -69,9 +78,7 @@ export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
 }
 
 export const onCanvasPinch = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'pinch'>) => {
-    eventState.event.preventDefault()
-
-    document.ontouchmove = function () {
+    document.ontouchmove = function() {
         return true
     }
 
@@ -148,7 +155,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
         onDrag: eventState => onCanvasDrag(dispatch, svgRef, eventState),
         onWheel: eventState => onCanvasWheel(dispatch, svgRef, eventState),
         onPinch: eventState => onCanvasPinch(dispatch, svgRef, eventState),
-    }, {domTarget: svgRef, eventOptions: {passive: false}})
+    }, {domTarget: svgRef})
 
     return <>
         <div className={'react-timeline'} style={{...style}} ref={ref}>
@@ -156,7 +163,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
                 viewBox={`0 0 ${width} ${height}`}
                 className={'react-timeline-svg'}
                 ref={svgRef}>
-                <SvgFilters/>
+                <SvgFilters />
                 <TimelineLayers>
                     {initialized && children}
                 </TimelineLayers>

@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react'
-import {useAnimate, useDateZero, useInitialized, useSize, useSpringConfig} from '../store/hooks'
+import {useAnimate, useDateZero, useHeaderHeight, useInitialized, useSize, useSpringConfig} from '../store/hooks'
 import {animated, to, useSpring} from 'react-spring'
 import {useTimePerPixelSpring} from '../context'
 import {OnForeground} from "../layers"
@@ -12,6 +12,7 @@ export const Now: React.FC = () => {
     let initialized = useInitialized()
     let timePerPixelSpring = useTimePerPixelSpring()
     let {height} = useSize()
+    let headerHeight = useHeaderHeight()
 
     const [now, setNow] = useState(Date.now())
 
@@ -35,7 +36,7 @@ export const Now: React.FC = () => {
     let x = to([nowSpring, timePerPixelSpring], (now, timePerPixel) => (now - dateZero.valueOf()) / timePerPixel)
     return <OnForeground>
         <DragOffset>
-            <animated.rect x={x} y={0} width={1} height={height}/>
+            <animated.rect x={x} y={0} width={1} height={height - headerHeight}/>
         </DragOffset>
     </OnForeground>
 }

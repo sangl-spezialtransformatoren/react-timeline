@@ -1,9 +1,8 @@
-import React, {RefObject, useContext, useEffect, useRef} from "react"
-import {useSetHeaderHeight} from "./store/actions"
-import {useResizeObserver} from "./hooks"
-import {useSize} from "./store/hooks"
-import {createPortal} from "react-dom"
-import {useDrag} from "react-use-gesture"
+import React, {RefObject, useContext, useEffect, useRef} from 'react'
+import {useSetHeaderHeight, useSetScrollOffset} from './store/actions'
+import {useResizeObserver} from './hooks'
+import {useSize} from './store/hooks'
+import {createPortal} from 'react-dom'
 
 export const LayerContext = React.createContext<{
     grid: RefObject<SVGGElement>,
@@ -17,10 +16,10 @@ export const TimelineLayers: React.FC = ({children}) => {
     let gridRef = useRef<SVGGElement>(null)
     let groupBackgroundsRef = useRef<SVGGElement>(null)
     let groupLabelsRef = useRef<SVGGElement>(null)
-    let eventsRef = useRef<SVGGElement>(null)
 
     let setHeaderHeight = useSetHeaderHeight()
     let [headerRef, {height: headerHeight}] = useResizeObserver<SVGGElement>()
+    let [eventsRef, {height: eventsHeight}] = useResizeObserver<SVGGElement>()
     let {width, height} = useSize()
 
     useEffect(() => {
@@ -28,28 +27,38 @@ export const TimelineLayers: React.FC = ({children}) => {
     }, [headerHeight])
 
     let scrollRef = useRef<SVGRectElement>(null)
+    let scrollDivRef = useRef<HTMLDivElement>(null)
 
-    useDrag((eventState) => {
-        let y = eventState.movement[1]
-        window.scrollBy({top: -y, behavior: "smooth"})
-    }, {domTarget: scrollRef})
+    let setScrollOffset = useSetScrollOffset()
+    useEffect(() => {
+        scrollDivRef.current && scrollDivRef.current.addEventListener('scroll', () => {
+            scrollDivRef.current && setScrollOffset(scrollDivRef.current.scrollTop)
+        })
+    }, [scrollDivRef])
 
     return <LayerContext.Provider value={{
         grid: gridRef,
         header: headerRef,
         groupBackgrounds: groupBackgroundsRef,
         groupLabels: groupLabelsRef,
-        events: eventsRef
+        events: eventsRef,
     }}>
-        <g id={"grid"} ref={gridRef}/>
-        <g id={"group-backgrounds"} transform={`translate(0 ${headerHeight})`} ref={groupBackgroundsRef}/>
+        <g id={'grid'} ref={gridRef} />
         {
             //Mask background so that the pinch event is handled correctly
         }
-        <rect x={0} y={0} width={width} height={height} fill={'transparent'} ref={scrollRef}/>
-        <g id={"events"} transform={`translate(0 ${headerHeight})`} ref={eventsRef}/>
-        <g id={"group-labels"} transform={`translate(0 ${headerHeight})`} ref={groupLabelsRef}/>
-        <g id={"header"} ref={headerRef}/>
+        <g id={'header'} ref={headerRef} />
+        <foreignObject x={0} y={headerHeight} width={width} height={height - headerHeight}>
+            <div style={{width: '100%', height: '100%', overflow: 'scroll', padding: 0, margin: 0}} ref={scrollDivRef}>
+                <svg style={{width: '100%', height: eventsHeight, margin: '-2px'}}>
+                    <g id={'group-backgrounds'} ref={groupBackgroundsRef} />
+                    <rect x={0} y={0} width={width} height={height - headerHeight} fill={'transparent'}
+                          ref={scrollRef} />
+                    <g id={'events'} ref={eventsRef} />
+                    <g id={'group-labels'} ref={groupLabelsRef} />
+                </svg>
+            </div>
+        </foreignObject>
         {children}
     </LayerContext.Provider>
 }
