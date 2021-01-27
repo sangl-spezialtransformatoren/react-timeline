@@ -2,6 +2,8 @@ import React, {useEffect, useState} from 'react'
 import {useAnimate, useDateZero, useInitialized, useSize, useSpringConfig} from '../store/hooks'
 import {animated, to, useSpring} from 'react-spring'
 import {useTimePerPixelSpring} from '../context'
+import {OnForeground} from "../layers"
+import {DragOffset} from "../timeline"
 
 export const Now: React.FC = () => {
     let dateZero = useDateZero()
@@ -31,5 +33,9 @@ export const Now: React.FC = () => {
 
 
     let x = to([nowSpring, timePerPixelSpring], (now, timePerPixel) => (now - dateZero.valueOf()) / timePerPixel)
-    return <animated.rect x={x} y={0} width={1} height={height} />
+    return <OnForeground>
+        <DragOffset>
+            <animated.rect x={x} y={0} width={1} height={height}/>
+        </DragOffset>
+    </OnForeground>
 }

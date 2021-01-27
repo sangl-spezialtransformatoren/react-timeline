@@ -17,8 +17,6 @@ import {
 import {format as dateFnsTzFormat, utcToZonedTime} from 'date-fns-tz'
 import {defaultMemoize} from 'reselect'
 import {shallowEqual} from 'react-redux'
-import React, {MutableRefObject} from 'react'
-import {BodyScrollOptions, disableBodyScroll, enableBodyScroll} from 'body-scroll-lock'
 
 const memoize = defaultMemoize
 
@@ -150,17 +148,3 @@ export function format(date: Date | number, formatString: string, {timeZone}: {t
     return dateFnsTzFormat(utcToZonedTime(new Date(date), timeZone), formatString, {timeZone})
 }
 
-export const useScrollLock = (
-    targetElement?: MutableRefObject<HTMLElement | Element | null | false>,
-    bodyScrollOption?: BodyScrollOptions,
-) => {
-    React.useLayoutEffect(() => {
-        if (!targetElement?.current) {
-            return
-        }
-        disableBodyScroll(targetElement.current, bodyScrollOption)
-        return () => {
-            targetElement.current && enableBodyScroll(targetElement.current)
-        }
-    }, [targetElement?.current])
-}

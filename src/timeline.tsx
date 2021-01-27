@@ -17,6 +17,7 @@ import {
     setTimeZone,
     setWeekStartsOn,
 } from './store/actions'
+import isEqual from "react-fast-compare"
 
 
 export const DragOffset: React.FC = ({children}) => {
@@ -33,14 +34,14 @@ export const DragOffset: React.FC = ({children}) => {
 export const SvgFilters: React.FC = () => {
     return <defs>
         <filter id="dropshadow" height="130%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-            <feOffset dx="0" dy="0" result="offsetblur" />
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+            <feOffset dx="0" dy="0" result="offsetblur"/>
             <feComponentTransfer>
-                <feFuncA type="linear" slope="0.5" />
+                <feFuncA type="linear" slope="0.5"/>
             </feComponentTransfer>
             <feMerge>
-                <feMergeNode />
-                <feMergeNode in="SourceGraphic" />
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
             </feMerge>
         </filter>
     </defs>
@@ -84,13 +85,22 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
     }, [store, weekStartsOn])
 
     useEffect(() => {
-        springConfig && store?.dispatch?.(setSpringConfig(springConfig))
+        if (!isEqual(springConfig, store?.getState().springConfig)) {
+            springConfig && store?.dispatch?.(setSpringConfig(springConfig))
+        }
     }, [store, springConfig])
 
+
     useEffect(() => {
-        initialData && store?.dispatch?.(mergeNewEventData(initialData.events))
-        initialData && store?.dispatch?.(mergeNewGroupData(initialData.groups))
-    }, [store, initialData?.events])
+        if (initialData) {
+            if (!isEqual(store?.getState()?.events, initialData.events)) {
+                store?.dispatch?.(mergeNewEventData(initialData.events))
+            }
+            if (!isEqual(store?.getState()?.groups, initialData.groups)) {
+                store?.dispatch?.(mergeNewGroupData(initialData.groups))
+            }
+        }
+    }, [store, initialData])
 
 
     if (store) {

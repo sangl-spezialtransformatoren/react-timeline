@@ -14,11 +14,10 @@ import {
 } from '../headers'
 import {useSize, useTimePerPixel, useTimeZone} from '../store/hooks'
 import {isWeekend} from 'date-fns'
-import React, {useContext, useEffect, useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {format} from '../functions'
-import {GroupsContext} from '../canvas'
-import {createPortal} from 'react-dom'
 import {DragOffset} from "../timeline"
+import {AsHeader} from "../layers"
 
 let headerColor = "rgba(250, 250, 250, 1)"
 
@@ -74,7 +73,7 @@ export const DayHeader = createDayHeader(DefaultDayHeader)
 const DefaultWeekHeader = createLabelTemporalHeader((date, {
     timeZone,
     width
-}) => width > 50 ? 'KW ' + format(new Date(date), 'w', {timeZone}) : format(new Date(date), 'w', {timeZone}))
+}) => width > 50 ? 'KW ' + format(new Date(date), 'I', {timeZone}) : format(new Date(date), 'I', {timeZone}))
 export const WeekHeader = createWeekHeader(DefaultWeekHeader)
 
 const DefaultMonthHeader = createLabelTemporalHeader((date, {
@@ -171,9 +170,7 @@ export const AutomaticHeader: React.FC = () => {
     let positions = show.map((_, index) => show.slice(0, index).filter(x => x).length)
     let {width} = useSize()
 
-    let {header} = useContext(GroupsContext)
-
-    return <>{header.current ? createPortal(<>
+    return <AsHeader>
         <DragOffset>
             {intervals.map(({name, component: Component}, index) => {
                 return render[index] &&
@@ -184,7 +181,5 @@ export const AutomaticHeader: React.FC = () => {
             })}
         </DragOffset>
         <rect x={0} y={75} width={width} height={1} fill={"lightgray"}/>
-
-    </>, header.current) : null}
-    </>
+    </AsHeader>
 }

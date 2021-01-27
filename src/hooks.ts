@@ -1,6 +1,7 @@
-import {RefObject, useEffect, useRef, useState} from 'react'
+import React, {MutableRefObject, RefObject, useEffect, useRef, useState} from 'react'
+import {BodyScrollOptions, disableBodyScroll, enableBodyScroll} from "body-scroll-lock"
 
-type Size = {x: number, y: number, width: number, height: number}
+type Size = { x: number, y: number, width: number, height: number }
 export const useResizeObserver = <E extends SVGElement | HTMLElement, >() => {
     let ref = useRef<E>(null)
     let [size, setSize] = useState<Size>({x: 0, y: 0, width: 0, height: 0})
@@ -25,4 +26,18 @@ export const useResizeObserver = <E extends SVGElement | HTMLElement, >() => {
     }, [ref])
 
     return [ref, size] as [RefObject<E>, Size]
+}
+export const useScrollLock = (
+    targetElement?: MutableRefObject<HTMLElement | Element | SVGElement | null | false> | RefObject<HTMLElement | Element | SVGElement | null | false>,
+    bodyScrollOption?: BodyScrollOptions,
+) => {
+    React.useLayoutEffect(() => {
+        if (!targetElement?.current) {
+            return
+        }
+        disableBodyScroll(targetElement.current, bodyScrollOption)
+        return () => {
+            targetElement.current && enableBodyScroll(targetElement.current)
+        }
+    }, [targetElement?.current])
 }

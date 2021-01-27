@@ -84,6 +84,7 @@ export const internalEventData: PartialTimelineReducer<'internalEventData'> = ()
                     [eventId]: rest,
                 }
             }
+            break
         }
     }
     return newState

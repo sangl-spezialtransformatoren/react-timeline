@@ -15,7 +15,6 @@ const StartDateAnimationContext: React.FC = ({children}) => {
     let initialized = useInitialized()
     let springConfig = useSpringConfig()
 
-
     let [{startDateSpring}] = useSpring({
         startDateSpring: startDate,
         immediate: !animate || !initialized,

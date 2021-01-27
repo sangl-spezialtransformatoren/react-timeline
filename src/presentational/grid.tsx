@@ -15,9 +15,8 @@ import {
 import {useSize, useTimePerPixel} from '../store/hooks'
 import React, {useEffect, useState} from 'react'
 import {isWeekend} from 'date-fns'
-import {GroupsContext} from '../canvas'
-import ReactDOM from 'react-dom'
 import {DragOffset} from "../timeline"
+import {AsGrid} from "../layers"
 
 const DefaultGrid: TemporalGridComponent = ({x}) => {
     let {height} = useSize()
@@ -119,13 +118,11 @@ export const AutomaticGrid: React.FC = () => {
     let show = biggerThanMinWidth.map((value, index) => value && (biggerThanMinWidth?.[index - 3] === false || biggerThanMinWidth?.[index - 3] === undefined))
     let render = show.map((value, index) => value || !!show?.[index - 1])
 
-    let {grid} = React.useContext(GroupsContext)
-
-    return grid.current ? ReactDOM.createPortal(<>
+    return <AsGrid>
         <DragOffset>
             {intervals.map(({name, component: Component}, index) => {
                 return render[index] && <g visibility={show[index] ? 'show' : 'hidden'} key={name}><Component/></g>
             })}
         </DragOffset>
-    </>, grid.current) : null
+    </AsGrid>
 }

@@ -46,23 +46,37 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
     eventState.event.stopPropagation()
-    let {movement: [dx], last, tap, distance, xy} = eventState
+    let {movement: [dx], last, tap, distance, xy, down} = eventState
 
     if (tap) {
+        document.ontouchmove = function () {
+            return true
+        }
         let action: Thunk = async (dispatch) => {
             dispatch(toggleEventSelection({id}))
         }
         dispatch(action)
         return
     }
+
+    if (down) {
+        // Prevent scroll on touch screens while dragging:
+        document.ontouchmove = function (e) {
+            e.preventDefault()
+        }
+    } else {
+        document.ontouchmove = function () {
+            return true
+        }
+    }
+
     if (distance === 0) {
         return
     }
-
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
         let numberOfSelectedEvents = selectNumberOfSelectedEvents(config)(state)
@@ -298,7 +312,6 @@ export function createEventComponent<T>(component: React.FC<T>) {
 
         let PresentationalComponent = animated(component)
 
-
         let props = {
             x: xSpring,
             y: ySpring,
@@ -313,7 +326,6 @@ export function createEventComponent<T>(component: React.FC<T>) {
             ...eventProps,
             ...otherProps,
         }
-
         // @ts-ignore
         return <PresentationalComponent {...props} />
     }

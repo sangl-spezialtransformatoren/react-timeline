@@ -12,7 +12,7 @@ export const DefaultEventComponent: PresentationalEventComponent = (
         dragEndHandle,
         selected
     }) => {
-    return <g style={{touchAction: "pan-y"}}>
+    return <g>
         <rect ref={dragHandle} fill={'gray'} height={height} style={{paintOrder: 'stroke'}} y={y} x={x}
               width={width} filter="url(#dropshadow)"/>
         <rect ref={dragStartHandle} fill={'rgba(0,0,0,0.1)'} y={y} height={height} x={x} width={10}

@@ -8,7 +8,6 @@ import {
     BusinessLogic,
     createEventComponent,
     DefaultBusinessLogic,
-    DragOffset,
     InitialTimelineParameters,
     makePureInterval,
     Now,
@@ -24,9 +23,9 @@ import {addDays, addHours, startOfDay} from 'date-fns'
 
 type EventData =
     RequiredEventData
-    & {label: string, vacation?: boolean, link: string, buffer?: boolean, manipulated?: boolean}
-type GroupData = RequiredGroupData & {label: string}
-type EventComponentProps = {label: string, vacation?: boolean}
+    & { label: string, vacation?: boolean, link: string, buffer?: boolean, manipulated?: boolean }
+type GroupData = RequiredGroupData & { label: string }
+type EventComponentProps = { label: string, vacation?: boolean }
 
 export const mergeRefs = <T, >(...refs: Array<Ref<T>>) => (ref: T) => {
     refs.forEach((resolvableRef) => {
@@ -56,9 +55,9 @@ let MyEventComponent: PresentationalEventComponent<EventComponentProps> = (
 
     if (vacation) {
         let ref = mergeRefs(dragEndHandle, dragHandle, dragStartHandle)
-        return <g style={{touchAction: 'pan-y'}}>
-            <g ref={ref} />
-            <rect fill={'rgba(0,0,0,0.3)'} y={y - 12} height={groupHeight} x={x} width={width} />
+        return <g>
+            <g ref={ref}/>
+            <rect fill={'rgba(0,0,0,0.3)'} y={y - 12} height={groupHeight} x={x} width={width}/>
             <foreignObject y={y - 12} height={groupHeight} x={x} width={width}
                            style={{pointerEvents: 'none', textAlign: 'center', verticalAlign: 'middle'}}>
                 <div className={'react-timeline-event'}>
@@ -69,21 +68,22 @@ let MyEventComponent: PresentationalEventComponent<EventComponentProps> = (
     } else if (buffer) {
         let ref = mergeRefs(dragEndHandle, dragHandle, dragStartHandle)
         return <g>
-            <g ref={ref} />
-            <line x1={x} x2={x + width - 3} y1={y + height / 2} y2={y + height / 2} stroke={'black'} />
-            <circle cx={x + width} cy={y + height / 2} stroke={'black'} r={3} fill={'none'} />
+            <g ref={ref}/>
+            <line x1={x} x2={x + width - 3} y1={y + height / 2} y2={y + height / 2} stroke={'black'}/>
+            <circle cx={x + width} cy={y + height / 2} stroke={'black'} r={3} fill={'none'}/>
         </g>
     } else {
-        return <g style={{touchAction: 'pan-y'}}>
+        return <g>
             <rect ref={dragHandle} fill={selected ? 'rgba(255,0,0,0.8)' : 'rgba(240,10,0,0.8)'} height={height}
                   style={{paintOrder: 'stroke'}} y={y} x={x}
                   rx={3} ry={3}
-                  width={width} filter="url(#dropshadow)" />
-            <rect ref={dragStartHandle} fill={'rgba(0,0,0,0.2)'} y={y} height={height} x={x} width={10}
-                  style={{cursor: 'ew-resize'}} visibility={selected ? 'display' : 'hidden'} />
-            <rect ref={dragEndHandle} fill={'rgba(0,0,0,0.2)'} y={y} height={height} x={x + width} width={10}
-                  style={{cursor: 'ew-resize'}}
-                  transform={'translate(-10, 0)'} visibility={selected ? 'display' : 'hidden'} />
+                  width={width} filter="url(#dropshadow)"/>
+            <rect ref={dragStartHandle} fill={'rgba(0,0,0,0)'} y={y - 0.25 * height} height={1.5 * height} x={x - 22}
+                  width={44}
+                  style={{cursor: 'ew-resize'}} visibility={selected ? 'display' : 'hidden'}/>
+            <rect ref={dragEndHandle} fill={'rgba(0,0,0,0)'} y={y - 0.25 * height} height={1.5 * height}
+                  x={x + width - 22} width={44}
+                  style={{cursor: 'ew-resize'}} visibility={selected ? 'display' : 'hidden'}/>
             <foreignObject y={y} height={height} x={x} width={width} style={{pointerEvents: 'none', padding: 2}}>
                 <div className={'react-timeline-event'}>
                     {label}
@@ -306,7 +306,7 @@ const App = () => {
 
     let [x, setX] = useState(0)
 
-    let initialData: {events: Record<string, EventData>, groups: Record<string, GroupData>} = {
+    let initialData: { events: Record<string, EventData>, groups: Record<string, GroupData> } = {
         events: {
             '1': {
                 interval: {start: date, end: date.valueOf() + 100 * 3600000},
@@ -378,14 +378,12 @@ const App = () => {
         springConfig={{mass: 0.8, tension: 210, friction: 20}}
         businessLogic={businessLogic}
     >
-        <AutomaticGrid />
-        <AutomaticHeader />
-        <TimelineEvents EventComponent={EventComponent} />
-        <DragOffset>
-            <Now />
-        </DragOffset>
+        <AutomaticGrid/>
+        <AutomaticHeader/>
+        <TimelineEvents EventComponent={EventComponent}/>
+        <Now/>
 
     </Timeline>
 }
 
-ReactDOM.render(<App />, document.getElementById('root'))
+ReactDOM.render(<App/>, document.getElementById('root'))
