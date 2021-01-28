@@ -21,9 +21,11 @@ export let events: PartialTimelineReducer<'events'> = (config) =>
         let newState: StoreShape['events'] = state?.events || {}
         switch (action.type) {
             case SET_EVENTS:
-                return action.payload
+                newState = action.payload
+                break
             case MERGE_NEW_EVENT_DATA:
-                return config.mergeNewEvents(newState, action.payload)
+                newState = config.mergeNewEvents(newState, action.payload)
+                break
             case UPDATE_EVENTS: {
                 let events = action.payload.events
                 for (let eventId of Object.keys(newState)) {

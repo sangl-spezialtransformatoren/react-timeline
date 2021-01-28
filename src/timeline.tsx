@@ -33,17 +33,6 @@ export const DragOffset: React.FC = ({children}) => {
 
 export const SvgFilters: React.FC = () => {
     return <defs>
-        <filter id="dropshadow" height="130%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-            <feOffset dx="0" dy="0" result="offsetblur"/>
-            <feComponentTransfer>
-                <feFuncA type="linear" slope="0.5"/>
-            </feComponentTransfer>
-            <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-        </filter>
     </defs>
 }
 

@@ -1,4 +1,4 @@
-import React, {MutableRefObject, useRef} from 'react'
+import React, {MutableRefObject, RefObject, useContext, useRef} from 'react'
 import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
@@ -18,14 +18,12 @@ import {Dispatch} from './store'
 import {BusinessLogic} from './store/businessLogic'
 import {
     selectEvents,
-    selectGroupPositions,
-    selectHeaderHeight,
     selectInternalEventData,
     selectNumberOfSelectedEvents,
-    selectScrollOffset,
     selectSelectedEvents,
     selectTimePerPixel,
 } from './store/selectors'
+import {LayerContext} from "./layers"
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -48,14 +46,14 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
 
-const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: string) => {
+const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, svgRef: RefObject<SVGSVGElement>, id: string) => {
     eventState.event.stopPropagation()
     let {movement: [dx], last, tap, distance, xy, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
         let action: Thunk = async (dispatch) => {
@@ -67,11 +65,11 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function(e) {
+        document.ontouchmove = function (e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
     }
@@ -107,22 +105,34 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
                 return [eventId, newInterval]
             }),
         )
-        let scrollOffset = selectScrollOffset(config)(state)
-        let headerHeight = selectHeaderHeight(config)(state)
-        let y = xy[1] + scrollOffset - headerHeight
-        let groupPositions = selectGroupPositions(config)(state)
-        let newGroupId: string = ''
-        for (let [groupId, position] of Object.entries(groupPositions)) {
-            if (groupId !== allEvents[id].groupId && y > position.y && y < (position.y + position.height)) {
-                newGroupId = groupId
-                break
+
+        let newGroups: Record<string, string> = {}
+        if (svgRef.current) {
+            let point = svgRef.current.createSVGPoint()
+            point.x = xy[0]
+            point.y = xy[1]
+            let y = point.matrixTransform(svgRef.current.getScreenCTM()?.inverse()).y
+            let groupPositions = Object.fromEntries(Array.from(document.getElementsByClassName("react-timeline-group-background")).map((element) => [element.id, (element as SVGGeometryElement).getBBox()]))
+            let newGroupId: string = ''
+            let lowestGroup = ""
+            let bottom: number = 0
+            for (let [groupId, position] of Object.entries(groupPositions)) {
+                if ((position.y + position.height) > bottom) {
+                    bottom = position.y + position.height
+                    lowestGroup = groupId
+                }
+                if (groupId !== allEvents[id].groupId && y > position.y && y < (position.y + position.height)) {
+                    newGroupId = groupId
+                    break
+                }
+            }
+            if (!newGroupId && lowestGroup && y > bottom) {
+                newGroupId = lowestGroup
+            }
+            if (newGroupId !== '') {
+                newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, newGroupId]))
             }
         }
-        let newGroups: Record<string, string> = {}
-        if (newGroupId !== '') {
-            newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, newGroupId]))
-        }
-
 
         if (!last) {
             let {events: newEvents} = config.validateDuringDrag({
@@ -153,13 +163,27 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
     dispatch(action)
 }
 
-const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
+const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) => {
     eventState.event.stopPropagation()
 
-    let {movement: [dx], last, tap} = eventState
+    let {movement: [dx], last, tap, down} = eventState
 
     if (tap) {
+        document.ontouchmove = function () {
+            return true
+        }
         return
+    }
+
+    if (down) {
+        // Prevent scroll on touch screens while dragging:
+        document.ontouchmove = function (e) {
+            e.preventDefault()
+        }
+    } else {
+        document.ontouchmove = function () {
+            return true
+        }
     }
 
     let action: Thunk = async (dispatch: Dispatch, getState) => {
@@ -208,12 +232,26 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
     dispatch(action)
 }
 
-const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, id: any) => {
+const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) => {
     eventState.event.stopPropagation()
-    let {movement: [dx], last, tap} = eventState
+    let {movement: [dx], last, tap, down} = eventState
 
     if (tap) {
+        document.ontouchmove = function () {
+            return true
+        }
         return
+    }
+
+    if (down) {
+        // Prevent scroll on touch screens while dragging:
+        document.ontouchmove = function (e) {
+            e.preventDefault()
+        }
+    } else {
+        document.ontouchmove = function () {
+            return true
+        }
     }
 
     let action: Thunk = async (dispatch, getState) => {
@@ -301,16 +339,18 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
 
+        let {innerSvg: svgRef} = useContext(LayerContext)
+
         useGesture({
-            onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, id),
+            onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, svgRef, id),
         }, {domTarget: ref})
 
         useGesture({
-            onDrag: eventState => onEventStartDrag(dispatch, businessLogic, eventState, id),
+            onDrag: eventState => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id),
         }, {domTarget: startRef})
 
         useGesture({
-            onDrag: eventState => onEventEndDrag(dispatch, businessLogic, eventState, id),
+            onDrag: eventState => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id),
         }, {domTarget: endRef})
 
         let PresentationalComponent = animated(component)

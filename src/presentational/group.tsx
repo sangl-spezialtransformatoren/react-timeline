@@ -1,7 +1,8 @@
 import React from "react"
-import {GroupPresentationalProps} from "../group"
+import {GroupBackgroundPresentationalProps, GroupLabelPresentationalProps} from "../group"
 
-export const DefaultGroupBackground: React.FC<GroupPresentationalProps> = (
+
+export const DefaultGroupBackground: React.FC<GroupBackgroundPresentationalProps> = (
     {
         width,
         y,
@@ -17,5 +18,18 @@ export const DefaultGroupBackground: React.FC<GroupPresentationalProps> = (
               fill={groupIndex % 2 === numberOfGroups % 2 ? 'rgba(0,0,0,0.05)' : 'transparent'}
               stroke={'transparent'}
         />
+    </>
+}
+
+export const DefaultGroupLabel: React.FC<GroupLabelPresentationalProps> = (
+    {
+        y,
+        height,
+    }) => {
+    return <>
+        <circle cx={40} cy={y + height / 2} r={20} fill={"rgba(110,110,110,0.9)"}/>
+        <text alignmentBaseline="central" fontFamily={"sans-serif"} textAnchor="middle" x={40} y={y + height / 2}
+              fill={"white"}>WS
+        </text>
     </>
 }

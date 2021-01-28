@@ -1,5 +1,5 @@
 import React, {RefObject, useEffect, useRef} from 'react'
-import {useGesture} from 'react-use-gesture'
+import {useDrag, usePinch, useWheel} from 'react-use-gesture'
 import {animated} from 'react-spring'
 import {Dispatch as ReduxDispatch} from 'redux'
 import {useDispatch} from 'react-redux'
@@ -25,13 +25,19 @@ import isEqual from 'react-fast-compare'
 import {TimelineLayers} from './layers'
 
 
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
 
 export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
-    let {distance, pinching, tap} = eventState
+    let {axis, distance, pinching, tap} = eventState
 
-    document.ontouchmove = function() {
-        return true
+    if (axis === 'y') {
+        document.ontouchmove = function () {
+            return true
+        }
+    } else {
+        document.ontouchmove = function (e) {
+            e.preventDefault()
+        }
     }
 
     if (pinching) {
@@ -47,12 +53,12 @@ export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement
 
 export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'wheel'>) => {
     if (!eventState.altKey) {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
         return
     }
-    document.ontouchmove = function(e) {
+    document.ontouchmove = function (e) {
         e.preventDefault()
     }
 
@@ -78,7 +84,8 @@ export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
 }
 
 export const onCanvasPinch = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'pinch'>) => {
-    document.ontouchmove = function() {
+    eventState.event.preventDefault()
+    document.ontouchmove = function () {
         return true
     }
 
@@ -125,7 +132,9 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
     let setTimePerPixel = useSetTimePerPixel()
     let setSize = useSetSize()
 
-    let [ref, {width, height}] = useResizeObserver<HTMLDivElement>()
+    let ref = useRef<HTMLDivElement>(null)
+    let {width, height} = useResizeObserver<HTMLDivElement>(ref)
+
     let svgRef = useRef<SVGSVGElement>(null)
     let initialStartDate = initialParameters?.startDate
     let initialEndDate = initialParameters?.endDate
@@ -134,7 +143,6 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
     useEffect(() => {
         width && height && setSize({width, height})
     }, [width, height])
-
 
     // Initialize
     useEffect(() => {
@@ -151,11 +159,12 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
     }, [initialStartDate, initialEndDate, initialized, width])
 
 
-    useGesture({
-        onDrag: eventState => onCanvasDrag(dispatch, svgRef, eventState),
-        onWheel: eventState => onCanvasWheel(dispatch, svgRef, eventState),
-        onPinch: eventState => onCanvasPinch(dispatch, svgRef, eventState),
-    }, {domTarget: svgRef})
+    useDrag(eventState => onCanvasDrag(dispatch, svgRef, eventState), {domTarget: svgRef})
+    useWheel(eventState => onCanvasWheel(dispatch, svgRef, eventState), {domTarget: svgRef})
+    usePinch(eventState => onCanvasPinch(dispatch, svgRef, eventState), {
+        domTarget: svgRef,
+        eventOptions: {passive: false}
+    })
 
     return <>
         <div className={'react-timeline'} style={{...style}} ref={ref}>
@@ -163,7 +172,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
                 viewBox={`0 0 ${width} ${height}`}
                 className={'react-timeline-svg'}
                 ref={svgRef}>
-                <SvgFilters />
+                <SvgFilters/>
                 <TimelineLayers>
                     {initialized && children}
                 </TimelineLayers>

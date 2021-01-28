@@ -57,6 +57,5 @@ export type StoreShape<Event extends RequiredEventData = RequiredEventData, Grou
     weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6
     presentational: {
         headerHeight: number
-        scrollOffset: number
     }
 }

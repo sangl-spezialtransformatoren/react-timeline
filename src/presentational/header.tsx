@@ -35,7 +35,7 @@ function createLabelTemporalHeader(mapDateToLabel: (date: Date | number, optiona
 
         return <>
             <rect x={x} y={y} width={width} height={height} fill={headerColor} stroke={headerColor}/>
-            <text x={x + width / 2} y={y + height - 8} textAnchor={'middle'} fontFamily={"sans-serif"}>{label}</text>
+            <text x={x + width / 2} y={y + height/2} alignmentBaseline={"central"} textAnchor={'middle'} fontFamily={"sans-serif"}>{label}</text>
         </>
     }
 }

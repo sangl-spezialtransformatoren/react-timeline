@@ -1,9 +1,8 @@
 import React, {MutableRefObject, RefObject, useEffect, useRef, useState} from 'react'
 import {BodyScrollOptions, disableBodyScroll, enableBodyScroll} from 'body-scroll-lock'
 
-type Size = {x: number, y: number, width: number, height: number}
-export const useResizeObserver = <E extends SVGElement | HTMLElement, >() => {
-    let ref = useRef<E>(null)
+type Size = { x: number, y: number, width: number, height: number }
+export const useResizeObserver = <E extends SVGElement | HTMLElement, >(ref: RefObject<E>) => {
     let [size, setSize] = useState<Size>({x: 0, y: 0, width: 0, height: 0})
     let observer = useRef(new ResizeObserver(entries => {
         let firstEntry = entries[0]
@@ -27,7 +26,7 @@ export const useResizeObserver = <E extends SVGElement | HTMLElement, >() => {
     }))
 
     useEffect(() => {
-        if (ref.current) {
+        if (ref?.current) {
             observer.current.observe(ref.current)
         }
         return () => {
@@ -35,7 +34,7 @@ export const useResizeObserver = <E extends SVGElement | HTMLElement, >() => {
         }
     }, [ref])
 
-    return [ref, size] as [RefObject<E>, Size]
+    return size
 }
 export const useScrollLock = (
     targetElement?: MutableRefObject<HTMLElement | Element | SVGElement | null | false> | RefObject<HTMLElement | Element | SVGElement | null | false>,

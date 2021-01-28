@@ -1,8 +1,9 @@
 import React, {RefObject, useContext, useEffect, useRef} from 'react'
-import {useSetHeaderHeight, useSetScrollOffset} from './store/actions'
+import {useSetHeaderHeight} from './store/actions'
 import {useResizeObserver} from './hooks'
 import {useSize} from './store/hooks'
 import {createPortal} from 'react-dom'
+import Scrollbars from "react-custom-scrollbars"
 
 export const LayerContext = React.createContext<{
     grid: RefObject<SVGGElement>,
@@ -10,31 +11,33 @@ export const LayerContext = React.createContext<{
     groupBackgrounds: RefObject<SVGGElement>
     groupLabels: RefObject<SVGGElement>
     events: RefObject<SVGGElement>
+    innerSvg: RefObject<SVGSVGElement>
+    groupLabelBackground: RefObject<SVGGElement>
 }>(undefined!)
 
+
 export const TimelineLayers: React.FC = ({children}) => {
+    // Refs
     let gridRef = useRef<SVGGElement>(null)
     let groupBackgroundsRef = useRef<SVGGElement>(null)
     let groupLabelsRef = useRef<SVGGElement>(null)
+    let scrollRef = useRef<SVGRectElement>(null)
+    let innerSvgRef = useRef<SVGSVGElement>(null)
+    let headerRef = useRef<SVGGElement>(null)
+    let eventsRef = useRef<SVGGElement>(null)
+    let groupLabelBackgroundRef = useRef<SVGGElement>(null)
 
-    let setHeaderHeight = useSetHeaderHeight()
-    let [headerRef, {height: headerHeight}] = useResizeObserver<SVGGElement>()
-    let [eventsRef, {height: eventsHeight}] = useResizeObserver<SVGGElement>()
+    // Resize Observers
+    let {height: headerHeight} = useResizeObserver<SVGGElement>(headerRef)
+    let {height: groupBackgroundsHeight} = useResizeObserver<SVGGElement>(groupBackgroundsRef)
+
     let {width, height} = useSize()
+    let setHeaderHeight = useSetHeaderHeight()
+
 
     useEffect(() => {
         setHeaderHeight(headerHeight)
     }, [headerHeight])
-
-    let scrollRef = useRef<SVGRectElement>(null)
-    let scrollDivRef = useRef<HTMLDivElement>(null)
-
-    let setScrollOffset = useSetScrollOffset()
-    useEffect(() => {
-        scrollDivRef.current && scrollDivRef.current.addEventListener('scroll', () => {
-            scrollDivRef.current && setScrollOffset(scrollDivRef.current.scrollTop)
-        })
-    }, [scrollDivRef])
 
     return <LayerContext.Provider value={{
         grid: gridRef,
@@ -42,22 +45,25 @@ export const TimelineLayers: React.FC = ({children}) => {
         groupBackgrounds: groupBackgroundsRef,
         groupLabels: groupLabelsRef,
         events: eventsRef,
+        innerSvg: innerSvgRef,
+        groupLabelBackground: groupLabelBackgroundRef
     }}>
-        <g id={'grid'} ref={gridRef} />
+        <g id={'grid'} ref={gridRef}/>
         {
             //Mask background so that the pinch event is handled correctly
         }
-        <g id={'header'} ref={headerRef} />
+        <g id={'group-label-background'} ref={groupLabelBackgroundRef}/>
+        <g id={'header'} ref={headerRef}/>
         <foreignObject x={0} y={headerHeight} width={width} height={height - headerHeight}>
-            <div style={{width: '100%', height: '100%', overflow: 'scroll', padding: 0, margin: 0}} ref={scrollDivRef}>
-                <svg style={{width: '100%', height: eventsHeight, margin: '-2px'}}>
-                    <g id={'group-backgrounds'} ref={groupBackgroundsRef} />
-                    <rect x={0} y={0} width={width} height={height - headerHeight} fill={'transparent'}
-                          ref={scrollRef} />
-                    <g id={'events'} ref={eventsRef} />
-                    <g id={'group-labels'} ref={groupLabelsRef} />
+            <Scrollbars>
+                <svg style={{width: '100%', height: groupBackgroundsHeight}} ref={innerSvgRef}>
+                    <g id={'group-backgrounds'} ref={groupBackgroundsRef} mask={"url(#mask)"}/>
+                    <rect width={width} height={height - headerHeight} fill={'transparent'}
+                          ref={scrollRef}/>
+                    <g id={'events'} ref={eventsRef} mask={"url(#mask)"}/>
+                    <g id={'group-labels'} ref={groupLabelsRef}/>
                 </svg>
-            </div>
+            </Scrollbars>
         </foreignObject>
         {children}
     </LayerContext.Provider>
@@ -86,4 +92,12 @@ export const AsGroupBackground: React.FC = ({children}) => {
 export const OnForeground: React.FC = ({children}) => {
     let {events: eventsRef} = useContext(LayerContext)
     return eventsRef.current ? createPortal(children, eventsRef.current) : null
+}
+
+export const AsGroupLabelBackground: React.FC = ({children}) => {
+    let {groupLabels: groupLabelsRef, groupLabelBackground: groupLabelBackgroundRef} = useContext(LayerContext)
+    return <>
+        {groupLabelBackgroundRef.current ? createPortal(children, groupLabelBackgroundRef.current) : null}
+        {groupLabelsRef.current ? createPortal(children, groupLabelsRef.current) : null}
+    </>
 }

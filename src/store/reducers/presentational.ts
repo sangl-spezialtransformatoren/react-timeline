@@ -1,5 +1,5 @@
 import {PartialTimelineReducer} from '../index'
-import {SET_HEADER_HEIGHT, SET_SCROLL_OFFSET} from '../actions'
+import {SET_HEADER_HEIGHT} from '../actions'
 
 
 export let presentational: PartialTimelineReducer<'presentational'> = () => (state, action) => {
@@ -9,13 +9,6 @@ export let presentational: PartialTimelineReducer<'presentational'> = () => (sta
             newState = {
                 ...newState,
                 headerHeight: action.payload,
-            }
-            break
-        }
-        case SET_SCROLL_OFFSET: {
-            newState = {
-                ...newState,
-                scrollOffset: action.payload,
             }
             break
         }
