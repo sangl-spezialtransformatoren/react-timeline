@@ -45,7 +45,7 @@ export const timeScale: PartialTimelineReducer<'timeScale'> = () => (state, acti
         case DRAG_CANVAS:
             return {
                 ...timeScaleState,
-                startDate: startDate.valueOf() - action.payload * timePerPixel,
+                startDate: startDate.valueOf() - action.payload.x * timePerPixel,
             }
 
         case SET_DATE_ZERO:

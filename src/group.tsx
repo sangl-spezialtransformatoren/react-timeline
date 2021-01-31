@@ -1,13 +1,13 @@
-import React, {useRef} from 'react'
+import React, {useMemo, useRef} from 'react'
 import {
-    useAnimate,
+    useAnimate, useContentHeight,
     useEventAndGroupIds,
     useEventIdsOrderedForPainting,
     useEventPositionsInGroup,
     useGroupHeights,
     useGroupIds,
     useGroupIndices,
-    useGroupOffsets,
+    useGroupOffsets, useHeaderHeight,
     useInitialized,
     useNumberOfGroups,
     useSize,
@@ -17,8 +17,8 @@ import {EventComponent as DefaultEventComponent} from './presentational/event'
 import {EventComponentType} from './event'
 import {DragOffset} from './timeline'
 import {animated, useSpring} from 'react-spring'
-import {DefaultGroupBackground, DefaultGroupLabel} from "./presentational/group"
-import {AsGroupBackground, AsGroupLabelBackground, AsGroupLabels, OnForeground} from "./layers"
+import {DefaultGroupBackground, DefaultGroupLabel} from './presentational/group'
+import {AsGroupBackground, AsGroupLabelBackground, AsGroupLabels, OnForeground} from './canvasContext'
 
 export type GroupBackgroundPresentationalProps = {
     width: number,
@@ -52,7 +52,7 @@ export function createGroupBackground<T extends GroupBackgroundPresentationalPro
         {
             groupId,
             y,
-            height
+            height,
         },
     ) => {
         let groupHeights = useGroupHeights()
@@ -77,9 +77,9 @@ export function createGroupBackground<T extends GroupBackgroundPresentationalPro
             heightSpring: height,
             config: springConfig,
             immediate: !animate || !initialized,
-        }, [springConfig, groupOffset, groupIndex, animate, initialized, groupHeight, height])
+        }, [springConfig, groupOffset, groupIndex, animate, initialized, groupHeight, height, y])
 
-        return <g ref={ref} className={"react-timeline-group-background"} id={groupId}>
+        return <g ref={ref} className={'react-timeline-group-background'} id={groupId}>
             {/* @ts-ignore */}
             <AnimatedComponent
                 y={ySpring}
@@ -104,12 +104,10 @@ export function createGroupLabel<T extends GroupLabelPresentationalProps>(compon
         },
     ) => {
         let groupHeights = useGroupHeights()
-        let groupOffsets = useGroupOffsets()
         let groupIndices = useGroupIndices()
         let numberOfGroups = useNumberOfGroups()
 
         let groupHeight = groupHeights[groupId]
-        let groupOffset = groupOffsets[groupId]
         let groupIndex = groupIndices[groupId]
 
 
@@ -124,13 +122,13 @@ export function createGroupLabel<T extends GroupLabelPresentationalProps>(compon
             heightSpring: height,
             config: springConfig,
             immediate: !animate || !initialized,
-        }, [springConfig, groupOffset, groupIndex, animate, initialized, groupHeight, height])
+        }, [springConfig, animate, initialized, groupHeight, height, y])
 
-        return <g ref={ref} className={"react-timeline-group-label"} id={groupId}>
+        return <g ref={ref} className={'react-timeline-group-label'} id={groupId}>
             {/* @ts-ignore */}
             <AnimatedComponent
                 x={0}
-                width={80}
+                width={60}
                 y={ySpring}
                 height={heightSpring}
                 groupIndex={groupIndex}
@@ -158,20 +156,28 @@ export const TimelineEvents: React.FC<TimelineGroupProps> = (
         eventHeight = 25,
         eventDistance = 8,
         groupPadding = 30,
-        minHeight = 50
+        minHeight = 50,
     }) => {
+
 
     let events = useEventIdsOrderedForPainting()
     let groups = useGroupIds()
     let eventToGroup = useEventAndGroupIds()
     let eventPositions = useEventPositionsInGroup()
     let groupHeights = useGroupHeights()
+    let contentHeight = useContentHeight()
+    let headerHeight = useHeaderHeight()
     let Component = EventComponent || DefaultEventComponent
 
-    let groupHeightsPixel = Object.fromEntries(groups.map(groupId => [groupId, Math.max(minHeight, eventHeight * groupHeights[groupId] + eventDistance * Math.max(groupHeights[groupId] - 1, 0) + groupPadding)]))
-    let groupYs = groups.reduce<[number, Record<string, number>]>((agg, groupId) => {
-        return [agg[0] + groupHeightsPixel[groupId], {...agg[1], [groupId]: agg[0]}]
-    }, [0, {}])[1]
+    let groupHeightsPixel = useMemo(() => {
+        return Object.fromEntries(groups.map(groupId => [groupId, Math.max(minHeight, eventHeight * groupHeights[groupId] + eventDistance * Math.max(groupHeights[groupId] - 1, 0) + groupPadding)]))
+    }, [minHeight, eventHeight, groupHeights, eventDistance, groupPadding])
+
+    let groupYs = useMemo(() => {
+        return groups.reduce<[number, Record<string, number>]>((agg, groupId) => {
+            return [agg[0] + groupHeightsPixel[groupId], {...agg[1], [groupId]: agg[0]}]
+        }, [0, {}])[1]
+    }, [groupHeightsPixel, groups])
 
     let {height} = useSize()
     return <>
@@ -180,7 +186,8 @@ export const TimelineEvents: React.FC<TimelineGroupProps> = (
                 key={groupId}
                 groupId={groupId}
                 y={groupYs[groupId]}
-                height={groupHeightsPixel[groupId]}/>)}
+                height={groupHeightsPixel[groupId]}
+            />)}
         </AsGroupBackground>
         <OnForeground>
             <DragOffset>
@@ -192,21 +199,21 @@ export const TimelineEvents: React.FC<TimelineGroupProps> = (
                             id={eventId}
                             eventHeight={eventHeight}
                             y={groupPadding / 2 + (eventHeight + eventDistance) * positionInGroup + groupYs[groupId]}
-                            groupHeight={groupHeightsPixel[groupId]}/>
+                            groupHeight={groupHeightsPixel[groupId]} />
                     </React.Fragment>
                 })}
             </DragOffset>
         </OnForeground>
         <AsGroupLabelBackground>
-            <rect width={80} height={height} fill={"rgba(250, 250, 250, 1)"} stroke={"transparent"}/>
-            <rect x={80} y={0} width={1} height={height} fill={"lightgray"}/>
+            <rect width={60} height={Math.max(contentHeight, height-headerHeight)} fill={'rgba(250, 250, 250, 1)'} stroke={'transparent'} />
+            <rect x={60} y={0} width={1} height={Math.max(contentHeight, height-headerHeight)} fill={'lightgray'} />
         </AsGroupLabelBackground>
         <AsGroupLabels>
             {groups.map(groupId => <GroupLabel
                 key={groupId}
                 groupId={groupId}
                 y={groupYs[groupId]}
-                height={groupHeightsPixel[groupId]}/>)}
+                height={groupHeightsPixel[groupId]} />)}
         </AsGroupLabels>
     </>
 }

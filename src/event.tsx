@@ -23,7 +23,7 @@ import {
     selectSelectedEvents,
     selectTimePerPixel,
 } from './store/selectors'
-import {LayerContext} from "./layers"
+import {CanvasContext} from './canvasContext'
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -46,14 +46,50 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
+
+function boundingBoxRelativeToSVGRoot(fromSpace: SVGGeometryElement, toSpace: SVGGeometryElement | SVGSVGElement, svgRoot: SVGSVGElement) {
+    let bbox = fromSpace.getBBox()
+
+    let ctm1 = toSpace.getScreenCTM()
+    let ctm2 = fromSpace.getScreenCTM()
+    if (ctm1 && ctm2) {
+        var m = ctm1.inverse().multiply(ctm2)
+
+        var topLeftCorner = svgRoot.createSVGPoint()
+        topLeftCorner.x = bbox.x
+        topLeftCorner.y = bbox.y
+
+        var bottomRightCorner = svgRoot.createSVGPoint()
+        bottomRightCorner.x = bbox.x + bbox.width
+        bottomRightCorner.y = bbox.y + bbox.height
+
+        topLeftCorner = topLeftCorner.matrixTransform(m)
+        bottomRightCorner = bottomRightCorner.matrixTransform(m)
+
+        return {
+            x: topLeftCorner.x,
+            y: topLeftCorner.y,
+            width: Math.abs(bottomRightCorner.x - topLeftCorner.x),
+            height: Math.abs(bottomRightCorner.y - topLeftCorner.y),
+        }
+    } else {
+        return {
+            x: bbox.x,
+            y: bbox.y,
+            width: bbox.width,
+            height: bbox.height,
+        }
+    }
+
+}
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, svgRef: RefObject<SVGSVGElement>, id: string) => {
     eventState.event.stopPropagation()
     let {movement: [dx], last, tap, distance, xy, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
         let action: Thunk = async (dispatch) => {
@@ -65,11 +101,11 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function (e) {
+        document.ontouchmove = function(e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
     }
@@ -112,18 +148,28 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
             point.x = xy[0]
             point.y = xy[1]
             let y = point.matrixTransform(svgRef.current.getScreenCTM()?.inverse()).y
-            let groupPositions = Object.fromEntries(Array.from(document.getElementsByClassName("react-timeline-group-background")).map((element) => [element.id, (element as SVGGeometryElement).getBBox()]))
+            let groupPositions = Object.fromEntries(
+                Array.from(
+                    document.getElementsByClassName('react-timeline-group-background')).map(
+                    (element) => [element.id, boundingBoxRelativeToSVGRoot(element as SVGGeometryElement, svgRef.current!, svgRef.current!)],
+                ),
+            )
             let newGroupId: string = ''
-            let lowestGroup = ""
+            let nearestGroupId: string = ''
+            let lowestGroup = ''
             let bottom: number = 0
+            let buffer = 5
             for (let [groupId, position] of Object.entries(groupPositions)) {
                 if ((position.y + position.height) > bottom) {
                     bottom = position.y + position.height
                     lowestGroup = groupId
                 }
-                if (groupId !== allEvents[id].groupId && y > position.y && y < (position.y + position.height)) {
+                if (groupId !== allEvents[id].groupId && y >= position.y && y < (position.y + position.height)) {
                     newGroupId = groupId
                     break
+                }
+                if (groupId !== allEvents[id].groupId && y >= position.y - buffer && y < (position.y + position.height + buffer)) {
+                    nearestGroupId = groupId
                 }
             }
             if (!newGroupId && lowestGroup && y > bottom) {
@@ -131,6 +177,9 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
             }
             if (newGroupId !== '') {
                 newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, newGroupId]))
+            }
+            if (nearestGroupId !== '') {
+                newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, nearestGroupId]))
             }
         }
 
@@ -169,7 +218,7 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
     let {movement: [dx], last, tap, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
         return
@@ -177,11 +226,11 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function (e) {
+        document.ontouchmove = function(e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
     }
@@ -237,7 +286,7 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
     let {movement: [dx], last, tap, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
         return
@@ -245,11 +294,11 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function (e) {
+        document.ontouchmove = function(e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function () {
+        document.ontouchmove = function() {
             return true
         }
     }
@@ -339,7 +388,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
 
-        let {innerSvg: svgRef} = useContext(LayerContext)
+        let {svg: svgRef} = useContext(CanvasContext)
 
         useGesture({
             onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, svgRef, id),

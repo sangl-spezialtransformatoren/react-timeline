@@ -17,7 +17,7 @@ import {isWeekend} from 'date-fns'
 import React, {useEffect, useState} from 'react'
 import {format} from '../functions'
 import {DragOffset} from "../timeline"
-import {AsHeader} from "../layers"
+import {AsHeader} from "../canvasContext"
 
 let headerColor = "rgba(250, 250, 250, 1)"
 

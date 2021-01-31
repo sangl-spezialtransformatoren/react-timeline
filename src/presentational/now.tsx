@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react'
 import {useAnimate, useDateZero, useHeaderHeight, useInitialized, useSize, useSpringConfig} from '../store/hooks'
 import {animated, to, useSpring} from 'react-spring'
 import {useTimePerPixelSpring} from '../context'
-import {OnForeground} from "../layers"
+import {OnForeground} from "../canvasContext"
 import {DragOffset} from "../timeline"
 
 export const Now: React.FC = () => {

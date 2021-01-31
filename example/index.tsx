@@ -95,7 +95,7 @@ let MyEventComponent: PresentationalEventComponent<EventComponentProps> = (
 
 let EventComponent = createEventComponent(MyEventComponent)
 
-let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
+let businessLogic: BusinessLogic<EventData, GroupData, EventData, GroupData> = {
     ...DefaultBusinessLogic,
     mapEventsToProps: data => data,
     mapEventsToLayer: data => {
@@ -294,6 +294,7 @@ let businessLogic: BusinessLogic<EventData, GroupData, EventComponentProps> = {
         }))
     },
     mergeNewGroups: (_, newGroups) => newGroups,
+    mapGroupsToProps: data => data
 
 }
 
@@ -426,7 +427,7 @@ const App = () => {
     useEffect(() => {
         setInterval(() => {
             setX(x => x + 1)
-        }, 2000)
+        }, 200000)
     }, [])
 
     return <Timeline

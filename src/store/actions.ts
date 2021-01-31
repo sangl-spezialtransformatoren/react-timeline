@@ -42,19 +42,19 @@ export const [mergeNewEventData, useMergeNewEventData] = createPayloadActionCrea
 
 
 export const MOVE_EVENT_INTERMEDIARY = 'moveEventIntermediary'
-export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, { id: string, interval: PureInterval }>
+export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, {id: string, interval: PureInterval}>
 export const [moveEventIntermediary, useMoveEventIntermediary] = createPayloadActionCreators(MOVE_EVENT_INTERMEDIARY)
 
 export const UPDATE_EVENTS_INTERMEDIARY = 'updateEventsIntermediary'
-export type UpdateEventsIntermediaryAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS_INTERMEDIARY, { events: Record<string, E> }>
+export type UpdateEventsIntermediaryAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS_INTERMEDIARY, {events: Record<string, E>}>
 export const [updateEventsIntermediary, useUpdateEventsIntermediary] = createPayloadActionCreators(UPDATE_EVENTS_INTERMEDIARY)
 
 export const UPDATE_EVENTS = 'updateEvents'
-export type UpdateEventsAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS, { events: Record<string, E> }>
+export type UpdateEventsAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS, {events: Record<string, E>}>
 export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDATE_EVENTS)
 
 export const CHANGE_GROUP = 'changeGroup'
-export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, { id: string, groupId: string }>
+export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, {id: string, groupId: string}>
 export const [changeGroup, useChangeGroup] = createPayloadActionCreators(CHANGE_GROUP)
 
 export const RESET_DRAG_OR_RESIZE = 'resetDragOrResize'
@@ -64,7 +64,7 @@ export const resetDragOrResize = () => {
 }
 
 export const TOGGLE_EVENT_SELECTED = 'toggleEventSelected'
-export type ToggleEventSelectedAction = PayloadAction<typeof TOGGLE_EVENT_SELECTED, { id: string }>
+export type ToggleEventSelectedAction = PayloadAction<typeof TOGGLE_EVENT_SELECTED, {id: string}>
 export const [toggleEventSelection, useToggleEventSelection] = createPayloadActionCreators(TOGGLE_EVENT_SELECTED)
 
 export const DESELECT_ALL_EVENTS = 'deselectAllEvents'
@@ -86,7 +86,7 @@ export type EventAction<E extends RequiredEventData = RequiredEventData> =
 
 // groups
 export const SET_GROUP_POSITION = 'setGroupPosition'
-export type SetGroupPositionAction = PayloadAction<typeof SET_GROUP_POSITION, { groupId: string, x: number, y: number, width: number, height: number }>
+export type SetGroupPositionAction = PayloadAction<typeof SET_GROUP_POSITION, {groupId: string, x: number, y: number, width: number, height: number}>
 export const [setGroupPosition, useSetGroupPosition] = createPayloadActionCreators(SET_GROUP_POSITION)
 
 export const MERGE_NEW_GROUP_DATA = 'mergeNewGroupData'
@@ -126,7 +126,7 @@ export type SetDateZeroAction = PayloadAction<typeof SET_DATE_ZERO, Date | numbe
 export const [setDateZero, useSetDateZero] = createPayloadActionCreators(SET_DATE_ZERO, data => data.valueOf())
 
 export const DRAG_CANVAS = 'dragCanvas'
-export type DragCanvasAction = PayloadAction<typeof DRAG_CANVAS, number>
+export type DragCanvasAction = PayloadAction<typeof DRAG_CANVAS, {x: number, y: number, applyBounds?: boolean, dragDrawer?: boolean}>
 export const [dragCanvas, useDragCanvas] = createPayloadActionCreators(DRAG_CANVAS)
 
 export const SET_TIME_PER_PIXEL = 'setTimePerPixel'
@@ -176,7 +176,33 @@ export const SET_HEADER_HEIGHT = 'setHeaderHeight'
 export type SetHeaderHeightAction = PayloadAction<typeof SET_HEADER_HEIGHT, number>
 export const [setHeaderHeight, useSetHeaderHeight] = createPayloadActionCreators(SET_HEADER_HEIGHT)
 
-export type PresentationalAction = SetHeaderHeightAction
+export const SET_SCROLL_OFFSET = 'setScrollOffset'
+export type SetScrollOffsetAction = PayloadAction<typeof SET_SCROLL_OFFSET, number>
+export const [setScrollOffset, useSetScrollOffset] = createPayloadActionCreators(SET_SCROLL_OFFSET)
+
+export const SET_CONTENT_HEIGHT = 'setContentHeight'
+export type SetContentHeightAction = PayloadAction<typeof SET_CONTENT_HEIGHT, number>
+export const [setContentHeight, useSetContentHeight] = createPayloadActionCreators(SET_CONTENT_HEIGHT)
+
+export const OPEN_DRAWER = 'openDrawer'
+export type OpenDrawerAction = Action<typeof OPEN_DRAWER>
+export const openDrawer = () => {
+    return {type: OPEN_DRAWER}
+}
+
+export const CLOSE_DRAWER = 'closeDrawer'
+export type CloseDrawerAction = Action<typeof CLOSE_DRAWER>
+export const closeDrawer = () => {
+    return {type: CLOSE_DRAWER}
+}
+
+
+export type PresentationalAction =
+    SetHeaderHeightAction
+    | SetScrollOffsetAction
+    | SetContentHeightAction
+    | OpenDrawerAction
+    | CloseDrawerAction
 
 // All actions
 export type Actions =
@@ -191,7 +217,7 @@ export type Actions =
     | PresentationalAction
     | GroupAction
 
-export type Filter<A> = A extends { type: string, payload: any } ? A : never
+export type Filter<A> = A extends {type: string, payload: any} ? A : never
 export type PayloadActions = Filter<Actions>
 
 export type Thunk = ThunkAction<void, StoreShape, any, Actions>

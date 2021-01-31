@@ -16,7 +16,7 @@ import {useSize, useTimePerPixel} from '../store/hooks'
 import React, {useEffect, useState} from 'react'
 import {isWeekend} from 'date-fns'
 import {DragOffset} from "../timeline"
-import {AsGrid} from "../layers"
+import {AsGrid} from "../canvasContext"
 
 const DefaultGrid: TemporalGridComponent = ({x}) => {
     let {height} = useSize()

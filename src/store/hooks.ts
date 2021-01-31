@@ -5,7 +5,9 @@ import {
     getGroupOffsets,
     getHeaderIntervals,
     selectAnimate,
+    selectContentHeight,
     selectDateZero,
+    selectDrawerOpening, selectDrawerWidth,
     selectEvent,
     selectEventIdsOrderedForPainting,
     selectEventIdToGroupIdMap,
@@ -19,12 +21,13 @@ import {
     selectInterval,
     selectMapEventIdToProps,
     selectNumberOfGroups,
+    selectScrollOffset,
     selectSelected,
     selectSize,
     selectSpringConfig,
     selectStartDate,
     selectTimePerPixel,
-    selectTimeZone
+    selectTimeZone,
 } from './selectors'
 
 
@@ -51,3 +54,7 @@ export const useIsEventSelected = (eventId: string) => useSelector(selectSelecte
 export const useGroupIds = () => useSelector(selectGroupIds, shallowEqual)
 export const useHeaderHeight = () => useSelector(selectHeaderHeight)
 export const useNumberOfGroups = () => useSelector(selectNumberOfGroups)
+export const useScrollOffset = () => useSelector(selectScrollOffset)
+export const useContentHeight = () => useSelector(selectContentHeight)
+export const useDrawerOpening = () => useSelector(selectDrawerOpening)
+export const useDrawerWidth = () => useSelector(selectDrawerWidth)

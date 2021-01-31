@@ -27,8 +27,8 @@ export const DefaultGroupLabel: React.FC<GroupLabelPresentationalProps> = (
         height,
     }) => {
     return <>
-        <circle cx={40} cy={y + height / 2} r={20} fill={"rgba(110,110,110,0.9)"}/>
-        <text alignmentBaseline="central" fontFamily={"sans-serif"} textAnchor="middle" x={40} y={y + height / 2}
+        <circle cx={30} cy={y + height / 2} r={20} fill={"rgba(110,110,110,0.9)"}/>
+        <text alignmentBaseline="central" fontFamily={"sans-serif"} textAnchor="middle" x={30} y={y + height / 2}
               fill={"white"}>WS
         </text>
     </>
