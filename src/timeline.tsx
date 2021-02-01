@@ -13,10 +13,10 @@ import {
     mergeNewEventData,
     mergeNewGroupData,
     setAnimate,
+    setLayoutParameters,
     setSpringConfig,
     setTimeZone,
-    setWeekStartsOn,
-    setLayoutParameters
+    setWeekStartsOn
 } from './store/actions'
 import isEqual from "react-fast-compare"
 
@@ -51,6 +51,8 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
         eventSpacing,
         groupPadding,
         minGroupHeight,
+        events,
+        groups,
         ...otherProps
     } = props
 
@@ -84,17 +86,21 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
         }
     }, [store, springConfig])
 
-
     useEffect(() => {
-        if (initialData) {
-            if (!isEqual(store?.getState()?.events, initialData.events)) {
-                store?.dispatch?.(mergeNewEventData(initialData.events))
-            }
-            if (!isEqual(store?.getState()?.groups, initialData.groups)) {
-                store?.dispatch?.(mergeNewGroupData(initialData.groups))
+        if (events) {
+            if (!isEqual(store?.getState()?.events, events)) {
+                store?.dispatch?.(mergeNewEventData(events))
             }
         }
-    }, [store, initialData])
+    }, [store, events])
+
+    useEffect(() => {
+        if (groups) {
+            if (!isEqual(store?.getState()?.groups, groups)) {
+                store?.dispatch?.(mergeNewGroupData(groups))
+            }
+        }
+    }, [store, groups])
 
     useEffect(() => {
         store?.dispatch(setLayoutParameters({

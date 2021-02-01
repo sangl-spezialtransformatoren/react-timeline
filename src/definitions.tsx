@@ -1,7 +1,7 @@
 import React from 'react'
 import {config, SpringConfig, SpringValue} from 'react-spring'
 import {BusinessLogic, DefaultBusinessLogic} from './store/businessLogic'
-import {RequiredEventData, RequiredGroupData, StoreShape} from './store/shape'
+import {RequiredEventData, RequiredGroupData} from './store/shape'
 import {PresentationalEventComponent} from "./components/event"
 import {DefaultEventComponent} from "./presentational/event"
 
@@ -20,15 +20,17 @@ export type TimelineProps<Event extends RequiredEventData = RequiredEventData, G
     timeZone?: string
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
     animate?: boolean
-    initialData?: { events: StoreShape['events'], groups: StoreShape['groups'] }
-    initialParameters?: InitialTimelineParameters
-    style?: TimelineStyle,
-    springConfig?: SpringConfig,
-    businessLogic?: BusinessLogic<Event, Group>,
+    events?: Record<string, Event>
+    groups?: Record<string, Group>
+    initialStartDate?: Date | number
+    initialEndDate?: Date | number
+    style?: TimelineStyle
+    springConfig?: SpringConfig
+    businessLogic?: BusinessLogic<Event, Group>
     eventComponent?: Y extends PresentationalEventComponent<infer T> ? PresentationalEventComponent<T> : never
-    eventHeight?: number,
-    eventSpacing?: number,
-    groupPadding?: number,
+    eventHeight?: number
+    eventSpacing?: number
+    groupPadding?: number
     minGroupHeight?: number
 }
 

@@ -150,11 +150,11 @@ export function createEventComponent<T>(component: React.FC<T>) {
 
 
 export type TimelineGroupProps = {
-    EventComponent?: EventComponentType
+    component?: EventComponentType
 }
 
-export const Events: React.FC<TimelineGroupProps> = ({EventComponent,}) => {
-    let Component = EventComponent || DefaultEventComponent
+export const Events: React.FC<TimelineGroupProps> = ({component,}) => {
+    let Component = component || DefaultEventComponent
 
     // Redux state
     let events = useEventIdsOrderedForPainting()
@@ -167,6 +167,8 @@ export const Events: React.FC<TimelineGroupProps> = ({EventComponent,}) => {
     let eventDistance = useEventMargin()
     let eventHeight = useEventHeight()
 
+    // Calculated state
+    // TODO: Move into Redux selector
     let groupHeightsPixel = useMemo(() => {
         return Object.fromEntries(groups.map(groupId => [groupId, Math.max(minHeight, eventHeight * groupHeights[groupId] + eventDistance * Math.max(groupHeights[groupId] - 1, 0) + groupPadding)]))
     }, [minHeight, eventHeight, groupHeights, eventDistance, groupPadding])

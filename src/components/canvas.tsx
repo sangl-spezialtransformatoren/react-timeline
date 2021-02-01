@@ -36,15 +36,14 @@ import {
 } from '../store/actions'
 
 
-export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 'style'>> = React.memo((props) => {
+export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | 'initialEndDate' | 'style'>> = React.memo((props) => {
     let {
         children,
         style,
-        initialParameters,
+        initialStartDate,
+        initialEndDate
     } = props
 
-    let initialStartDate = initialParameters?.startDate
-    let initialEndDate = initialParameters?.endDate
 
     // Component state
     let [previousScrollOffset, setPreviousScrollOffset] = useState(0)
@@ -139,7 +138,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
             left: -Infinity,
             right: Infinity,
         },
-        rubberband: true,
+        rubberband: animate,
     })
 
     useWheel(eventState => onCanvasWheel(dispatch, svgRef, eventState), {
