@@ -1,4 +1,4 @@
-import {createEventComponent, PresentationalEventComponent} from "../event"
+import {createEventComponent, PresentationalEventComponent} from "../components/event"
 import React from "react"
 
 export const DefaultEventComponent: PresentationalEventComponent = (

@@ -1,5 +1,6 @@
 import React from "react"
-import {GroupBackgroundPresentationalProps, GroupLabelPresentationalProps} from "../group"
+import {GroupBackgroundPresentationalProps} from "../components/groupBackground"
+import {GroupLabelPresentationalProps} from "../components/groupLabel"
 
 
 export const DefaultGroupBackground: React.FC<GroupBackgroundPresentationalProps> = (
@@ -24,7 +25,7 @@ export const DefaultGroupBackground: React.FC<GroupBackgroundPresentationalProps
 export const DefaultGroupLabel: React.FC<GroupLabelPresentationalProps> = (
     {
         y,
-        height,
+        height
     }) => {
     return <>
         <circle cx={30} cy={y + height / 2} r={20} fill={"rgba(110,110,110,0.9)"}/>

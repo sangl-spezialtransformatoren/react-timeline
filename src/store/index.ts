@@ -4,8 +4,8 @@ import {BusinessLogic} from './businessLogic'
 import {Actions, PayloadActions} from './actions'
 import {useDispatch as useReduxDispatch, useSelector as useReduxSelector} from 'react-redux'
 import {StoreShape} from './shape'
-import {useContext, useMemo} from 'react'
-import {BusinessLogicContext} from '../context'
+import {useMemo} from 'react'
+import {useBusinessLogic} from '../context'
 //@ts-ignore
 import {registerSelectors} from 'reselect-tools'
 import {createSelector as reselectCreateSelector} from "reselect"
@@ -16,7 +16,7 @@ export type Dispatch = ThunkDispatch<StoreShape, undefined, Actions>
 export const createSelector = reselectCreateSelector
 
 export function useSelector<TSelected>(selector: (config: BusinessLogic) => ((state: StoreShape) => TSelected), equalityFn?: (left: TSelected, right: TSelected) => boolean): TSelected {
-    let config = useContext(BusinessLogicContext)
+    let config = useBusinessLogic()
     let memoizedSelector = useMemo(() => {
         return selector(config)
     }, [config])

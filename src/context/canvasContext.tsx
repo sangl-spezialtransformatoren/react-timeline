@@ -12,12 +12,12 @@ export const CanvasContext = React.createContext<{
 }>(undefined!)
 
 
-export const AsGrid: React.FC = ({children}) => {
+export const Grid: React.FC = ({children}) => {
     let {grid: gridRef} = useContext(CanvasContext)
     return gridRef.current ? createPortal(children, gridRef.current) : null
 }
 
-export const AsHeader: React.FC = ({children}) => {
+export const Header: React.FC = ({children}) => {
     let {header: headerRef} = useContext(CanvasContext)
     return headerRef.current ? createPortal(children, headerRef.current) : null
 }
@@ -32,14 +32,18 @@ export const AsGroupBackground: React.FC = ({children}) => {
     return groupBackgroundRef.current ? createPortal(children, groupBackgroundRef.current) : null
 }
 
-export const OnForeground: React.FC = ({children}) => {
+export const Foreground: React.FC = ({children}) => {
     let {events: eventsRef} = useContext(CanvasContext)
     return eventsRef.current ? createPortal(children, eventsRef.current) : null
 }
 
-export const AsGroupLabelBackground: React.FC = ({children}) => {
+export const GroupLabelBackground: React.FC = ({children}) => {
     let {groupLabels: groupLabelsRef} = useContext(CanvasContext)
     return <>
         {groupLabelsRef.current ? createPortal(children, groupLabelsRef.current) : null}
     </>
+}
+
+export const useCanvasContext = () => {
+    return useContext(CanvasContext)
 }

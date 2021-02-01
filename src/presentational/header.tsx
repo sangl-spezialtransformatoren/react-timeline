@@ -11,13 +11,11 @@ import {
     createWeekHeader,
     createYearHeader,
     TemporalHeaderComponent,
-} from '../headers'
-import {useSize, useTimePerPixel, useTimeZone} from '../store/hooks'
+} from '../components/header'
+import {useTimePerPixel, useTimeZone} from '../store/hooks'
 import {isWeekend} from 'date-fns'
 import React, {useEffect, useState} from 'react'
-import {format} from '../functions'
-import {DragOffset} from "../timeline"
-import {AsHeader} from "../canvasContext"
+import {format} from '../functions/misc'
 
 let headerColor = "rgba(250, 250, 250, 1)"
 
@@ -35,7 +33,8 @@ function createLabelTemporalHeader(mapDateToLabel: (date: Date | number, optiona
 
         return <>
             <rect x={x} y={y} width={width} height={height} fill={headerColor} stroke={headerColor}/>
-            <text x={x + width / 2} y={y + height/2} alignmentBaseline={"central"} textAnchor={'middle'} fontFamily={"sans-serif"}>{label}</text>
+            <text x={x + width / 2} y={y + height / 2} alignmentBaseline={"central"} textAnchor={'middle'}
+                  fontFamily={"sans-serif"}>{label}</text>
         </>
     }
 }
@@ -168,18 +167,13 @@ export const AutomaticHeader: React.FC = () => {
     let show = biggerThanMinWidth.map((value, index) => value && (biggerThanMinWidth?.[index - 3] === false || biggerThanMinWidth?.[index - 3] === undefined))
     let render = show.map((value, index) => value || !!show?.[index - 1])
     let positions = show.map((_, index) => show.slice(0, index).filter(x => x).length)
-    let {width} = useSize()
-
-    return <AsHeader>
-        <DragOffset>
-            {intervals.map(({name, component: Component}, index) => {
-                return render[index] &&
-                    <g key={name} transform={`translate(0 ${75 - 25 * positions[index + 1]})`}
-                       visibility={show[index] ? 'show' : 'hidden'}>
-                        <Component/>
-                    </g>
-            })}
-        </DragOffset>
-        <rect x={0} y={75} width={width} height={1} fill={"lightgray"}/>
-    </AsHeader>
+    return <>
+        {intervals.map(({name, component: Component}, index) => {
+            return render[index] &&
+                <g key={name} transform={`translate(0 ${75 - 25 * positions[index + 1]})`}
+                   visibility={show[index] ? 'show' : 'hidden'}>
+                    <Component/>
+                </g>
+        })}
+    </>
 }

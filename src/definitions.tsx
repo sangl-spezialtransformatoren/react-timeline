@@ -2,8 +2,7 @@ import React from 'react'
 import {config, SpringConfig, SpringValue} from 'react-spring'
 import {BusinessLogic, DefaultBusinessLogic} from './store/businessLogic'
 import {RequiredEventData, RequiredGroupData, StoreShape} from './store/shape'
-import {PureInterval} from './store/reducers/events'
-import {PresentationalEventComponent} from "./event"
+import {PresentationalEventComponent} from "./components/event"
 import {DefaultEventComponent} from "./presentational/event"
 
 export type TimelineStyle = {
@@ -17,16 +16,6 @@ export type InitialTimelineParameters = {
 }
 
 
-export type DefaultEventShape = {
-    interval: PureInterval,
-    label: string
-    groupId: string
-}
-
-export type DefaultGroupShape = {
-    label: string
-}
-
 export type TimelineProps<Event extends RequiredEventData = RequiredEventData, Group extends RequiredGroupData = RequiredGroupData, Y = PresentationalEventComponent> = {
     timeZone?: string
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
@@ -37,6 +26,10 @@ export type TimelineProps<Event extends RequiredEventData = RequiredEventData, G
     springConfig?: SpringConfig,
     businessLogic?: BusinessLogic<Event, Group>,
     eventComponent?: Y extends PresentationalEventComponent<infer T> ? PresentationalEventComponent<T> : never
+    eventHeight?: number,
+    eventSpacing?: number,
+    groupPadding?: number,
+    minGroupHeight?: number
 }
 
 export const DefaultTimelineProps: Partial<TimelineProps> = {

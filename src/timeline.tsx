@@ -7,7 +7,7 @@ import {TimelineContext, useStartDateSpring, useTimePerPixelSpring} from './cont
 import {DefaultBusinessLogic} from './store/businessLogic'
 import {createTimelineStore} from './store/reducers/root'
 import './style.css'
-import {TimelineCanvas} from './canvas'
+import {TimelineCanvas} from './components/canvas'
 import {useDateZero} from './store/hooks'
 import {
     mergeNewEventData,
@@ -16,6 +16,7 @@ import {
     setSpringConfig,
     setTimeZone,
     setWeekStartsOn,
+    setLayoutParameters
 } from './store/actions'
 import isEqual from "react-fast-compare"
 
@@ -46,6 +47,10 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
         springConfig,
         initialData,
         children,
+        eventHeight,
+        eventSpacing,
+        groupPadding,
+        minGroupHeight,
         ...otherProps
     } = props
 
@@ -90,6 +95,15 @@ export const Timeline: React.FC<TimelineProps> = (props) => {
             }
         }
     }, [store, initialData])
+
+    useEffect(() => {
+        store?.dispatch(setLayoutParameters({
+            eventHeight,
+            eventSpacing,
+            groupPadding,
+            minGroupHeight
+        }))
+    }, [eventHeight, eventSpacing, groupPadding, minGroupHeight])
 
 
     if (store) {

@@ -5,6 +5,7 @@ import {
     OPEN_DRAWER,
     SET_CONTENT_HEIGHT,
     SET_HEADER_HEIGHT,
+    SET_LAYOUT_PARAMETERS,
     SET_SCROLL_OFFSET,
     SET_SIZE,
 } from '../actions'
@@ -15,8 +16,12 @@ export let presentational: PartialTimelineReducer<'presentational'> = () => (sta
         headerHeight: 0,
         scrollOffset: 0,
         contentHeight: 0,
-        drawerOpening: 0,
         drawerWidth: 80,
+        drawerOpened: false,
+        eventHeight: 25,
+        eventSpacing: 8,
+        groupPadding: 30,
+        minGroupHeight: 45
     }
     switch (action.type) {
         case SET_HEADER_HEIGHT: {
@@ -28,17 +33,6 @@ export let presentational: PartialTimelineReducer<'presentational'> = () => (sta
         }
         case DRAG_CANVAS: {
             let newScrollOffset = newState.scrollOffset + action.payload.y
-            let newDrawerOpening = newState.drawerOpening
-            if (action.payload.dragDrawer) {
-                newDrawerOpening = newDrawerOpening + action.payload.x
-                if (newDrawerOpening > newState.drawerWidth) {
-                    newDrawerOpening = newState.drawerWidth
-                }
-                if (newDrawerOpening < 0) {
-                    newDrawerOpening = 0
-                }
-            }
-
             if (action.payload.applyBounds) {
                 let headerHeight = newState.headerHeight
                 let divHeight = state?.size.height || 0
@@ -49,8 +43,7 @@ export let presentational: PartialTimelineReducer<'presentational'> = () => (sta
 
             newState = {
                 ...newState,
-                scrollOffset: newScrollOffset,
-                drawerOpening: newDrawerOpening,
+                scrollOffset: newScrollOffset
             }
             break
         }
@@ -72,7 +65,7 @@ export let presentational: PartialTimelineReducer<'presentational'> = () => (sta
             if (action.payload.width > 960) {
                 newState = {
                     ...newState,
-                    drawerOpening: newState.drawerWidth,
+                    drawerOpened: true
                 }
             }
             break
@@ -80,7 +73,7 @@ export let presentational: PartialTimelineReducer<'presentational'> = () => (sta
         case OPEN_DRAWER: {
             newState = {
                 ...newState,
-                drawerOpening: newState.drawerWidth,
+                drawerOpened: true
             }
             break
         }
@@ -88,8 +81,18 @@ export let presentational: PartialTimelineReducer<'presentational'> = () => (sta
             if (state?.size.width && state.size.width < 960) {
                 newState = {
                     ...newState,
-                    drawerOpening: 0,
+                    drawerOpened: false
                 }
+            }
+            break
+        }
+        case SET_LAYOUT_PARAMETERS: {
+            newState = {
+                ...newState,
+                eventHeight: action.payload.eventHeight || newState.eventHeight,
+                eventSpacing: action.payload.eventSpacing || newState.eventSpacing,
+                groupPadding: action.payload.groupPadding || newState.groupPadding,
+                minGroupHeight: action.payload.minGroupHeight || newState.minGroupHeight
             }
             break
         }

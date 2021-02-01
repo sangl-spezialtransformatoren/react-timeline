@@ -60,6 +60,10 @@ export type StoreShape<Event extends RequiredEventData = RequiredEventData, Grou
         contentHeight: number
         scrollOffset: number
         drawerWidth: number
-        drawerOpening: number
+        drawerOpened: boolean
+        eventHeight: number
+        eventSpacing: number
+        groupPadding: number
+        minGroupHeight: number
     }
 }

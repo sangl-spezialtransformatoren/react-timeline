@@ -1,25 +1,31 @@
 import {useSelector} from './index'
 import {shallowEqual} from 'react-redux'
-import {IntervalCreator} from '../functions'
+import {IntervalCreator} from '../functions/intervals'
 import {
     getGroupOffsets,
     getHeaderIntervals,
     selectAnimate,
     selectContentHeight,
     selectDateZero,
-    selectDrawerOpening, selectDrawerWidth,
+    selectDrawerOpened,
+    selectDrawerWidth,
     selectEvent,
+    selectEventHeight,
     selectEventIdsOrderedForPainting,
     selectEventIdToGroupIdMap,
+    selectEventMargin,
     selectEventPositionsInGroup,
     selectEventProps,
     selectGroupHeights,
     selectGroupIds,
     selectGroupIndices,
+    selectGroupPadding,
     selectHeaderHeight,
     selectInitialized,
     selectInterval,
     selectMapEventIdToProps,
+    selectMapGroupIdToProps,
+    selectMinGroupHeight,
     selectNumberOfGroups,
     selectScrollOffset,
     selectSelected,
@@ -56,5 +62,10 @@ export const useHeaderHeight = () => useSelector(selectHeaderHeight)
 export const useNumberOfGroups = () => useSelector(selectNumberOfGroups)
 export const useScrollOffset = () => useSelector(selectScrollOffset)
 export const useContentHeight = () => useSelector(selectContentHeight)
-export const useDrawerOpening = () => useSelector(selectDrawerOpening)
+export const useDrawerOpened = () => useSelector(selectDrawerOpened)
 export const useDrawerWidth = () => useSelector(selectDrawerWidth)
+export const useMapGroupIdToProps = () => useSelector(selectMapGroupIdToProps)
+export const useEventHeight = () => useSelector(selectEventHeight)
+export const useEventMargin = () => useSelector(selectEventMargin)
+export const useGroupPadding = () => useSelector(selectGroupPadding)
+export const useMinGroupHeight = () => useSelector(selectMinGroupHeight)

@@ -12,10 +12,10 @@ import {
     generateWeekIntervals,
     generateYearIntervals,
     intervalCreatorOptions,
-} from './functions'
+} from '../functions/intervals'
 import {animated, to} from 'react-spring'
-import {useTimePerPixelSpring} from './context'
-import {useDateZero, useGetHeaderIntervals} from "./store/hooks"
+import {useTimePerPixelSpring} from '../context'
+import {useDateZero, useGetHeaderIntervals} from "../store/hooks"
 
 type HeaderProps<T = {}> = { x: number, y: number, width: number, height: number } & T
 type TemporalHeaderProps = HeaderProps<{ date: Date | number }>

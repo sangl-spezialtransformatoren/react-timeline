@@ -1,29 +1,41 @@
-import React, {MutableRefObject, RefObject, useContext, useRef} from 'react'
+import React, {MutableRefObject, RefObject, useMemo, useRef} from 'react'
 import {animated, to, useSpring} from 'react-spring'
 import {useGesture} from 'react-use-gesture'
 import {useDispatch} from 'react-redux'
-import {useBusinessLogic, useTimePerPixelSpring} from './context'
-import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary} from './store/actions'
+import {useBusinessLogic, useTimePerPixelSpring} from '../context'
+import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary} from '../store/actions'
 import {EventState} from './canvas'
 import {
     useAnimate,
     useDateZero,
+    useEventAndGroupIds,
+    useEventHeight,
+    useEventIdsOrderedForPainting,
+    useEventMargin,
+    useEventPositionsInGroup,
     useEventProps,
     useGetInterval,
+    useGroupHeights,
+    useGroupIds,
+    useGroupPadding,
     useInitialized,
     useIsEventSelected,
+    useMinGroupHeight,
     useSpringConfig,
-} from './store/hooks'
-import {Dispatch} from './store'
-import {BusinessLogic} from './store/businessLogic'
+} from '../store/hooks'
+import {Dispatch} from '../store'
+import {BusinessLogic} from '../store/businessLogic'
 import {
     selectEvents,
     selectInternalEventData,
     selectNumberOfSelectedEvents,
     selectSelectedEvents,
     selectTimePerPixel,
-} from './store/selectors'
-import {CanvasContext} from './canvasContext'
+} from '../store/selectors'
+import {Foreground, useCanvasContext} from '../context/canvasContext'
+import {EventComponent as DefaultEventComponent} from "../presentational/event"
+import {DragOffset} from "../timeline"
+import {boundingBoxRelativeToSVGRoot} from "../functions/misc"
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -46,50 +58,153 @@ export type EventComponentProps<T = {}> = {
     groupHeight?: number
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & { y: number, groupHeight?: number }>
 
-function boundingBoxRelativeToSVGRoot(fromSpace: SVGGeometryElement, toSpace: SVGGeometryElement | SVGSVGElement, svgRoot: SVGSVGElement) {
-    let bbox = fromSpace.getBBox()
 
-    let ctm1 = toSpace.getScreenCTM()
-    let ctm2 = fromSpace.getScreenCTM()
-    if (ctm1 && ctm2) {
-        var m = ctm1.inverse().multiply(ctm2)
+export function createEventComponent<T>(component: React.FC<T>) {
+    let EventComponent: EventComponentType<T> = (
+        {
+            id,
+            y,
+            eventHeight = 20,
+            groupHeight,
+            children,
+            ...otherProps
+        }) => {
+        // Animate component
+        let PresentationalComponent = animated(component)
 
-        var topLeftCorner = svgRoot.createSVGPoint()
-        topLeftCorner.x = bbox.x
-        topLeftCorner.y = bbox.y
+        // Redux
+        let dispatch = useDispatch()
 
-        var bottomRightCorner = svgRoot.createSVGPoint()
-        bottomRightCorner.x = bbox.x + bbox.width
-        bottomRightCorner.y = bbox.y + bbox.height
+        // Redux state
+        let dateZero = useDateZero()
+        let animate = useAnimate()
+        let initialized = useInitialized()
+        let springConfig = useSpringConfig()
 
-        topLeftCorner = topLeftCorner.matrixTransform(m)
-        bottomRightCorner = bottomRightCorner.matrixTransform(m)
+        // TODO: Move up
+        let interval = useGetInterval(id)
+        let eventProps = useEventProps(id)
+        let selected = useIsEventSelected(id)
 
-        return {
-            x: topLeftCorner.x,
-            y: topLeftCorner.y,
-            width: Math.abs(bottomRightCorner.x - topLeftCorner.x),
-            height: Math.abs(bottomRightCorner.y - topLeftCorner.y),
+        // Other State
+        let timePerPixelSpring = useTimePerPixelSpring()
+        let businessLogic = useBusinessLogic()
+        let {svg: svgRef} = useCanvasContext()
+
+
+        // Refs
+        let ref = useRef<SVGGeometryElement>(null)
+        let startRef = useRef<SVGGeometryElement>(null)
+        let endRef = useRef<SVGGeometryElement>(null)
+
+        // Springs
+        let [{ySpring, intervalStartSpring, intervalEndSpring, groupHeightSpring}] = useSpring({
+            intervalStartSpring: interval.start,
+            intervalEndSpring: interval.end,
+            ySpring: y,
+            groupHeightSpring: groupHeight,
+            config: springConfig,
+            immediate: !animate || !initialized,
+        }, [springConfig, interval.start, interval.end, animate, initialized, y, groupHeight])
+
+        // Interpolations
+        let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
+        let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
+
+
+        // Attach gestures
+        useGesture({
+            onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, svgRef, id),
+        }, {domTarget: ref})
+
+        useGesture({
+            onDrag: eventState => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id),
+        }, {domTarget: startRef})
+
+        useGesture({
+            onDrag: eventState => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id),
+        }, {domTarget: endRef})
+
+        // Define props
+        let props = {
+            x: xSpring,
+            y: ySpring,
+            width: widthSpring,
+            height: eventHeight,
+            groupHeight: groupHeightSpring,
+            dragHandle: ref,
+            dragStartHandle: startRef,
+            dragEndHandle: endRef,
+            eventId: id,
+            selected,
+            ...eventProps,
+            ...otherProps,
         }
-    } else {
-        return {
-            x: bbox.x,
-            y: bbox.y,
-            width: bbox.width,
-            height: bbox.height,
-        }
+        // @ts-ignore
+        return <PresentationalComponent {...props} />
     }
-
+    return React.memo(EventComponent)
 }
+
+
+export type TimelineGroupProps = {
+    EventComponent?: EventComponentType
+}
+
+export const Events: React.FC<TimelineGroupProps> = ({EventComponent,}) => {
+    let Component = EventComponent || DefaultEventComponent
+
+    // Redux state
+    let events = useEventIdsOrderedForPainting()
+    let groups = useGroupIds()
+    let eventToGroup = useEventAndGroupIds()
+    let eventPositions = useEventPositionsInGroup()
+    let groupHeights = useGroupHeights()
+    let minHeight = useMinGroupHeight()
+    let groupPadding = useGroupPadding()
+    let eventDistance = useEventMargin()
+    let eventHeight = useEventHeight()
+
+    let groupHeightsPixel = useMemo(() => {
+        return Object.fromEntries(groups.map(groupId => [groupId, Math.max(minHeight, eventHeight * groupHeights[groupId] + eventDistance * Math.max(groupHeights[groupId] - 1, 0) + groupPadding)]))
+    }, [minHeight, eventHeight, groupHeights, eventDistance, groupPadding])
+
+    let groupYs = useMemo(() => {
+        return groups.reduce<[number, Record<string, number>]>((agg, groupId) => {
+            return [agg[0] + groupHeightsPixel[groupId], {...agg[1], [groupId]: agg[0]}]
+        }, [0, {}])[1]
+    }, [groupHeightsPixel, groups])
+
+    let eventYs = useMemo(() => {
+        return Object.fromEntries(events.map(eventId => [eventId, groupPadding / 2 + (eventHeight + eventDistance) * eventPositions[eventId] + groupYs[eventToGroup[eventId]]]))
+    }, [events, groupPadding, eventHeight, eventDistance, eventPositions, groupYs, eventToGroup])
+
+    return <>
+        <Foreground>
+            <DragOffset>
+                {events.map((eventId) => {
+                    return <React.Fragment key={eventId}>
+                        <Component
+                            id={eventId}
+                            eventHeight={eventHeight}
+                            y={eventYs[eventId]}
+                            groupHeight={groupHeightsPixel[eventToGroup[eventId]]}/>
+                    </React.Fragment>
+                })}
+            </DragOffset>
+        </Foreground>
+    </>
+}
+
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, svgRef: RefObject<SVGSVGElement>, id: string) => {
     eventState.event.stopPropagation()
     let {movement: [dx], last, tap, distance, xy, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
         let action: Thunk = async (dispatch) => {
@@ -101,11 +216,11 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function(e) {
+        document.ontouchmove = function (e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
     }
@@ -218,7 +333,7 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
     let {movement: [dx], last, tap, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
         return
@@ -226,11 +341,11 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function(e) {
+        document.ontouchmove = function (e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
     }
@@ -286,7 +401,7 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
     let {movement: [dx], last, tap, down} = eventState
 
     if (tap) {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
         return
@@ -294,11 +409,11 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
 
     if (down) {
         // Prevent scroll on touch screens while dragging:
-        document.ontouchmove = function(e) {
+        document.ontouchmove = function (e) {
             e.preventDefault()
         }
     } else {
-        document.ontouchmove = function() {
+        document.ontouchmove = function () {
             return true
         }
     }
@@ -348,78 +463,4 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
         }
     }
     dispatch(action)
-}
-
-export function createEventComponent<T>(component: React.FC<T>) {
-    let EventComponent: EventComponentType<T> = (
-        {
-            id,
-            y,
-            eventHeight = 20,
-            groupHeight,
-            children,
-            ...otherProps
-        }) => {
-        let ref = useRef<SVGGeometryElement>(null)
-        let startRef = useRef<SVGGeometryElement>(null)
-        let endRef = useRef<SVGGeometryElement>(null)
-        let dispatch = useDispatch()
-
-        let interval = useGetInterval(id)
-        let eventProps = useEventProps(id)
-        let selected = useIsEventSelected(id)
-
-        let dateZero = useDateZero()
-        let animate = useAnimate()
-        let initialized = useInitialized()
-        let springConfig = useSpringConfig()
-        let timePerPixelSpring = useTimePerPixelSpring()
-        let businessLogic = useBusinessLogic()
-
-        let [{ySpring, intervalStartSpring, intervalEndSpring, groupHeightSpring}] = useSpring({
-            intervalStartSpring: interval.start,
-            intervalEndSpring: interval.end,
-            ySpring: y,
-            groupHeightSpring: groupHeight,
-            config: springConfig,
-            immediate: !animate || !initialized,
-        }, [springConfig, interval.start, interval.end, animate, initialized, y, groupHeight])
-
-        let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
-        let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
-
-        let {svg: svgRef} = useContext(CanvasContext)
-
-        useGesture({
-            onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, svgRef, id),
-        }, {domTarget: ref})
-
-        useGesture({
-            onDrag: eventState => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id),
-        }, {domTarget: startRef})
-
-        useGesture({
-            onDrag: eventState => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id),
-        }, {domTarget: endRef})
-
-        let PresentationalComponent = animated(component)
-
-        let props = {
-            x: xSpring,
-            y: ySpring,
-            width: widthSpring,
-            height: eventHeight,
-            groupHeight: groupHeightSpring,
-            dragHandle: ref,
-            dragStartHandle: startRef,
-            dragEndHandle: endRef,
-            eventId: id,
-            selected,
-            ...eventProps,
-            ...otherProps,
-        }
-        // @ts-ignore
-        return <PresentationalComponent {...props} />
-    }
-    return EventComponent
 }

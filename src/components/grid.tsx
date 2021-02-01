@@ -1,6 +1,6 @@
 import React from "react"
-import {useTimePerPixelSpring} from "./context"
-import {useDateZero, useGetHeaderIntervals} from "./store/hooks"
+import {useTimePerPixelSpring} from "../context"
+import {useDateZero, useGetHeaderIntervals} from "../store/hooks"
 import {animated, to} from "react-spring"
 import {
     generateCenturyIntervals,
@@ -15,7 +15,7 @@ import {
     generateWeekIntervals,
     generateYearIntervals,
     intervalCreatorOptions
-} from "./functions"
+} from "../functions/intervals"
 
 type GridProps<T = {}> = { x: number, y: number, width: number, height: number } & T
 type TemporalGridProps = GridProps<{ date: Date | number }>

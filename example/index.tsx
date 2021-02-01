@@ -4,10 +4,14 @@ import {Ref, useEffect, useState} from 'react'
 import * as ReactDOM from 'react-dom'
 import {
     AutomaticGrid,
-    AutomaticHeader,
     BusinessLogic,
     createEventComponent,
+    DayHeader,
     DefaultBusinessLogic,
+    Events,
+    GroupBackgrounds,
+    GroupLabels,
+    Header,
     InitialTimelineParameters,
     makePureInterval,
     Now,
@@ -15,7 +19,7 @@ import {
     RequiredEventData,
     RequiredGroupData,
     Timeline,
-    TimelineEvents,
+    WeekHeader
 } from 'react-timeline'
 import 'react-timeline/bundle.css'
 import {addDays, addHours, startOfDay} from 'date-fns'
@@ -440,8 +444,15 @@ const App = () => {
         businessLogic={businessLogic}
     >
         <AutomaticGrid/>
-        <AutomaticHeader/>
-        <TimelineEvents EventComponent={EventComponent}/>
+        <Header>
+            <DayHeader/>
+            <g transform={"translate(0 20)"}>
+                <WeekHeader/>
+            </g>
+        </Header>
+        <Events EventComponent={EventComponent}/>
+        <GroupBackgrounds/>
+        <GroupLabels/>
         <Now/>
 
     </Timeline>

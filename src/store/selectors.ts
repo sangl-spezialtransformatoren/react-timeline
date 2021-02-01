@@ -3,7 +3,7 @@ import {areIntervalsIntersecting} from 'schedule-fns/lib/src/functions/intervals
 import {PureInterval} from './reducers/events'
 import {BusinessLogic} from './businessLogic'
 import {getDefaultTimeZone} from '../index'
-import {IntervalCreator} from '../functions'
+import {IntervalCreator} from '../functions/intervals'
 import {compareAsc} from 'date-fns'
 import {createSelector} from './index'
 
@@ -13,7 +13,7 @@ export function select<E extends RequiredEventData, G extends RequiredGroupData,
     return selector
 }
 
-function positionEvent(positionedEvents: Record<string, {interval: PureInterval, position: number}>, interval: PureInterval) {
+function positionEvent(positionedEvents: Record<string, { interval: PureInterval, position: number }>, interval: PureInterval) {
     let positions = Object.values(positionedEvents).filter(
         (leftEvent) => areIntervalsIntersecting(leftEvent.interval, interval) && leftEvent.interval.end !== interval.start && leftEvent.interval.start !== interval.end,
     ).map((leftEvent) => leftEvent.position)
@@ -26,7 +26,7 @@ function positionEvent(positionedEvents: Record<string, {interval: PureInterval,
 
 // Positions the given events one after another so they don't overlap
 function distributeEventsVertically(orderedEventIds: string[], mapEventToInterval: Record<string, PureInterval>, placeInSameRow: string[][] = []): Record<string, number> {
-    let positionedEvents: Record<string, {interval: PureInterval, position: number}> = {}
+    let positionedEvents: Record<string, { interval: PureInterval, position: number }> = {}
     for (const eventId of orderedEventIds) {
         if (Object.keys(positionedEvents).includes(eventId)) {
             continue
@@ -93,9 +93,12 @@ export const selectHeaderHeight = select(() => state => state.presentational.hea
 
 export const selectScrollOffset = select(() => state => state.presentational.scrollOffset)
 export const selectContentHeight = select(() => state => state.presentational.contentHeight)
-export const selectDrawerOpening = select(() => state => state.presentational.drawerOpening)
+export const selectDrawerOpened = select(() => state => state.presentational.drawerOpened)
 export const selectDrawerWidth = select(() => state => state.presentational.drawerWidth)
-
+export const selectEventHeight = select(() => state => state.presentational.eventHeight)
+export const selectEventMargin = select(() => state => state.presentational.eventSpacing)
+export const selectGroupPadding = select(() => state => state.presentational.groupPadding)
+export const selectMinGroupHeight = select(() => state => state.presentational.minGroupHeight)
 
 // Returns {eventId1: event, eventId2: event, ...}
 export const selectSelectedEvents = (config: BusinessLogic) => createSelector(
@@ -146,7 +149,7 @@ export const selectEventsWithVolatileState = (config: BusinessLogic) => createSe
                     selected: internalEventData?.[eventId]?.selected || false,
                 }]
             }),
-        ) as Record<string, RequiredEventData & {selected: boolean}>
+        ) as Record<string, RequiredEventData & { selected: boolean }>
     },
 )
 
@@ -162,7 +165,7 @@ export const selectEvent = (eventId: string) => (config: BusinessLogic) => creat
 // Returns {eventId1: interval1, eventId2: interval2, ...}
 export const selectMapEventIdToVolatileInterval = (config: BusinessLogic) => createSelector(
     [selectEventsWithVolatileState(config)],
-    function(events) {
+    function (events) {
         return Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, event.interval]))
     },
 )
@@ -301,7 +304,7 @@ export const selectGroupIndices = (config: BusinessLogic) => createSelector(
 export const selectGroupPositions = (config: BusinessLogic) => createSelector(
     [selectGroupIds(config), selectInternalGroupData(config)],
     function selectGroupPositionsCollector(groupIds, internalGroupData) {
-        return Object.fromEntries(groupIds.map((groupId) => [groupId, internalGroupData[groupId].position])) as Record<string, {x: number, y: number, width: number, height: number}>
+        return Object.fromEntries(groupIds.map((groupId) => [groupId, internalGroupData[groupId].position])) as Record<string, { x: number, y: number, width: number, height: number }>
     },
 )
 
@@ -355,6 +358,11 @@ export const selectEventProps = (eventId: string) => (config: BusinessLogic) => 
     (events) => events[eventId],
 )
 
+export const selectMapGroupIdToProps = (config: BusinessLogic) => createSelector(
+    [selectGroups(config)],
+    (groups) => config.mapGroupsToProps(groups)
+)
+
 // Returns {eventId1: true, eventId2: false, ...}
 export const selectMapEventIdToSelected = (config: BusinessLogic) => createSelector(
     [selectEventsWithVolatileState(config)],
@@ -372,3 +380,4 @@ export const selectNumberOfGroups = (config: BusinessLogic) => createSelector(
     [selectGroupIndices(config)],
     (groupIndices) => Math.max(...Object.values(groupIndices)) + 1,
 )
+

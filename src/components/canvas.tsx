@@ -5,19 +5,19 @@ import {Dispatch as ReduxDispatch} from 'redux'
 import {useDispatch} from 'react-redux'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 
-import {TimelineProps} from './definitions'
-import {SvgFilters} from './timeline'
+import {TimelineProps} from '../definitions'
+import {DragOffset, SvgFilters} from '../timeline'
 import {
     useAnimate,
-    useDrawerOpening,
+    useDrawerOpened,
     useDrawerWidth,
     useInitialized,
     useScrollOffset,
     useSpringConfig,
-} from './store/hooks'
-import {useResizeObserver} from './hooks'
+} from '../store/hooks'
+import {useResizeObserver} from '../functions/hooks'
 import isEqual from 'react-fast-compare'
-import {CanvasContext} from './canvasContext'
+import {CanvasContext} from '../context/canvasContext'
 import {
     closeDrawer,
     deselectAllEvents,
@@ -33,111 +33,7 @@ import {
     useSetStartDate,
     useSetTimePerPixel,
     zoom,
-} from './store/actions'
-
-
-export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
-
-export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
-    let {axis, distance, pinching, tap, delta, velocity, movement, elapsedTime} = eventState
-
-    if (axis === 'x' || velocity < 3) {
-        document.ontouchmove = function(e) {
-            e.preventDefault()
-        }
-    } else {
-        document.ontouchmove = function() {
-            return true
-        }
-    }
-
-    if (pinching) {
-        return
-    }
-    if (tap) {
-        dispatch(deselectAllEvents())
-    }
-    if (distance > 0) {
-        let [x, y] = delta
-        if (movement[0] > 80 && movement[0] / elapsedTime > 1.3 && elapsedTime > 50 && elapsedTime < 250 && !pinching) {
-            dispatch(openDrawer())
-        }
-        if (movement[0] < -80 && movement[0] / elapsedTime < -0.9 && elapsedTime > 50 && elapsedTime < 250 && !pinching) {
-            dispatch(closeDrawer())
-        }
-        dispatch(dragCanvas({x, y}))
-    }
-}
-
-export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'wheel'>) => {
-    let {distance, delta} = eventState
-    eventState.event.preventDefault()
-
-    document.ontouchmove = function(e) {
-        e.preventDefault()
-    }
-
-    if (eventState.altKey) {
-        let svg = svgRef?.current
-        if (svg !== undefined && svg !== null) {
-            let point = svg.createSVGPoint()
-            point.x = eventState.event.clientX
-            point.y = eventState.event.clientY
-            let x = point.matrixTransform(svg.getScreenCTM()?.inverse()).x
-
-            let {delta} = eventState
-            let factor = 1 + Math.sign(delta[1]) * 0.002 * Math.min(Math.abs(delta[1]), 100)
-
-            if (eventState.first) {
-                dispatch(lockZoomCenter(x))
-            }
-            if (eventState.last) {
-                dispatch(unlockZoomCenter())
-            } else {
-                dispatch(zoom(factor))
-            }
-        }
-    } else {
-        if (distance > 0) {
-            let [_, y] = delta
-            console.log(_)
-            dispatch(dragCanvas({x: 0, y: -y, applyBounds: true}))
-        }
-    }
-}
-
-export const onCanvasPinch = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'pinch'>) => {
-    eventState.event.preventDefault()
-    document.ontouchmove = function() {
-        return true
-    }
-
-    let svg = svgRef?.current
-    if (svg !== undefined && svg !== null) {
-
-        let point = svg.createSVGPoint()
-        point.x = eventState.origin[0]
-        point.y = eventState.origin[1]
-        let x = point.matrixTransform(svg.getScreenCTM()?.inverse()).x
-
-        let {previous, da, first} = eventState
-        let factor: number
-        if (!first) {
-            factor = previous[0] / da[0]
-        } else {
-            factor = 1
-        }
-
-        if (eventState.first) {
-            dispatch(lockZoomCenter(x))
-        }
-        if (eventState.last) {
-            dispatch(unlockZoomCenter())
-        } else {
-            dispatch(zoom(factor))
-        }
-    }
-}
+} from '../store/actions'
 
 
 export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 'style'>> = React.memo((props) => {
@@ -160,7 +56,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
     let initialized = useInitialized()
     let scrollOffset = useScrollOffset()
     let springConfig = useSpringConfig()
-    let drawerOpening = useDrawerOpening()
+    let drawerOpened = useDrawerOpened()
     let drawerWidth = useDrawerWidth()
     let animate = useAnimate()
 
@@ -218,6 +114,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
         setHeaderHeight(headerHeight)
     }, [headerHeight])
 
+    // Hide Scrollbar after 2s
     useEffect(() => {
         if (Math.abs(scrollOffset - previousScrollOffset) > 15) {
             if (timeoutVar) {
@@ -244,15 +141,18 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
         },
         rubberband: true,
     })
+
     useWheel(eventState => onCanvasWheel(dispatch, svgRef, eventState), {
         domTarget: svgRef,
         eventOptions: {passive: false},
     })
+
     usePinch(eventState => onCanvasPinch(dispatch, svgRef, eventState), {
         domTarget: scrollRef,
         eventOptions: {passive: false},
     })
 
+    // Springs
     let [{scrollPosition: scrollOffsetSpring}] = useSpring({
         scrollPosition: scrollOffset,
         config: springConfig,
@@ -260,12 +160,16 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
     }, [springConfig, animate, initialized, scrollOffset])
 
     let [{drawerOpeningSpring}] = useSpring({
-        drawerOpeningSpring: drawerOpening,
+        drawerOpeningSpring: drawerOpened ? drawerWidth : 0,
         config: springConfig,
         immediate: !animate || !initialized,
-    }, [springConfig, animate, initialized, drawerOpening])
+    }, [springConfig, animate, initialized, drawerOpened, drawerWidth])
 
-    let [{scrollbarX, scrollbarHeight, scrollbarColor}] = useSpring({
+    let [{
+        scrollbarX: scrollbarXSpring,
+        scrollbarHeight: scrollbarHeightSpring,
+        scrollbarColor: scrollbarColorSpring
+    }] = useSpring({
         scrollbarX: contentHeight > divHeight - headerHeight && showScrollbar ? contentWidth - 6 : contentWidth,
         scrollbarColor: contentHeight > divHeight - headerHeight && showScrollbar ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0)',
         scrollbarHeight: (divHeight - headerHeight) ** 2 / contentHeight - 8,
@@ -274,9 +178,10 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
     }, [springConfig, animate, initialized, contentWidth, showScrollbar, divHeight])
 
 
-    let transform = to([scrollOffsetSpring], scrollPosition => `translate(0 ${headerHeight + scrollPosition})`)
-    let transformDrawer = to([scrollOffsetSpring, drawerOpeningSpring], (scrollPosition, drawerOpening) => `translate(${-drawerWidth + drawerOpening} ${headerHeight + scrollPosition})`)
-    let scrollY = to([scrollOffsetSpring], scrollOffset => headerHeight + (-scrollOffset * (divHeight - headerHeight) / contentHeight) + 3)
+    // Interpolations
+    let scrollTransform = to([scrollOffsetSpring], scrollPosition => `translate(0 ${headerHeight + scrollPosition})`)
+    let drawerTransform = to([scrollOffsetSpring, drawerOpeningSpring], (scrollPosition, drawerOpening) => `translate(${-drawerWidth + drawerOpening} ${headerHeight + scrollPosition})`)
+    let scrollbarY = to([scrollOffsetSpring], scrollOffset => headerHeight + (-scrollOffset * (divHeight - headerHeight) / contentHeight) + 3)
 
     return <>
         <div className={'react-timeline'} style={{...style}} ref={divRef}>
@@ -284,7 +189,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
                 viewBox={`0 0 ${divWidth} ${divHeight}`}
                 className={'react-timeline-svg'}
                 ref={svgRef}>
-                <SvgFilters />
+                <SvgFilters/>
                 <CanvasContext.Provider value={{
                     svg: svgRef,
                     grid: gridRef,
@@ -294,30 +199,136 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialParameters' | 
                     events: eventsRef,
                     groupLabelBackground: groupLabelBackgroundRef,
                 }}>
-                    <g id={'grid'} ref={gridRef} />
+                    <g id={'grid'} ref={gridRef}/>
+                    <g id={'group-label-background'} ref={groupLabelBackgroundRef}/>
+                    <animated.g id={'group-backgrounds'} ref={groupBackgroundsRef} transform={scrollTransform}/>
+
                     {
                         //Mask background so that the pinch event is handled correctly
                     }
-                    <g id={'group-label-background'} ref={groupLabelBackgroundRef} />
-                    <animated.g id={'group-backgrounds'} ref={groupBackgroundsRef} transform={transform} />
                     <rect width={divWidth} y={headerHeight} height={divHeight - headerHeight} fill={'transparent'}
-                          ref={scrollRef} />
-                    <animated.g id={'events'} ref={eventsRef} transform={transform} />
-                    <animated.g id={'group-labels'} ref={groupLabelsRef} transform={transformDrawer} />
+                          ref={scrollRef}/>
+                    <animated.g id={'events'} ref={eventsRef} transform={scrollTransform}/>
+                    <animated.g id={'group-labels'} ref={groupLabelsRef} transform={drawerTransform}/>
                     {initialized && children}
                     <g>
                         <animated.rect width={3}
-                                       height={scrollbarHeight}
-                                       x={scrollbarX}
-                                       y={scrollY}
+                                       height={scrollbarHeightSpring}
+                                       x={scrollbarXSpring}
+                                       y={scrollbarY}
                                        rx={1.5}
                                        ry={1.5}
-                                       fill={scrollbarColor}
+                                       fill={scrollbarColorSpring}
                         />
                     </g>
-                    <g id={'header'} ref={headerRef} />
+                    <DragOffset>
+                        <g id={'header'} ref={headerRef}/>
+                    </DragOffset>
                 </CanvasContext.Provider>
             </animated.svg>
         </div>
     </>
 }, isEqual)
+
+// Event handlers
+export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & { event: EventTypes[T] }
+
+export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement> | undefined, eventState: EventState<'drag'>) => {
+    let {axis, distance, pinching, tap, delta, velocity, movement, elapsedTime} = eventState
+
+    if (axis === 'x' || velocity < 1.5) {
+        document.ontouchmove = function (e) {
+            e.preventDefault()
+        }
+    } else {
+        document.ontouchmove = function () {
+            return true
+        }
+    }
+
+    if (pinching) {
+        return
+    }
+    if (tap) {
+        dispatch(deselectAllEvents())
+    }
+    if (distance > 0) {
+        let [x, y] = delta
+        if (movement[0] > 80 && movement[0] / elapsedTime > 1.3 && elapsedTime > 50 && elapsedTime < 250 && !pinching) {
+            dispatch(openDrawer())
+        }
+        if (movement[0] < -80 && movement[0] / elapsedTime < -0.9 && elapsedTime > 50 && elapsedTime < 250 && !pinching) {
+            dispatch(closeDrawer())
+        }
+        dispatch(dragCanvas({x, y}))
+    }
+}
+
+export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'wheel'>) => {
+    let {distance, delta} = eventState
+    eventState.event.preventDefault()
+
+    document.ontouchmove = function (e) {
+        e.preventDefault()
+    }
+
+    if (eventState.altKey) {
+        let svg = svgRef?.current
+        if (svg !== undefined && svg !== null) {
+            let point = svg.createSVGPoint()
+            point.x = eventState.event.clientX
+            point.y = eventState.event.clientY
+            let x = point.matrixTransform(svg.getScreenCTM()?.inverse()).x
+
+            let {delta} = eventState
+            let factor = 1 + Math.sign(delta[1]) * 0.002 * Math.min(Math.abs(delta[1]), 100)
+
+            if (eventState.first) {
+                dispatch(lockZoomCenter(x))
+            }
+            if (eventState.last) {
+                dispatch(unlockZoomCenter())
+            } else {
+                dispatch(zoom(factor))
+            }
+        }
+    } else {
+        if (distance > 0) {
+            let y = delta[1]
+            dispatch(dragCanvas({x: 0, y: -y, applyBounds: true}))
+        }
+    }
+}
+
+export const onCanvasPinch = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'pinch'>) => {
+    eventState.event.preventDefault()
+    document.ontouchmove = function () {
+        return true
+    }
+
+    let svg = svgRef?.current
+    if (svg !== undefined && svg !== null) {
+
+        let point = svg.createSVGPoint()
+        point.x = eventState.origin[0]
+        point.y = eventState.origin[1]
+        let x = point.matrixTransform(svg.getScreenCTM()?.inverse()).x
+
+        let {previous, da, first} = eventState
+        let factor: number
+        if (!first) {
+            factor = previous[0] / da[0]
+        } else {
+            factor = 1
+        }
+
+        if (eventState.first) {
+            dispatch(lockZoomCenter(x))
+        }
+        if (eventState.last) {
+            dispatch(unlockZoomCenter())
+        } else {
+            dispatch(zoom(factor))
+        }
+    }
+}

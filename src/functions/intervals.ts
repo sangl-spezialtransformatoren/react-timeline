@@ -1,3 +1,4 @@
+import {defaultMemoize} from "reselect"
 import {
     addDays,
     addHours,
@@ -12,11 +13,9 @@ import {
     startOfMonth,
     startOfQuarter,
     startOfWeek,
-    startOfYear,
-} from 'date-fns'
-import {format as dateFnsTzFormat, utcToZonedTime} from 'date-fns-tz'
-import {defaultMemoize} from 'reselect'
-import {shallowEqual} from 'react-redux'
+    startOfYear
+} from "date-fns"
+import {shallowEqual} from "react-redux"
 
 const memoize = defaultMemoize
 
@@ -143,8 +142,3 @@ export const generateCenturyIntervals = memoize((from: number | Date, to: number
     }
     return century.slice(0, -1).map<Interval>((week, index) => ({start: week, end: century.slice(1)[index]}))
 }, shallowEqual)
-
-export function format(date: Date | number, formatString: string, {timeZone}: {timeZone: string}) {
-    return dateFnsTzFormat(utcToZonedTime(new Date(date), timeZone), formatString, {timeZone})
-}
-

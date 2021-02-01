@@ -11,12 +11,12 @@ import {
     createWeekGrid,
     createYearGrid,
     TemporalGridComponent,
-} from '../grid'
+} from '../components/grid'
 import {useSize, useTimePerPixel} from '../store/hooks'
 import React, {useEffect, useState} from 'react'
 import {isWeekend} from 'date-fns'
 import {DragOffset} from "../timeline"
-import {AsGrid} from "../canvasContext"
+import {Grid} from "../context/canvasContext"
 
 const DefaultGrid: TemporalGridComponent = ({x}) => {
     let {height} = useSize()
@@ -118,11 +118,11 @@ export const AutomaticGrid: React.FC = () => {
     let show = biggerThanMinWidth.map((value, index) => value && (biggerThanMinWidth?.[index - 3] === false || biggerThanMinWidth?.[index - 3] === undefined))
     let render = show.map((value, index) => value || !!show?.[index - 1])
 
-    return <AsGrid>
+    return <Grid>
         <DragOffset>
             {intervals.map(({name, component: Component}, index) => {
                 return render[index] && <g visibility={show[index] ? 'show' : 'hidden'} key={name}><Component/></g>
             })}
         </DragOffset>
-    </AsGrid>
+    </Grid>
 }

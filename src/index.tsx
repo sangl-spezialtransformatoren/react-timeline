@@ -4,7 +4,6 @@ export {
     TimelineStyle,
     InitialTimelineParameters,
 } from './definitions'
-export {createDayHeader, createWeekHeader} from './headers'
 let defaultTimeZone = 'Etc/UTC'
 
 export function setDefaultTimezone(timeZone: string) {
@@ -16,9 +15,11 @@ export function getDefaultTimeZone() {
     return defaultTimeZone
 }
 
-export {TimelineEvents} from './group'
+export {Events} from './components/event'
+export {GroupBackgrounds} from './components/groupBackground'
+export {GroupLabels} from './components/groupLabel'
 export {BusinessLogic, DefaultBusinessLogic} from './store/businessLogic'
-export {createEventComponent, PresentationalEventComponent} from './event'
+export {createEventComponent, PresentationalEventComponent} from './components/event'
 export {AutomaticHeader} from './presentational/header'
 export {AutomaticGrid} from './presentational/grid'
 export {CenturyHeader} from './presentational/header'
@@ -35,3 +36,5 @@ export {Now} from './presentational/now'
 export {makePureInterval} from "./store/reducers/events"
 export {DragOffset} from './timeline'
 export {RequiredEventData, RequiredGroupData} from "./store/shape"
+export {Header, Grid, AsGroupBackground, AsGroupLabels, GroupLabelBackground, Foreground} from "./context/canvasContext"
+export {createDayHeader, createWeekHeader} from './components/header'
