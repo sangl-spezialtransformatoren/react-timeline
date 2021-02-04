@@ -1,0 +1,28 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel index.html",
+    "start-prod": "cross-env NODE_ENV=production parcel index.html --host 0.0.0.0",
+    "build": "parcel build index.html"
+  },
+  "dependencies": {
+    "react-app-polyfill": "^1.0.0"
+  },
+  "alias": {
+    "react": "../node_modules/react",
+    "react-dom": "../node_modules/react-dom",
+    "date-fns": "../node_modules/date-fns",
+    "scheduler/tracing": "../node_modules/scheduler/tracing-profiling",
+    "react-timeline": "../dist",
+    "react-timeline/budle.css": "../dist/bundle.css"
+  },
+  "devDependencies": {
+    "@types/react": "^16.9.11",
+    "@types/react-dom": "^16.8.4",
+    "parcel": "^1.12.3",
+    "typescript": "^3.4.5"
+  }
+}
