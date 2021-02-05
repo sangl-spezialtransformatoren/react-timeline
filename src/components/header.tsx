@@ -43,6 +43,7 @@ function createHeaderElement<T>(component: HeaderComponent<T>) {
 
 export function createTemporalHeader<T>(component: HeaderComponent<T>, intervalName: string, intervalCreator: (from: Date | number, to: Date | number, options: intervalCreatorOptions) => Interval[], intervalLength: number) {
     let HeaderElement = createHeaderElement(component)
+
     let TemporalHeader: React.FC<Omit<T, keyof TemporalHeaderProps>> = (props) => {
         let {children, ...otherProps} = props
 

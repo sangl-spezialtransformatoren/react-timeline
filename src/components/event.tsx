@@ -1,7 +1,6 @@
 import React, {MutableRefObject, RefObject, useMemo, useRef} from 'react'
 import {animated, to, useSpring} from 'react-spring'
-import {useGesture} from 'react-use-gesture'
-import {useDispatch} from 'react-redux'
+import {useDrag} from 'react-use-gesture'
 import {useBusinessLogic, useTimePerPixelSpring} from '../context'
 import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary} from '../store/actions'
 import {DragOffset, EventState} from './canvas'
@@ -18,7 +17,7 @@ import {
     useMapEventIdToSelected,
     useSpringConfig,
 } from '../store/hooks'
-import {Dispatch} from '../store'
+import {Dispatch, useDispatch} from '../store'
 import {BusinessLogic} from '../store/businessLogic'
 import {
     selectEvents,
@@ -60,6 +59,8 @@ export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, k
 
 
 export function createEventComponent<T>(component: React.FC<T>) {
+    let PresentationalComponent = animated(component)
+
     let EventComponent: EventComponentType<T> = (
         {
             id,
@@ -72,8 +73,6 @@ export function createEventComponent<T>(component: React.FC<T>) {
             children,
             ...otherProps
         }) => {
-        // Animate component
-        let PresentationalComponent = animated(component)
 
         // Redux
         let dispatch = useDispatch()
@@ -89,11 +88,23 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let businessLogic = useBusinessLogic()
         let {svg: svgRef} = useCanvasContext()
 
-
         // Refs
         let ref = useRef<SVGGeometryElement>(null)
         let startRef = useRef<SVGGeometryElement>(null)
         let endRef = useRef<SVGGeometryElement>(null)
+
+        // Callbacks
+        let onDrag = useMemo(() => {
+            return (eventState: EventState<'drag'>) => onEventDrag(dispatch, businessLogic, eventState, svgRef, id)
+        }, [dispatch, businessLogic, svgRef, id])
+
+        let onDragStart = useMemo(() => {
+            return (eventState: EventState<'drag'>) => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id)
+        }, [dispatch, businessLogic, svgRef, id])
+
+        let onDragEnd = useMemo(() => {
+            return (eventState: EventState<'drag'>) => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id)
+        }, [dispatch, businessLogic, svgRef, id])
 
         // Springs
         let [{ySpring, intervalStartSpring, intervalEndSpring, groupHeightSpring}] = useSpring({
@@ -109,22 +120,13 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
 
-
         // Attach gestures
-        useGesture({
-            onDrag: eventState => onEventDrag(dispatch, businessLogic, eventState, svgRef, id),
-        }, {domTarget: ref})
-
-        useGesture({
-            onDrag: eventState => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id),
-        }, {domTarget: startRef})
-
-        useGesture({
-            onDrag: eventState => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id),
-        }, {domTarget: endRef})
+        useDrag(onDrag, {domTarget: ref})
+        useDrag(onDragStart, {domTarget: startRef})
+        useDrag(onDragEnd, {domTarget: endRef})
 
         // Define props
-        let props = {
+        let props = useMemo(() => ({
             x: xSpring,
             y: ySpring,
             width: widthSpring,
@@ -137,7 +139,8 @@ export function createEventComponent<T>(component: React.FC<T>) {
             selected,
             ...eventProps,
             ...otherProps,
-        }
+        }), [xSpring, ySpring, widthSpring, eventHeight, groupHeightSpring, ref, startRef, endRef, id, selected, eventProps, otherProps])
+
         // @ts-ignore
         return <PresentationalComponent {...props} />
     }
@@ -166,22 +169,22 @@ export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventCo
     let groupHeightsPixel = useGroupHeights()
     let eventYs = useEventYs()
 
+    let otherProps = useMemo(() => ({}), [])
+
     return <>
         <OnEventSpace>
             <DragOffset>
-                {events.map((eventId) => {
-                    return <React.Fragment key={eventId}>
-                        <Component
-                            id={eventId}
-                            eventHeight={eventHeight}
-                            y={eventYs[eventId]}
-                            groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
-                            interval={mapEventToInterval[eventId]}
-                            selected={mapEventToSelected[eventId]}
-                            eventProps={{}}
-                        />
-                    </React.Fragment>
-                })}
+                {events.map((eventId) => <Component
+                        key={eventId}
+                        id={eventId}
+                        eventHeight={eventHeight}
+                        y={eventYs[eventId]}
+                        groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
+                        interval={mapEventToInterval[eventId]}
+                        selected={mapEventToSelected[eventId]}
+                        eventProps={otherProps}
+                    />,
+                )}
             </DragOffset>
         </OnEventSpace>
     </>

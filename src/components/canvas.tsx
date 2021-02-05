@@ -1,8 +1,7 @@
-import React, {RefObject, useEffect, useRef, useState} from 'react'
+import React, {RefObject, useEffect, useMemo, useRef, useState} from 'react'
 import {useDrag, usePinch, useWheel} from 'react-use-gesture'
 import {animated, to, useSpring} from 'react-spring'
 import {Dispatch as ReduxDispatch} from 'redux'
-import {useDispatch} from 'react-redux'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 
 import {TimelineProps} from '../definitions'
@@ -37,6 +36,7 @@ import {
 } from '../store/actions'
 import {activateBodyScroll, deactivateBodyScroll} from '../functions/misc'
 import {useStartDateSpring, useTimePerPixelSpring} from '../context'
+import {useDispatch} from '../store'
 
 export const DragOffset: React.FC = ({children}) => {
     let startDateSpring = useStartDateSpring()
@@ -49,7 +49,7 @@ export const DragOffset: React.FC = ({children}) => {
     </animated.g>
 }
 
-export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | 'initialEndDate' | 'style'>> = React.memo((props) => {
+export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | 'initialEndDate' | 'style'>> = React.memo(function TimelineCanvas(props) {
     let {
         children,
         style,
@@ -149,8 +149,20 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
         }
     }, [divHeight, scrollOffset, previousScrollOffset, setPreviousScrollOffset, setShowScrollbar])
 
+    // Callbacks
+    let onDrag = useMemo(() => {
+        return (eventState: EventState<'drag'>) => onCanvasDrag(dispatch, svgRef, eventState)
+    }, [dispatch, svgRef])
+    let onWheel = useMemo(() => {
+        return (eventState: EventState<'wheel'>) => onCanvasWheel(dispatch, svgRef, eventState)
+    }, [dispatch, svgRef])
+    let onPinch = useMemo(() => {
+        return (eventState: EventState<'pinch'>) => onCanvasPinch(dispatch, svgRef, eventState)
+    }, [dispatch, svgRef])
+
+
     // Attach canvas gestures
-    useDrag(eventState => onCanvasDrag(dispatch, svgRef, eventState), {
+    useDrag(onDrag, {
         domTarget: scrollRef,
         bounds: {
             top: -Math.max(headerHeight + contentHeight - divHeight, 0) - scrollOffset,
@@ -161,12 +173,12 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
         rubberband: animate,
     })
 
-    useWheel(eventState => onCanvasWheel(dispatch, svgRef, eventState), {
+    useWheel(onWheel, {
         domTarget: svgRef,
         eventOptions: {passive: false},
     })
 
-    usePinch(eventState => onCanvasPinch(dispatch, svgRef, eventState), {
+    usePinch(onPinch, {
         domTarget: scrollRef,
         eventOptions: {passive: false},
     })
