@@ -38,7 +38,7 @@ import {
 } from './selectors'
 
 
-export const useAnimate = () => useSelector(selectAnimate)
+export const useAnimate = () => useSelector(selectAnimate, shallowEqual)
 export const useGroupOffsets = () => useSelector(getGroupOffsets)
 export const useEventIdsOrderedForPainting = () => useSelector(selectEventIdsOrderedForPainting)
 export const useEventAndGroupIds = () => useSelector(selectEventIdToGroupIdMap)
@@ -46,9 +46,9 @@ export const useGroupEventHeights = () => useSelector(selectGroupEventHeights)
 export const useGroupIndices = () => useSelector(selectGroupIndices)
 export const useGetHeaderIntervals = (intervalCreator: IntervalCreator, intervalLength: number) => useSelector(getHeaderIntervals(intervalCreator, intervalLength))
 export const useEventPositionsInGroup = () => useSelector(selectEventPositionsInGroup)
-export const useInitialized = () => useSelector(selectInitialized)
+export const useInitialized = () => useSelector(selectInitialized, shallowEqual)
 export const useSize = () => useSelector(selectSize)
-export const useSpringConfig = () => useSelector(selectSpringConfig)
+export const useSpringConfig = () => useSelector(selectSpringConfig, shallowEqual)
 export const useStartDate = () => useSelector(selectStartDate)
 export const useDateZero = () => useSelector(selectDateZero, shallowEqual)
 export const useTimePerPixel = () => useSelector(selectTimePerPixel)

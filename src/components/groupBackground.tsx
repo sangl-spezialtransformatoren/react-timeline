@@ -86,7 +86,7 @@ export function createGroupBackground<T extends GroupBackgroundPresentationalPro
 }
 
 
-export const GroupBackgrounds: React.FC<{component?: React.FC<GroupBackgroundPresentationalProps>}> = ({component = DefaultGroupBackground}) => {
+export const GroupBackgrounds: React.FC<{component?: React.FC<GroupBackgroundPresentationalProps>}> = React.memo(function GroupBackgrounds({component = DefaultGroupBackground}) {
     let Component = useMemo(() => {
         return createGroupBackground(component)
     }, [component])
@@ -120,5 +120,5 @@ export const GroupBackgrounds: React.FC<{component?: React.FC<GroupBackgroundPre
             {groups.map(groupId => <Component {...groupProps[groupId]} />)}
         </AsGroupBackground>
     </>
-}
+})
 

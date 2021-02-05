@@ -152,7 +152,7 @@ export type TimelineGroupProps = {
     component?: React.FC<PresentationalEventComponentProps>
 }
 
-export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventComponent}) => {
+export const Events_: React.FC<TimelineGroupProps> = React.memo(function Events({component = DefaultEventComponent}) {
     // Create event component
     let Component = useMemo(() => {
         return createEventComponent(component)
@@ -172,22 +172,26 @@ export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventCo
     let otherProps = useMemo(() => ({}), [])
 
     return <>
-        <OnEventSpace>
-            <DragOffset>
-                {events.map((eventId) => <Component
-                        key={eventId}
-                        id={eventId}
-                        eventHeight={eventHeight}
-                        y={eventYs[eventId]}
-                        groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
-                        interval={mapEventToInterval[eventId]}
-                        selected={mapEventToSelected[eventId]}
-                        eventProps={otherProps}
-                    />,
-                )}
-            </DragOffset>
-        </OnEventSpace>
+        {events.map((eventId) => <Component
+                key={eventId}
+                id={eventId}
+                eventHeight={eventHeight}
+                y={eventYs[eventId]}
+                groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
+                interval={mapEventToInterval[eventId]}
+                selected={mapEventToSelected[eventId]}
+                eventProps={otherProps}
+            />,
+        )}
     </>
+})
+
+export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventComponent}) => {
+    return <OnEventSpace>
+        <DragOffset>
+            <Events_ component={component} />
+        </DragOffset>
+    </OnEventSpace>
 }
 
 

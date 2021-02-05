@@ -38,16 +38,18 @@ import {activateBodyScroll, deactivateBodyScroll} from '../functions/misc'
 import {useStartDateSpring, useTimePerPixelSpring} from '../context'
 import {useDispatch} from '../store'
 
-export const DragOffset: React.FC = ({children}) => {
-    let startDateSpring = useStartDateSpring()
-    let timePerPixelSpring = useTimePerPixelSpring()
-    let dateZero = useDateZero()
-    let offset = to([startDateSpring, timePerPixelSpring], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()} 0)`)
+export const DragOffset: React.FC = React.memo(
+    function DragOffset({children}) {
+        let startDateSpring = useStartDateSpring()
+        let timePerPixelSpring = useTimePerPixelSpring()
+        let dateZero = useDateZero()
+        let offset = to([startDateSpring, timePerPixelSpring], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()} 0)`)
 
-    return <animated.g transform={offset}>
-        {children}
-    </animated.g>
-}
+        return <animated.g transform={offset}>
+            {children}
+        </animated.g>
+    }
+)
 
 export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | 'initialEndDate' | 'style'>> = React.memo(function TimelineCanvas(props) {
     let {

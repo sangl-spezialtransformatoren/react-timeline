@@ -88,48 +88,46 @@ export function createGroupLabel<T extends GroupLabelPresentationalProps>(compon
     return React.memo(GroupLabel)
 }
 
-export const GroupLabels: React.FC<{component?: React.FC<GroupLabelPresentationalProps>, background?: React.FC<GroupLabelBackgroundPresentationalProps>}> = ({
-                                                                                                                                                                 component = DefaultGroupLabel,
-                                                                                                                                                                 background = DefaultGroupLabelBackground,
-                                                                                                                                                             }) => {
-    let Component = useMemo(() => {
-        return createGroupLabel(component)
-    }, [component])
+export const GroupLabels: React.FC<{component?: React.FC<GroupLabelPresentationalProps>, background?: React.FC<GroupLabelBackgroundPresentationalProps>}> = React.memo(
+    function GroupLabels({component = DefaultGroupLabel, background = DefaultGroupLabelBackground}) {
+        let Component = useMemo(() => {
+            return createGroupLabel(component)
+        }, [component])
 
-    let Background = useMemo(() => {
-        return background
-    }, [background])
+        let Background = useMemo(() => {
+            return background
+        }, [background])
 
-    // Redux state
-    let groups = useGroupIds()
-    let groupHeights = useGroupEventHeights()
-    let mapGroupIdToProps = useMapGroupIdToProps()
-    let groupIndices = useGroupIndices()
-    let groupOffsets = useGroupOffsets()
-    let numberOfGroups = useNumberOfGroups()
-    let groupHeightsPixel = useGroupHeights()
-    let groupYs = useGroupYs()
-    let {height} = useSize()
-    let contentHeight = useContentHeight()
+        // Redux state
+        let groups = useGroupIds()
+        let groupHeights = useGroupEventHeights()
+        let mapGroupIdToProps = useMapGroupIdToProps()
+        let groupIndices = useGroupIndices()
+        let groupOffsets = useGroupOffsets()
+        let numberOfGroups = useNumberOfGroups()
+        let groupHeightsPixel = useGroupHeights()
+        let groupYs = useGroupYs()
+        let {height} = useSize()
+        let contentHeight = useContentHeight()
 
-    let groupProps = useMemo(() => {
-        return Object.fromEntries(groups.map(groupId => [groupId, {
-            key: groupId,
-            groupId: groupId,
-            y: groupYs[groupId],
-            height: groupHeightsPixel[groupId],
-            groupHeight: groupHeights[groupId],
-            groupIndex: groupIndices[groupId],
-            groupOffset: groupOffsets[groupId],
-            numberOfGroups: numberOfGroups,
-            ...mapGroupIdToProps[groupId],
-        }]))
-    }, [groups, groupYs, groupHeightsPixel, groupHeights, groupIndices, groupOffsets, numberOfGroups, mapGroupIdToProps])
+        let groupProps = useMemo(() => {
+            return Object.fromEntries(groups.map(groupId => [groupId, {
+                key: groupId,
+                groupId: groupId,
+                y: groupYs[groupId],
+                height: groupHeightsPixel[groupId],
+                groupHeight: groupHeights[groupId],
+                groupIndex: groupIndices[groupId],
+                groupOffset: groupOffsets[groupId],
+                numberOfGroups: numberOfGroups,
+                ...mapGroupIdToProps[groupId],
+            }]))
+        }, [groups, groupYs, groupHeightsPixel, groupHeights, groupIndices, groupOffsets, numberOfGroups, mapGroupIdToProps])
 
-    return <>
-        <AsGroupLabels>
-            <Background y={-300} height={Math.max(height, contentHeight) + 600} />
-            {groups.map(groupId => <Component {...groupProps[groupId]} />)}
-        </AsGroupLabels>
-    </>
-}
+        return <>
+            <AsGroupLabels>
+                <Background y={-300} height={Math.max(height, contentHeight) + 600} />
+                {groups.map(groupId => <Component {...groupProps[groupId]} />)}
+            </AsGroupLabels>
+        </>
+    })
