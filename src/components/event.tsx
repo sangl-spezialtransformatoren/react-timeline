@@ -11,12 +11,11 @@ import {
     useEventAndGroupIds,
     useEventHeight,
     useEventIdsOrderedForPainting,
-    useEventProps,
+    useEventIntervals,
     useEventYs,
-    useGetInterval,
     useGroupHeights,
     useInitialized,
-    useIsEventSelected,
+    useMapEventIdToSelected,
     useSpringConfig,
 } from '../store/hooks'
 import {Dispatch} from '../store'
@@ -31,6 +30,7 @@ import {
 import {OnEventSpace, useCanvasContext} from '../context/canvasContext'
 import {DefaultEventComponent} from '../presentational/event'
 import {activateBodyScroll, boundingBoxRelativeToSVGRoot, deactivateBodyScroll} from '../functions/misc'
+import {PureInterval} from '../store/reducers/events'
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -51,9 +51,12 @@ export type EventComponentProps<T = {}> = {
     id: string
     eventHeight?: number
     groupHeight?: number
+    interval: PureInterval
+    eventProps: any
+    selected: boolean
 } & T
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number}>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number, selected: boolean}>
 
 
 export function createEventComponent<T>(component: React.FC<T>) {
@@ -63,6 +66,9 @@ export function createEventComponent<T>(component: React.FC<T>) {
             y,
             eventHeight = 20,
             groupHeight,
+            interval,
+            eventProps,
+            selected,
             children,
             ...otherProps
         }) => {
@@ -77,10 +83,6 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let animate = useAnimate()
         let initialized = useInitialized()
         let springConfig = useSpringConfig()
-
-        let interval = useGetInterval(id)
-        let eventProps = useEventProps(id)
-        let selected = useIsEventSelected(id)
 
         // Other State
         let timePerPixelSpring = useTimePerPixelSpring()
@@ -157,6 +159,8 @@ export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventCo
     let events = useEventIdsOrderedForPainting()
     let eventToGroup = useEventAndGroupIds()
     let eventHeight = useEventHeight()
+    let mapEventToInterval = useEventIntervals()
+    let mapEventToSelected = useMapEventIdToSelected()
 
     // Calculated state
     let groupHeightsPixel = useGroupHeights()
@@ -171,7 +175,11 @@ export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventCo
                             id={eventId}
                             eventHeight={eventHeight}
                             y={eventYs[eventId]}
-                            groupHeight={groupHeightsPixel[eventToGroup[eventId]]} />
+                            groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
+                            interval={mapEventToInterval[eventId]}
+                            selected={mapEventToSelected[eventId]}
+                            eventProps={{}}
+                        />
                     </React.Fragment>
                 })}
             </DragOffset>

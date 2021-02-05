@@ -388,7 +388,7 @@ export const selectMapGroupIdToProps = (config: BusinessLogic) => createSelector
 export const selectMapEventIdToSelected = (config: BusinessLogic) => createSelector(
     [selectEventsWithVolatileState(config)],
     function selectMapEventIdToSelectedCollector(events) {
-        return Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, !!event?.selected]))
+        return Object.fromEntries(Object.entries(events).map(([eventId, event]) => [eventId, !!event?.selected])) as Record<string, boolean>
     },
 )
 
