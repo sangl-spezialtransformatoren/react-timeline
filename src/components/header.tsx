@@ -15,16 +15,16 @@ import {
 } from '../functions/intervals'
 import {animated, to} from 'react-spring'
 import {useTimePerPixelSpring} from '../context'
-import {useDateZero, useGetHeaderIntervals} from "../store/hooks"
+import {useDateZero, useGetHeaderIntervals} from '../store/hooks'
 
-type HeaderProps<T = {}> = { x: number, y: number, width: number, height: number } & T
-type TemporalHeaderProps = HeaderProps<{ date: Date | number }>
+type HeaderProps<T = {}> = {x: number, y: number, width: number, height: number} & T
+type TemporalHeaderProps = HeaderProps<{date: Date | number}>
 
-export type HeaderComponent<T> = React.FC<T & { x: number, y: number, width: number, height: number }>
+export type HeaderComponent<T> = React.FC<T & {x: number, y: number, width: number, height: number}>
 export type TemporalHeaderComponent<T = {}> = React.FC<TemporalHeaderProps & T>
 
 function createHeaderElement<T>(component: HeaderComponent<T>) {
-    let HeaderElement: React.FC<{ start: Date | number, end: Date | number } & T> = (props) => {
+    let HeaderElement: React.FC<{start: Date | number, end: Date | number} & T> = (props) => {
         let {start, end, children, ...otherProps} = props
         let timePerPixelSpring = useTimePerPixelSpring()
         let dateZero = useDateZero()

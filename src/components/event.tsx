@@ -1,4 +1,4 @@
-import React, {MutableRefObject, RefObject, useMemo, useRef} from 'react'
+import React, {MutableRefObject, RefObject, useCallback, useMemo, useRef} from 'react'
 import {animated, to, useSpring} from 'react-spring'
 import {useDrag} from 'react-use-gesture'
 import {useBusinessLogic, useTimePerPixelSpring} from '../context'
@@ -59,8 +59,6 @@ export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, k
 
 
 export function createEventComponent<T>(component: React.FC<T>) {
-    let PresentationalComponent = animated(component)
-
     let EventComponent: EventComponentType<T> = (
         {
             id,
@@ -73,6 +71,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
             children,
             ...otherProps
         }) => {
+        let PresentationalComponent = animated(component)
 
         // Redux
         let dispatch = useDispatch()
@@ -94,55 +93,61 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let endRef = useRef<SVGGeometryElement>(null)
 
         // Callbacks
-        let onDrag = useMemo(() => {
-            return (eventState: EventState<'drag'>) => onEventDrag(dispatch, businessLogic, eventState, svgRef, id)
-        }, [dispatch, businessLogic, svgRef, id])
-
-        let onDragStart = useMemo(() => {
-            return (eventState: EventState<'drag'>) => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id)
-        }, [dispatch, businessLogic, svgRef, id])
-
-        let onDragEnd = useMemo(() => {
-            return (eventState: EventState<'drag'>) => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id)
-        }, [dispatch, businessLogic, svgRef, id])
+        let onDrag = useCallback((eventState: EventState<'drag'>) => onEventDrag(dispatch, businessLogic, eventState, svgRef, id), [dispatch, businessLogic, svgRef, id])
+        let onDragStart = useCallback((eventState: EventState<'drag'>) => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id), [dispatch, businessLogic, svgRef, id])
+        let onDragEnd = useCallback((eventState: EventState<'drag'>) => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id), [dispatch, businessLogic, svgRef, id])
 
         // Springs
-        let [{ySpring, intervalStartSpring, intervalEndSpring, groupHeightSpring}] = useSpring({
-            intervalStartSpring: interval.start,
-            intervalEndSpring: interval.end,
+        let [{ySpring}] = useSpring({
             ySpring: y,
+            config: springConfig,
+            immediate: !animate || !initialized,
+        }, [springConfig, animate, initialized, y])
+
+        let [{intervalStartSpring}] = useSpring({
+            intervalStartSpring: interval.start,
+            config: springConfig,
+            immediate: !animate || !initialized,
+        }, [springConfig, animate, initialized, interval.start])
+
+        let [{intervalEndSpring}] = useSpring({
+            intervalEndSpring: interval.end,
+            config: springConfig,
+            immediate: !animate || !initialized,
+        }, [springConfig, animate, initialized, interval.end])
+
+        let [{groupHeightSpring}] = useSpring({
             groupHeightSpring: groupHeight,
             config: springConfig,
             immediate: !animate || !initialized,
-        }, [springConfig, interval.start, interval.end, animate, initialized, y, groupHeight])
+        }, [springConfig, animate, initialized, groupHeight])
+
+        let xInterpolator = useCallback((a, b) => (b.valueOf() - dateZero.valueOf()) / a.valueOf(), [dateZero])
+        let widthInterpolator = useCallback((timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf(), [])
 
         // Interpolations
-        let xSpring = to([timePerPixelSpring, intervalStartSpring], (timePerPixel, intervalStart) => (intervalStart.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf())
-        let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], (timePerPixel, intervalStart, intervalEnd) => (intervalEnd.valueOf() - intervalStart.valueOf()) / timePerPixel.valueOf())
+        let xSpring = to([timePerPixelSpring, intervalStartSpring], xInterpolator)
+        let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], widthInterpolator)
 
         // Attach gestures
         useDrag(onDrag, {domTarget: ref})
         useDrag(onDragStart, {domTarget: startRef})
         useDrag(onDragEnd, {domTarget: endRef})
 
-        // Define props
-        let props = useMemo(() => ({
-            x: xSpring,
-            y: ySpring,
-            width: widthSpring,
-            height: eventHeight,
-            groupHeight: groupHeightSpring,
-            dragHandle: ref,
-            dragStartHandle: startRef,
-            dragEndHandle: endRef,
-            eventId: id,
-            selected,
-            ...eventProps,
-            ...otherProps,
-        }), [xSpring, ySpring, widthSpring, eventHeight, groupHeightSpring, ref, startRef, endRef, id, selected, eventProps, otherProps])
-
         // @ts-ignore
-        return <PresentationalComponent {...props} />
+        return <PresentationalComponent
+            x={xSpring}
+            y={ySpring}
+            width={widthSpring}
+            height={eventHeight}
+            groupHeight={groupHeightSpring}
+            dragHandle={ref}
+            dragStartHandle={startRef}
+            dragEndHandle={endRef}
+            eventId={id}
+            selected={selected}
+            {...eventProps}
+            {...otherProps} />
     }
     return React.memo(EventComponent)
 }

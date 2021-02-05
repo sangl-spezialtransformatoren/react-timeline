@@ -216,21 +216,25 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
     let drawerTransform = to([scrollOffsetSpring, drawerOpeningSpring], (scrollPosition, drawerOpening) => `translate(${drawerOpening} ${headerHeight + scrollPosition})`)
     let scrollbarY = to([scrollOffsetSpring], scrollOffset => contentHeight !== 0 ? headerHeight + (-scrollOffset * (divHeight - headerHeight) / contentHeight) + 3 : 0)
 
+    let canvasContextValue = useMemo(() => {
+        return {
+            svg: svgRef,
+            grid: gridRef,
+            header: headerRef,
+            groupBackgrounds: groupBackgroundsRef,
+            groupLabels: groupLabelsRef,
+            events: eventsRef,
+            foreground: foregroundRef,
+        }
+    }, [svgRef, gridRef, headerRef, groupBackgroundsRef, groupLabelsRef, eventsRef, foregroundRef])
+
     return <>
         <div className={'react-timeline'} style={{...style}} ref={divRef}>
             <animated.svg
                 viewBox={`0 0 ${divWidth} ${divHeight}`}
                 className={'react-timeline-svg'}
                 ref={svgRef}>
-                <CanvasContext.Provider value={{
-                    svg: svgRef,
-                    grid: gridRef,
-                    header: headerRef,
-                    groupBackgrounds: groupBackgroundsRef,
-                    groupLabels: groupLabelsRef,
-                    events: eventsRef,
-                    foreground: foregroundRef,
-                }}>
+                <CanvasContext.Provider value={canvasContextValue}>
                     <g id={'grid'} ref={gridRef} />
                     <animated.g id={'group-backgrounds'} ref={groupBackgroundsRef} transform={scrollTransform} />
 
