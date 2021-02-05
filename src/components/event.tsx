@@ -196,7 +196,7 @@ export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventCo
 
 
 const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, svgRef: RefObject<SVGSVGElement>, id: string) => {
-    let {movement: [dx], last, tap, distance, xy} = eventState
+    let {movement: [dx], last, tap, distance, xy, pinching} = eventState
 
     if (tap) {
         let action: Thunk = async (dispatch) => {
@@ -206,6 +206,9 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
         return
     }
     if (distance === 0) {
+        return
+    }
+    if (pinching) {
         return
     }
 
@@ -314,12 +317,17 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
 }
 
 const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) => {
-    let {movement: [dx], last} = eventState
+    let {movement: [dx], last, pinching} = eventState
+
+    if (pinching) {
+        return
+    }
 
     deactivateBodyScroll(document)
     if (last) {
         activateBodyScroll(document)
     }
+
 
     let action: Thunk = async (dispatch: Dispatch, getState) => {
         let state = getState()
@@ -369,7 +377,11 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
 }
 
 const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) => {
-    let {movement: [dx], last} = eventState
+    let {movement: [dx], last, pinching} = eventState
+
+    if (pinching) {
+        return
+    }
 
     deactivateBodyScroll(document)
     if (last) {
