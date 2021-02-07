@@ -298,14 +298,21 @@ export const onCanvasDrag = (dispatch: ReduxDispatch, _: RefObject<SVGSVGElement
 }
 
 export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'wheel'>) => {
-    let {distance, delta, last} = eventState
+    let {distance, delta, last, memo, velocity} = eventState
+    let zooming: boolean = memo || false
 
     deactivateBodyScroll(document)
     if (last) {
         activateBodyScroll(document)
     }
 
-    if (eventState.altKey) {
+    if (velocity < 0.1 && eventState.altKey) {
+        zooming = true
+    } else if (velocity < 0.1 && !eventState.altKey){
+        zooming = false
+    }
+
+    if (zooming) {
         let svg = svgRef?.current
         if (svg !== undefined && svg !== null) {
             let point = svg.createSVGPoint()
@@ -331,6 +338,7 @@ export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
             dispatch(dragCanvas({x: 0, y: -y, applyBounds: true}))
         }
     }
+    return zooming
 }
 
 export const onCanvasPinch = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGElement> | undefined, eventState: EventState<'pinch'>) => {
