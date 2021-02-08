@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react'
-import {TimelineProps} from './definitions'
+import {DefaultTimelineProps, TimelineProps} from './definitions'
 import {Provider} from 'react-redux'
 import {TimelineStore} from './store'
 import {TimelineContext} from './context'
@@ -19,7 +19,7 @@ import {
 import isEqual from 'react-fast-compare'
 
 
-export const Timeline: React.FC<TimelineProps> = (props) => {
+export const Timeline: React.FC<TimelineProps> = (props = DefaultTimelineProps) => {
     let {
         animate,
         businessLogic,

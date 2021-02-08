@@ -18,9 +18,7 @@ import {
     selectEventYs,
     selectGroupEventHeights,
     selectGroupHeights,
-    selectGroupIds,
     selectGroupIndices,
-    selectGroupPadding,
     selectGroupYs,
     selectHeaderHeight,
     selectInitialized,
@@ -29,6 +27,7 @@ import {
     selectMapGroupIdToProps,
     selectMinGroupHeight,
     selectNumberOfGroups,
+    selectOrderedGroupIds,
     selectScrollOffset,
     selectSize,
     selectSpringConfig,
@@ -54,7 +53,7 @@ export const useDateZero = () => useSelector(selectDateZero, shallowEqual)
 export const useTimePerPixel = () => useSelector(selectTimePerPixel)
 export const useTimeZone = () => useSelector(selectTimeZone)
 export const useMapEventIdToProps = () => useSelector(selectMapEventIdToProps)
-export const useGroupIds = () => useSelector(selectGroupIds, shallowEqual)
+export const useGroupIds = () => useSelector(selectOrderedGroupIds, shallowEqual)
 export const useHeaderHeight = () => useSelector(selectHeaderHeight)
 export const useNumberOfGroups = () => useSelector(selectNumberOfGroups)
 export const useScrollOffset = () => useSelector(selectScrollOffset)
@@ -64,7 +63,6 @@ export const useDrawerWidth = () => useSelector(selectDrawerWidth)
 export const useMapGroupIdToProps = () => useSelector(selectMapGroupIdToProps)
 export const useEventHeight = () => useSelector(selectEventHeight)
 export const useEventMargin = () => useSelector(selectEventMargin)
-export const useGroupPadding = () => useSelector(selectGroupPadding)
 export const useMinGroupHeight = () => useSelector(selectMinGroupHeight)
 export const useGroupHeights = () => useSelector(selectGroupHeights)
 export const useGroupYs = () => useSelector(selectGroupYs)

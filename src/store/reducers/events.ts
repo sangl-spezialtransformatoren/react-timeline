@@ -27,16 +27,12 @@ export let events: PartialTimelineReducer<'events'> = (config) =>
                 newState = config.mergeNewEvents(newState, action.payload)
                 break
             case UPDATE_EVENTS: {
-                let events = action.payload.events
-                for (let eventId of Object.keys(newState)) {
-                    let newEvent = events?.[eventId]
-                    if (newEvent) {
-                        newState = {
-                            ...newState,
-                            [eventId]: newEvent,
-                        }
-                    }
+                let {updatedEvents, deletedEvents} = action.payload
+                newState = {
+                    ...newState,
+                    ...updatedEvents
                 }
+                newState = Object.fromEntries(Object.entries(newState).filter(([eventId, _]) => !deletedEvents?.includes(eventId)))
                 break
             }
             case CHANGE_GROUP: {

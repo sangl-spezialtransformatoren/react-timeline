@@ -32,8 +32,7 @@ export const internalEventData: PartialTimelineReducer<'internalEventData'> = ()
         case RESET_DRAG_OR_RESIZE: {
             newState = Object.fromEntries(
                 Object.entries(newState).map(([eventId, event]) => {
-                    let {interval, initialInterval, ...rest} = event
-                    return [eventId, rest]
+                    return [eventId, {selected: event.selected}]
                 }))
             break
         }
@@ -49,16 +48,19 @@ export const internalEventData: PartialTimelineReducer<'internalEventData'> = ()
             break
         }
         case UPDATE_EVENTS_INTERMEDIARY: {
-            let events = action.payload.events
-            for (let [eventId, event] of Object.entries(events)) {
+            let {updatedEvents, deletedEvents} = action.payload
+            newState = Object.fromEntries(Object.entries(newState).filter(([eventId, _]) => !deletedEvents?.includes(eventId)))
+            if (updatedEvents) {
+                let mergedData: Record<string, InternalEventData> = Object.fromEntries(Object.entries(updatedEvents).map(([eventId, newEvent]) => {
+                    return [eventId, {
+                        ...newEvent,
+                        selected: newState?.[eventId]?.selected
+
+                    }]
+                }))
                 newState = {
                     ...newState,
-                    [eventId]: {
-                        ...newState[eventId],
-                        initialInterval: newState[eventId]?.initialInterval || state?.events[eventId].interval,
-                        interval: event.interval,
-                        groupId: event.groupId,
-                    },
+                    ...mergedData
                 }
             }
             break
@@ -76,14 +78,16 @@ export const internalEventData: PartialTimelineReducer<'internalEventData'> = ()
             break
         }
         case UPDATE_EVENTS: {
-            let events = action.payload.events
-            for (let eventId of Object.keys(events)) {
-                let {interval, initialInterval, groupId, ...rest} = newState[eventId]
-                newState = {
-                    ...newState,
-                    [eventId]: rest,
+            let {updatedEvents, deletedEvents} = action.payload
+            let updatedEventIds = updatedEvents ? Object.keys(updatedEvents) : []
+            newState = Object.fromEntries(Object.entries(newState).filter(([eventId, _]) => !deletedEvents?.includes(eventId)))
+            newState = Object.fromEntries(Object.entries(newState).map(([eventId, event]) => {
+                if (Object.keys(updatedEventIds).includes(eventId)) {
+                    return [eventId, event]
+                } else {
+                    return [eventId, {selected: event.selected}]
                 }
-            }
+            }))
             break
         }
     }

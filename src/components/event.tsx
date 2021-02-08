@@ -2,7 +2,15 @@ import React, {MutableRefObject, RefObject, useCallback, useMemo, useRef} from '
 import {animated, to, useSpring} from 'react-spring'
 import {useDrag} from 'react-use-gesture'
 import {useBusinessLogic, useTimePerPixelSpring} from '../context'
-import {resetDragOrResize, Thunk, toggleEventSelection, updateEvents, updateEventsIntermediary} from '../store/actions'
+import {
+    resetDragOrResize,
+    Thunk,
+    toggleEventSelection,
+    updateEvents,
+    updateEventsIntermediary,
+    updateGroups,
+    updateGroupsIntermediary
+} from '../store/actions'
 import {DragOffset, EventState} from './canvas'
 import {
     useAnimate,
@@ -14,6 +22,7 @@ import {
     useEventYs,
     useGroupHeights,
     useInitialized,
+    useMapEventIdToProps,
     useMapEventIdToSelected,
     useSpringConfig,
 } from '../store/hooks'
@@ -21,6 +30,7 @@ import {Dispatch, useDispatch} from '../store'
 import {BusinessLogic} from '../store/businessLogic'
 import {
     selectEvents,
+    selectGroups,
     selectInternalEventData,
     selectNumberOfSelectedEvents,
     selectSelectedEvents,
@@ -51,9 +61,9 @@ export type EventComponentProps<T = {}> = {
     eventHeight?: number
     groupHeight?: number
     interval: PureInterval
-    eventProps: any
+    eventProps: T
     selected: boolean
-} & T
+}
 
 export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number, selected: boolean}>
 
@@ -68,8 +78,6 @@ export function createEventComponent<T>(component: React.FC<T>) {
             interval,
             eventProps,
             selected,
-            children,
-            ...otherProps
         }) => {
         let PresentationalComponent = animated(component)
 
@@ -136,18 +144,17 @@ export function createEventComponent<T>(component: React.FC<T>) {
 
         // @ts-ignore
         return <PresentationalComponent
+            {...eventProps}
+            eventId={id}
             x={xSpring}
             y={ySpring}
             width={widthSpring}
             height={eventHeight}
             groupHeight={groupHeightSpring}
+            selected={selected}
             dragHandle={ref}
             dragStartHandle={startRef}
-            dragEndHandle={endRef}
-            eventId={id}
-            selected={selected}
-            {...eventProps}
-            {...otherProps} />
+            dragEndHandle={endRef}/>
     }
     return React.memo(EventComponent)
 }
@@ -169,12 +176,9 @@ export const Events_: React.FC<TimelineGroupProps> = React.memo(function Events(
     let eventHeight = useEventHeight()
     let mapEventToInterval = useEventIntervals()
     let mapEventToSelected = useMapEventIdToSelected()
-
-    // Calculated state
+    let mapEventToProps = useMapEventIdToProps()
     let groupHeightsPixel = useGroupHeights()
     let eventYs = useEventYs()
-
-    let otherProps = useMemo(() => ({}), [])
 
     return <>
         {events.map((eventId) => <Component
@@ -185,7 +189,8 @@ export const Events_: React.FC<TimelineGroupProps> = React.memo(function Events(
                 groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
                 interval={mapEventToInterval[eventId]}
                 selected={mapEventToSelected[eventId]}
-                eventProps={otherProps}
+                // @ts-ignore
+                eventProps={mapEventToProps[eventId]}
             />,
         )}
     </>
@@ -194,7 +199,7 @@ export const Events_: React.FC<TimelineGroupProps> = React.memo(function Events(
 export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventComponent}) => {
     return <OnEventSpace>
         <DragOffset>
-            <Events_ component={component} />
+            <Events_ component={component}/>
         </DragOffset>
     </OnEventSpace>
 }
@@ -225,12 +230,13 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
         let numberOfSelectedEvents = selectNumberOfSelectedEvents(config)(state)
-        let allEvents = selectEvents(config)(state)
+        let currentEvents = selectEvents(config)(state)
+        let currentGroups = selectGroups(config)(state)
         let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents
         if (numberOfSelectedEvents === 0) {
-            selectedEvents = {[id]: allEvents[id]}
+            selectedEvents = {[id]: currentEvents[id]}
         } else {
             selectedEvents = selectSelectedEvents(config)(state)
             if (!Object.keys(selectedEvents).includes(id)) {
@@ -273,11 +279,11 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
                     bottom = position.y + position.height
                     lowestGroup = groupId
                 }
-                if (groupId !== allEvents[id].groupId && y >= position.y && y < (position.y + position.height)) {
+                if (groupId !== currentEvents[id].groupId && y >= position.y && y < (position.y + position.height)) {
                     newGroupId = groupId
                     break
                 }
-                if (groupId !== allEvents[id].groupId && y >= position.y - buffer && y < (position.y + position.height + buffer)) {
+                if (groupId !== currentEvents[id].groupId && y >= position.y - buffer && y < (position.y + position.height + buffer)) {
                     nearestGroupId = groupId
                 }
             }
@@ -293,25 +299,33 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
         }
 
         if (!last) {
-            let {events: newEvents} = config.validateDuringDrag({
+            let {updatedEvents, deletedEvents, updatedGroups, deletedGroups} = config.validateDuringDrag({
                 manipulatedEventId: id,
                 newIntervals: newIntervals,
-                newGroups: newGroups,
-                events: allEvents,
+                newGroupAssignments: newGroups,
+                currentEvents: currentEvents,
+                currentGroups: currentGroups
             })
-            if (newEvents) {
-                dispatch(updateEventsIntermediary({events: newEvents}))
+            if (updatedEvents || deletedEvents) {
+                dispatch(updateEventsIntermediary({updatedEvents, deletedEvents}))
+            }
+            if (updatedGroups || deletedGroups) {
+                dispatch(updateGroupsIntermediary({updatedGroups, deletedGroups}))
             }
         } else {
             try {
-                let {events: newEvents} = await config.validateAfterDrag({
+                let {updatedEvents, deletedEvents, updatedGroups, deletedGroups} = await config.validateAfterDrag({
                     manipulatedEventId: id,
                     newIntervals: newIntervals,
-                    newGroups: newGroups,
-                    events: allEvents,
+                    newGroupAssignments: newGroups,
+                    currentEvents: currentEvents,
+                    currentGroups: currentGroups
                 })
-                if (newEvents) {
-                    dispatch(updateEvents({events: newEvents}))
+                if (updatedEvents || deletedEvents) {
+                    dispatch(updateEvents({updatedEvents, deletedEvents}))
+                }
+                if (updatedGroups || deletedGroups) {
+                    dispatch(updateGroups({updatedGroups, deletedGroups}))
                 }
             } catch (e) {
                 dispatch(resetDragOrResize())
@@ -336,7 +350,9 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
 
     let action: Thunk = async (dispatch: Dispatch, getState) => {
         let state = getState()
-        let event = selectEvents(config)(state)[id]
+        let currentEvents = selectEvents(config)(state)
+        let currentGroups = selectGroups(config)(state)
+        let event = currentEvents[id]
         let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents = selectSelectedEvents(config)(state)
@@ -346,7 +362,6 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
 
         let oldInterval = internalEventData?.[id]?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
-        let events = selectEvents(config)(state)
 
         let dt = dx * timePerPixel
         let newInterval = {
@@ -354,23 +369,31 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
             end: oldInterval.end,
         }
         if (!last) {
-            let {events: newEvents} = config.validateDuringResize({
+            let {updatedEvents, deletedEvents, updatedGroups, deletedGroups} = config.validateDuringResize({
                 manipulatedEventId: id,
                 newIntervals: {[id]: newInterval},
-                events,
+                currentEvents,
+                currentGroups,
             })
-            if (newEvents) {
-                dispatch(updateEventsIntermediary({events: newEvents}))
+            if (updatedEvents || deletedEvents) {
+                dispatch(updateEventsIntermediary({updatedEvents, deletedEvents}))
+            }
+            if (updatedGroups || deletedGroups) {
+                dispatch(updateGroupsIntermediary({updatedGroups, deletedGroups}))
             }
         } else {
             try {
-                let {events: newEvents} = await config.validateAfterResize({
+                let {updatedEvents, deletedEvents, updatedGroups, deletedGroups} = await config.validateAfterResize({
                     manipulatedEventId: id,
                     newIntervals: {[id]: newInterval},
-                    events,
+                    currentEvents,
+                    currentGroups
                 })
-                if (newEvents) {
-                    dispatch(updateEvents({events: newEvents}))
+                if (updatedEvents || deletedEvents) {
+                    dispatch(updateEvents({updatedEvents, deletedEvents}))
+                }
+                if (updatedGroups || deletedGroups) {
+                    dispatch(updateGroups({updatedGroups, deletedGroups}))
                 }
             } catch (e) {
                 dispatch(resetDragOrResize())
@@ -395,7 +418,9 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
 
     let action: Thunk = async (dispatch, getState) => {
         let state = getState()
-        let event = selectEvents(config)(state)[id]
+        let currentEvents = selectEvents(config)(state)
+        let currentGroups = selectGroups(config)(state)
+        let event = currentEvents[id]
         let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents = selectSelectedEvents(config)(state)
@@ -405,7 +430,6 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
 
         let oldInterval = internalEventData?.[id]?.initialInterval || event.interval
         let timePerPixel = selectTimePerPixel(config)(state)
-        let events = selectEvents(config)(state)
 
         let dt = dx * timePerPixel
         let newInterval = {
@@ -414,23 +438,31 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
         }
 
         if (!last) {
-            let {events: newEvents} = config.validateDuringResize({
+            let {updatedEvents, deletedEvents, updatedGroups, deletedGroups} = config.validateDuringResize({
                 manipulatedEventId: id,
                 newIntervals: {[id]: newInterval},
-                events,
+                currentEvents: currentEvents,
+                currentGroups: currentGroups
             })
-            if (newEvents) {
-                dispatch(updateEventsIntermediary({events: newEvents}))
+            if (updatedEvents || deletedEvents) {
+                dispatch(updateEventsIntermediary({updatedEvents, deletedEvents}))
+            }
+            if (updatedGroups || deletedGroups) {
+                dispatch(updateGroupsIntermediary({updatedGroups, deletedGroups}))
             }
         } else {
             try {
-                let {events: newEvents} = await config.validateAfterResize({
+                let {updatedEvents, deletedEvents, updatedGroups, deletedGroups} = await config.validateAfterResize({
                     manipulatedEventId: id,
                     newIntervals: {[id]: newInterval},
-                    events,
+                    currentEvents,
+                    currentGroups
                 })
-                if (newEvents) {
-                    dispatch(updateEvents({events: newEvents}))
+                if (updatedEvents || deletedEvents) {
+                    dispatch(updateEvents({updatedEvents, deletedEvents}))
+                }
+                if (updatedGroups || deletedGroups) {
+                    dispatch(updateGroups({updatedGroups, deletedGroups}))
                 }
             } catch (e) {
                 dispatch(resetDragOrResize())

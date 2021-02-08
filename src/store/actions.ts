@@ -1,7 +1,7 @@
 import {Action} from 'redux'
 
 import {createPayloadActionCreators, PayloadAction} from './index'
-import {RequiredEventData, StoreShape} from './shape'
+import {RequiredEventData, RequiredGroupData, StoreShape} from './shape'
 import {makePureInterval, PureInterval} from './reducers/events'
 import {ThunkAction} from '@reduxjs/toolkit'
 
@@ -45,13 +45,21 @@ export const MOVE_EVENT_INTERMEDIARY = 'moveEventIntermediary'
 export type MoveEventIntermediaryAction = PayloadAction<typeof MOVE_EVENT_INTERMEDIARY, {id: string, interval: PureInterval}>
 export const [moveEventIntermediary, useMoveEventIntermediary] = createPayloadActionCreators(MOVE_EVENT_INTERMEDIARY)
 
+export const UPDATE_EVENTS = 'updateEvents'
+export type UpdateEventsAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS, {updatedEvents?: Record<string, E>, deletedEvents?: string[]}>
+export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDATE_EVENTS)
+
 export const UPDATE_EVENTS_INTERMEDIARY = 'updateEventsIntermediary'
-export type UpdateEventsIntermediaryAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS_INTERMEDIARY, {events: Record<string, E>}>
+export type UpdateEventsIntermediaryAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS_INTERMEDIARY, {updatedEvents?: Record<string, E>, deletedEvents?: string[]}>
 export const [updateEventsIntermediary, useUpdateEventsIntermediary] = createPayloadActionCreators(UPDATE_EVENTS_INTERMEDIARY)
 
-export const UPDATE_EVENTS = 'updateEvents'
-export type UpdateEventsAction<E extends RequiredEventData = RequiredEventData> = PayloadAction<typeof UPDATE_EVENTS, {events: Record<string, E>}>
-export const [updateEvents, useUpdateEvents] = createPayloadActionCreators(UPDATE_EVENTS)
+export const UPDATE_GROUPS = 'updateGroups'
+export type UpdateGroupsAction<G extends RequiredGroupData = RequiredGroupData> = PayloadAction<typeof UPDATE_GROUPS, {updatedGroups?: Record<string, G>, deletedGroups?: string[]}>
+export const [updateGroups, useUpdateGroups] = createPayloadActionCreators(UPDATE_GROUPS)
+
+export const UPDATE_GROUPS_INTERMEDIARY = 'updateGroupsIntermediary'
+export type UpdateGroupsIntermediaryAction<G extends RequiredGroupData = RequiredGroupData> = PayloadAction<typeof UPDATE_GROUPS_INTERMEDIARY, {updatedGroups?: Record<string, G>, deletedGroups?: string[]}>
+export const [updateGroupsIntermediary, useUpdateGroupsIntermediary] = createPayloadActionCreators(UPDATE_GROUPS_INTERMEDIARY)
 
 export const CHANGE_GROUP = 'changeGroup'
 export type ChangeGroupAction = PayloadAction<typeof CHANGE_GROUP, {id: string, groupId: string}>
@@ -73,15 +81,17 @@ export const deselectAllEvents = () => {
     return {type: DESELECT_ALL_EVENTS}
 }
 
-export type EventAction<E extends RequiredEventData = RequiredEventData> =
+export type EventAction<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> =
     SetEventsAction
     | ChangeGroupAction
     | ResetDragOrResizeAction
     | MoveEventIntermediaryAction
     | MergeNewEventDataAction
     | ToggleEventSelectedAction
-    | UpdateEventsIntermediaryAction<E>
     | UpdateEventsAction<E>
+    | UpdateEventsIntermediaryAction<E>
+    | UpdateGroupsAction<G>
+    | UpdateGroupsIntermediaryAction<G>
     | DeselectAllEventsAction
 
 // groups

@@ -2,12 +2,70 @@ import {compareAsc} from 'date-fns'
 import {RequiredEventData, RequiredGroupData} from './shape'
 import {makePureInterval} from './reducers/events'
 
+export type ValidateDuringDragInput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    manipulatedEventId: string,
+    newIntervals: Record<string, Interval>,
+    newGroupAssignments: Record<string, string>,
+    currentEvents: Record<string, E>,
+    currentGroups: Record<string, G>
+}
+
+export type ValidateDuringDragOutput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    updatedEvents?: Record<string, E>,
+    deletedEvents?: string[],
+    updatedGroups?: Record<string, G>,
+    deletedGroups?: string[]
+}
+
+export type ValidateAfterDragInput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    manipulatedEventId: string,
+    newIntervals: Record<string, Interval>,
+    newGroupAssignments: Record<string, string>,
+    currentEvents: Record<string, E>,
+    currentGroups: Record<string, G>
+}
+
+export type ValidateAfterDragOutput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    updatedEvents?: Record<string, E>,
+    deletedEvents?: string[],
+    updatedGroups?: Record<string, G>,
+    deletedGroups?: string[]
+}
+
+export type ValidateDuringResizeInput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    manipulatedEventId: string,
+    newIntervals: Record<string, Interval>,
+    currentEvents: Record<string, E>,
+    currentGroups: Record<string, G>
+}
+
+export type ValidateDuringResizeOutput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    updatedEvents?: Record<string, E>,
+    deletedEvents?: string[],
+    updatedGroups?: Record<string, G>,
+    deletedGroups?: string[]
+}
+
+export type ValidateAfterResizeInput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    manipulatedEventId: string,
+    newIntervals: Record<string, Interval>,
+    currentEvents: Record<string, E>,
+    currentGroups: Record<string, G>
+}
+
+export type ValidateAfterResizeOutput<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData> = {
+    updatedEvents?: Record<string, E>,
+    deletedEvents?: string[],
+    updatedGroups?: Record<string, G>,
+    deletedGroups?: string[]
+}
+
 export type BusinessLogic<E extends RequiredEventData = RequiredEventData, G extends RequiredGroupData = RequiredGroupData, EventProps extends {} = E, GroupProps extends {} = G> = {
-    validateDuringDrag: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, newGroups: Record<string, string>, events: Record<string, E>}) => {events?: Record<string, E>}
-    validateAfterDrag: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, newGroups: Record<string, string>, events: Record<string, E>}) => Promise<{events?: Record<string, E>}>
-    validateDuringResize: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E>}) => {events?: Record<string, E>}
-    validateAfterResize: (data: {manipulatedEventId: string, newIntervals: Record<string, Interval>, events: Record<string, E>}) => Promise<{events?: Record<string, E>}>
-    orderGroups: (data: {groupIds: string[]}) => {groupIds: string[]},
+    validateDuringDrag: (data: ValidateDuringDragInput<E, G>) => ValidateDuringDragOutput<E, G>
+    validateAfterDrag: (data: ValidateAfterDragInput) => Promise<ValidateAfterDragOutput>
+    validateDuringResize: (data: ValidateDuringResizeInput<E, G>) => ValidateDuringResizeOutput<E, G>
+    validateAfterResize: (data: ValidateAfterResizeInput<E, G>) => Promise<ValidateAfterResizeOutput<E, G>>
+    orderGroups: (currentGroups: Record<string, G>) => string[],
     orderEventsForPositioning: (data: Record<string, E>) => string[],
     mapEventsToLayer: (data: Record<string, E>) => Record<string, number>,
     mapEventsToProps: (data: Record<string, E>) => Record<string, EventProps>
@@ -18,56 +76,57 @@ export type BusinessLogic<E extends RequiredEventData = RequiredEventData, G ext
 }
 
 export const DefaultBusinessLogic: BusinessLogic = {
-    validateDuringDrag: ({newIntervals, newGroups, events}) => {
-        let newEvents = Object.fromEntries(Object.entries(events).map(
-            ([eventId, event]) => [eventId, {
-                ...event,
-                interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : event.interval,
-                groupId: newGroups?.[eventId] ? newGroups[eventId] : event.groupId,
+    validateDuringDrag: ({newIntervals, newGroupAssignments, currentEvents}) => {
+        let changedEvents = new Set([...Object.keys(newIntervals), ...Object.keys(newGroupAssignments)])
+        let newEvents = Object.fromEntries(Array.from(changedEvents).map(
+            eventId => {
+                return [eventId, {
+                    ...currentEvents[eventId],
+                    interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : currentEvents[eventId].interval,
+                    groupId: newGroupAssignments?.[eventId] ? newGroupAssignments[eventId] : currentEvents[eventId].groupId,
+                }]
+            }))
+
+        return {
+            updatedEvents: newEvents,
+        }
+    },
+    validateDuringResize: ({newIntervals, currentEvents}) => {
+        let newEvents = Object.fromEntries(Object.keys(newIntervals).map(
+            eventId => [eventId, {
+                ...currentEvents[eventId],
+                interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : currentEvents[eventId].interval,
             }]))
 
         return {
-            events: newEvents,
+            updatedEvents: newEvents,
         }
     },
-    validateDuringResize: ({newIntervals, events}) => {
-        let newEvents = Object.fromEntries(Object.entries(events).map(
-            ([eventId, event]) => [eventId, {
-                ...event,
-                interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : event.interval,
+    validateAfterDrag: async ({newIntervals, newGroupAssignments, currentEvents}) => {
+        let changedEvents = new Set([...Object.keys(newIntervals), ...Object.keys(newGroupAssignments)])
+        let newEvents = Object.fromEntries(Array.from(changedEvents).map(
+            eventId => [eventId, {
+                ...currentEvents[eventId],
+                interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : currentEvents[eventId].interval,
+                groupId: newGroupAssignments?.[eventId] ? newGroupAssignments[eventId] : currentEvents[eventId].groupId,
             }]))
 
         return {
-            events: newEvents,
+            updatedEvents: newEvents,
         }
     },
-    validateAfterDrag: async ({newIntervals, newGroups, events}) => {
-        let newEvents = Object.fromEntries(Object.entries(events).map(
-            ([eventId, event]) => [eventId, {
-                ...event,
-                interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : event.interval,
-                groupId: newGroups?.[eventId] ? newGroups[eventId] : event.groupId,
+    validateAfterResize: async ({newIntervals, currentEvents}) => {
+        let newEvents = Object.fromEntries(Object.keys(newIntervals).map(
+            eventId => [eventId, {
+                ...currentEvents[eventId],
+                interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : currentEvents[eventId].interval,
             }]))
 
         return {
-            events: newEvents,
+            updatedEvents: newEvents,
         }
     },
-    validateAfterResize: async ({newIntervals, events}) => {
-        let newEvents = Object.fromEntries(Object.entries(events).map(
-            ([eventId, event]) => [eventId, {
-                ...event,
-                interval: newIntervals?.[eventId] ? makePureInterval(newIntervals[eventId]) : event.interval,
-            }]),
-        )
-
-        return {
-            events: newEvents,
-        }
-    },
-    orderGroups: ({groupIds}) => ({
-        groupIds: groupIds.sort(),
-    }),
+    orderGroups: currentGroups => Object.keys(currentGroups).sort(),
     orderEventsForPositioning: data => {
         return Object.entries(data).sort(([_a, EventA], [_b, EventB]) => compareAsc(EventA.interval.start, EventB.interval.start)).map(([eventId]) => eventId)
     },

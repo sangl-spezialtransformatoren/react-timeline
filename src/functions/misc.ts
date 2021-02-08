@@ -12,13 +12,13 @@ export function boundingBoxRelativeToSVGRoot(fromSpace: SVGGeometryElement, toSp
     let ctm1 = toSpace.getScreenCTM()
     let ctm2 = fromSpace.getScreenCTM()
     if (ctm1 && ctm2) {
-        var m = ctm1.inverse().multiply(ctm2)
+        let m = ctm1.inverse().multiply(ctm2)
 
-        var topLeftCorner = svgRoot.createSVGPoint()
+        let topLeftCorner = svgRoot.createSVGPoint()
         topLeftCorner.x = bbox.x
         topLeftCorner.y = bbox.y
 
-        var bottomRightCorner = svgRoot.createSVGPoint()
+        let bottomRightCorner = svgRoot.createSVGPoint()
         bottomRightCorner.x = bbox.x + bbox.width
         bottomRightCorner.y = bbox.y + bbox.height
 
