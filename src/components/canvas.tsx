@@ -235,8 +235,8 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
                 className={'react-timeline-svg'}
                 ref={svgRef}>
                 <CanvasContext.Provider value={canvasContextValue}>
-                    <g id={'grid'} ref={gridRef} />
-                    <animated.g id={'group-backgrounds'} ref={groupBackgroundsRef} transform={scrollTransform} />
+                    <g id={'grid'} ref={gridRef}/>
+                    <animated.g id={'group-backgrounds'} ref={groupBackgroundsRef} transform={scrollTransform}/>
 
                     {
                         //Mask background so that the pinch event is handled correctly
@@ -244,10 +244,10 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
                     <g id={'drag-surface'}>
                         <rect width={divWidth} y={headerHeight} height={divHeight - headerHeight}
                               fill={'transparent'}
-                              ref={scrollRef} />
+                              ref={scrollRef}/>
                     </g>
-                    <animated.g id={'events'} ref={eventsRef} transform={scrollTransform} />
-                    <animated.g id={'group-labels'} ref={groupLabelsRef} transform={drawerTransform} />
+                    <animated.g id={'events'} ref={eventsRef} transform={scrollTransform}/>
+                    <animated.g id={'group-labels'} ref={groupLabelsRef} transform={drawerTransform}/>
                     {initialized && children}
                     <g id={'scrollbar'}>
                         <animated.rect width={3}
@@ -259,8 +259,8 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
                                        fill={scrollbarColorSpring}
                         />
                     </g>
-                    <g id={'header'} ref={headerRef} />
-                    <g id={'foreground'} ref={foregroundRef} />
+                    <g id={'header'} ref={headerRef}/>
+                    <g id={'foreground'} ref={foregroundRef}/>
                 </CanvasContext.Provider>
             </animated.svg>
         </div>
@@ -308,7 +308,7 @@ export const onCanvasWheel = (dispatch: ReduxDispatch, svgRef: RefObject<SVGSVGE
 
     if (velocity < 0.1 && eventState.altKey) {
         zooming = true
-    } else if (velocity < 0.1 && !eventState.altKey){
+    } else if (velocity < 0.1 && !eventState.altKey) {
         zooming = false
     }
 

@@ -25,6 +25,7 @@ export type GroupBackgroundProps = {
     numberOfGroups: number,
     y: number,
     height: number
+    groupProps: any
 }
 
 export type GroupBackgroundPresentationalProps = GroupBackgroundProps & {
@@ -42,12 +43,11 @@ export function createGroupBackground<T extends GroupBackgroundPresentationalPro
             groupId,
             y,
             height,
-            children,
             groupIndex,
             groupHeight,
             groupOffset,
             numberOfGroups,
-            ...props
+            groupProps
         },
     ) => {
         // Redux state
@@ -78,7 +78,7 @@ export function createGroupBackground<T extends GroupBackgroundPresentationalPro
                 groupId={groupId}
                 groupOffset={groupOffset}
                 groupHeight={groupHeight}
-                {...props}
+                groupProps={groupProps}
             />
         </g>
     }
@@ -111,7 +111,7 @@ export const GroupBackgrounds: React.FC<{component?: React.FC<GroupBackgroundPre
             groupIndex: groupIndices[groupId],
             groupOffset: groupOffsets[groupId],
             numberOfGroups: numberOfGroups,
-            ...mapGroupIdToProps[groupId],
+            groupProps: mapGroupIdToProps[groupId]
         }]))
     }, [groups, groupYs, groupHeightsPixel, groupHeights, groupIndices, groupOffsets, numberOfGroups, mapGroupIdToProps])
 

@@ -245,4 +245,4 @@ export type Actions =
 export type Filter<A> = A extends {type: string, payload: any} ? A : never
 export type PayloadActions = Filter<Actions>
 
-export type Thunk = ThunkAction<void, StoreShape, any, Actions>
+export type Thunk<E extends RequiredEventData, G extends RequiredGroupData> = ThunkAction<void, StoreShape<E, G>, any, Actions>

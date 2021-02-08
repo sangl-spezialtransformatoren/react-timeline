@@ -40,6 +40,7 @@ import {OnEventSpace, useCanvasContext} from '../context/canvasContext'
 import {DefaultEventComponent} from '../presentational/event'
 import {activateBodyScroll, boundingBoxRelativeToSVGRoot, deactivateBodyScroll} from '../functions/misc'
 import {PureInterval} from '../store/reducers/events'
+import {RequiredEventData, RequiredGroupData} from "../store/shape"
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -56,7 +57,7 @@ export type PresentationalEventComponentProps = {
 }
 export type PresentationalEventComponent<T = {}> = React.FC<PresentationalEventComponentProps & T>
 
-export type EventComponentProps<T = {}> = {
+export type EventComponentProps<T extends any> = {
     id: string
     eventHeight?: number
     groupHeight?: number
@@ -164,37 +165,38 @@ export type TimelineGroupProps = {
     component?: React.FC<PresentationalEventComponentProps>
 }
 
-export const Events_: React.FC<TimelineGroupProps> = React.memo(function Events({component = DefaultEventComponent}) {
-    // Create event component
-    let Component = useMemo(() => {
-        return createEventComponent(component)
-    }, [component])
+export const Events_ = React.memo(
+    function Events({component = DefaultEventComponent}: TimelineGroupProps) {
+        // Create event component
+        let Component = useMemo(() => {
+            return createEventComponent(component)
+        }, [component])
 
-    // Redux state
-    let events = useEventIdsOrderedForPainting()
-    let eventToGroup = useEventAndGroupIds()
-    let eventHeight = useEventHeight()
-    let mapEventToInterval = useEventIntervals()
-    let mapEventToSelected = useMapEventIdToSelected()
-    let mapEventToProps = useMapEventIdToProps()
-    let groupHeightsPixel = useGroupHeights()
-    let eventYs = useEventYs()
+        // Redux state
+        let events = useEventIdsOrderedForPainting()
+        let eventToGroup = useEventAndGroupIds()
+        let eventHeight = useEventHeight()
+        let mapEventToInterval = useEventIntervals()
+        let mapEventToSelected = useMapEventIdToSelected()
+        let mapEventToProps = useMapEventIdToProps()
+        let groupHeightsPixel = useGroupHeights()
+        let eventYs = useEventYs()
 
-    return <>
-        {events.map((eventId) => <Component
-                key={eventId}
-                id={eventId}
-                eventHeight={eventHeight}
-                y={eventYs[eventId]}
-                groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
-                interval={mapEventToInterval[eventId]}
-                selected={mapEventToSelected[eventId]}
-                // @ts-ignore
-                eventProps={mapEventToProps[eventId]}
-            />,
-        )}
-    </>
-})
+        return <>
+            {events.map((eventId) => <Component
+                    key={eventId}
+                    id={eventId}
+                    eventHeight={eventHeight}
+                    y={eventYs[eventId]}
+                    groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
+                    interval={mapEventToInterval[eventId]}
+                    selected={mapEventToSelected[eventId]}
+                    // @ts-ignore
+                    eventProps={mapEventToProps[eventId]}
+                />,
+            )}
+        </>
+    })
 
 export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventComponent}) => {
     return <OnEventSpace>
@@ -205,11 +207,11 @@ export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventCo
 }
 
 
-const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, svgRef: RefObject<SVGSVGElement>, id: string) => {
+function onEventDrag<E extends RequiredEventData, G extends RequiredGroupData, E_ extends {}, G_ extends {}>(dispatch: Dispatch<E, G>, config: BusinessLogic<E, G, E_, G_>, eventState: EventState<'drag'>, svgRef: RefObject<SVGSVGElement>, id: string) {
     let {movement: [dx], last, tap, distance, xy, pinching} = eventState
 
     if (tap) {
-        let action: Thunk = async (dispatch) => {
+        let action: Thunk<E, G> = async (dispatch) => {
             dispatch(toggleEventSelection({id}))
         }
         dispatch(action)
@@ -227,7 +229,7 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
         activateBodyScroll(document)
     }
 
-    let action: Thunk = async (dispatch, getState) => {
+    let action: Thunk<E, G> = async (dispatch, getState) => {
         let state = getState()
         let numberOfSelectedEvents = selectNumberOfSelectedEvents(config)(state)
         let currentEvents = selectEvents(config)(state)
@@ -335,7 +337,7 @@ const onEventDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: Even
     dispatch(action)
 }
 
-const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) => {
+function onEventStartDrag<E extends RequiredEventData, G extends RequiredGroupData, E_ extends {}, G_ extends {}>(dispatch: Dispatch<E, G>, config: BusinessLogic<E, G, E_, G_>, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) {
     let {movement: [dx], last, pinching} = eventState
 
     if (pinching) {
@@ -348,7 +350,7 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
     }
 
 
-    let action: Thunk = async (dispatch: Dispatch, getState) => {
+    let action: Thunk<E, G> = async (dispatch, getState) => {
         let state = getState()
         let currentEvents = selectEvents(config)(state)
         let currentGroups = selectGroups(config)(state)
@@ -404,7 +406,7 @@ const onEventStartDrag = (dispatch: Dispatch, config: BusinessLogic, eventState:
 
 }
 
-const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) => {
+function onEventEndDrag<E extends RequiredEventData, G extends RequiredGroupData, E_ extends {}, G_ extends {}>(dispatch: Dispatch<E, G>, config: BusinessLogic<E, G, E_, G_>, eventState: EventState<'drag'>, _: RefObject<SVGSVGElement>, id: any) {
     let {movement: [dx], last, pinching} = eventState
 
     if (pinching) {
@@ -416,7 +418,7 @@ const onEventEndDrag = (dispatch: Dispatch, config: BusinessLogic, eventState: E
         activateBodyScroll(document)
     }
 
-    let action: Thunk = async (dispatch, getState) => {
+    let action: Thunk<E, G> = async (dispatch, getState) => {
         let state = getState()
         let currentEvents = selectEvents(config)(state)
         let currentGroups = selectGroups(config)(state)
