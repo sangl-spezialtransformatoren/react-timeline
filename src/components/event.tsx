@@ -94,7 +94,8 @@ export function createEventComponent<T>(component: React.FC<T>) {
         // Other State
         let timePerPixelSpring = useTimePerPixelSpring()
         let businessLogic = useBusinessLogic()
-        let {svg: svgRef} = useCanvasContext()
+        let canvasContext = useCanvasContext()
+        let {svg: svgRef} = canvasContext
 
         // Refs
         let ref = useRef<SVGGeometryElement>(null)

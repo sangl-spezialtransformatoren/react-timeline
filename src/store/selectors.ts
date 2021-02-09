@@ -1,4 +1,4 @@
-import {RequiredEventData, RequiredGroupData, StoreShape} from './shape'
+import {InternalEventData, RequiredEventData, RequiredGroupData, StoreShape} from './shape'
 import {areIntervalsIntersecting} from 'schedule-fns/lib/src/functions/intervals'
 import {PureInterval} from './reducers/events'
 import {BusinessLogic} from './businessLogic'
@@ -15,6 +15,7 @@ export type ValueOf<T> = T[keyof T]
 export function select<T, E extends RED = any, G extends RGD = any, E_ extends {} = any, G_ extends {} = any>(selector: (config: BusinessLogic<E, G, E_, G_>) => (state: StoreShape<E, G>) => T) {
     return selector
 }
+
 
 function positionEvent(positionedEvents: Record<string, {interval: PureInterval, position: number}>, interval: PureInterval) {
     let positions = Object.values(positionedEvents).filter(
@@ -137,30 +138,37 @@ export const selectMapGroupIdsToEventIds = <E extends RED, G extends RGD, E_ ext
 
 
 //Returns {eventId1: event1, eventId2, event2, ...}
-export const selectEventsWithVolatileState = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => createSelector(
-    [selectEvents(config), selectInternalEventData(config)],
-    function selectEventsWithVolatileStateCombiner(events, internalEventData) {
-        return Object.fromEntries(Object.entries(events).map(
-            ([eventId, event]) => {
-                return [eventId, {
-                    ...events[eventId],
-                    interval: internalEventData?.[eventId]?.interval || event.interval,
-                    groupId: internalEventData?.[eventId]?.groupId || event.groupId,
-                    selected: internalEventData?.[eventId]?.selected || false,
-                }]
-            }),
-        ) as Record<string, E & {selected: boolean}>
-    },
-)
+export const selectEventsWithVolatileState = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => {
+    let previousArgs: Record<string, {state: E, internalState: InternalEventData}> = {}
+    let previousResult: Record<string, E & {selected: boolean}> = {}
 
-
-// Returns event
-export const selectEvent = (eventId: string) => <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => createSelector(
-    [selectEvents(config)],
-    function selectEventCombiner(events) {
-        return events[eventId]
-    },
-)
+    return createSelector(
+        [selectEvents(config), selectInternalEventData(config)],
+        function selectEventsWithVolatileStateCombiner(events, internalEventData) {
+            return Object.fromEntries(Object.entries(events).map(
+                ([eventId, event]) => {
+                    let previous = previousArgs?.[eventId]
+                    if (previous && previous.state === event && previous.internalState === internalEventData?.[eventId]) {
+                        return [eventId, previousResult[eventId]]
+                    } else {
+                        let result = {
+                            ...events[eventId],
+                            interval: internalEventData?.[eventId]?.interval || event.interval,
+                            groupId: internalEventData?.[eventId]?.groupId || event.groupId,
+                            selected: internalEventData?.[eventId]?.selected || false,
+                        } as E & {selected: boolean}
+                        previousArgs[eventId] = {
+                            state: event,
+                            internalState: internalEventData?.[eventId]
+                        }
+                        previousResult[eventId] = result
+                        return [eventId, result]
+                    }
+                }),
+            ) as Record<string, E & {selected: boolean}>
+        },
+    )
+}
 
 // Returns {eventId1: interval1, eventId2: interval2, ...}
 export const selectMapEventIdToVolatileInterval = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => createSelector(
@@ -350,15 +358,45 @@ export const selectEventIdToGroupIdMap = <E extends RED, G extends RGD, E_ exten
     },
 )
 
-export const selectMapEventIdToProps = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => createSelector(
-    [selectEventsWithVolatileState(config)],
-    (events) => config.mapEventsToProps(events),
-)
+export const selectMapEventIdToProps = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => {
+    let previousArgs: Record<string, E> = {}
+    let previousResult: Record<string, E_> = {}
+    return createSelector(
+        [selectEventsWithVolatileState(config)],
+        (events) => {
+            return Object.fromEntries(Object.entries(events).map(([eventId, event]) => {
+                if (previousArgs[eventId] === event) {
+                    return [eventId, previousResult[eventId]]
+                } else {
+                    let result = config.mapEventsToProps(event)
+                    previousArgs[eventId] = event
+                    previousResult[eventId] = result
+                    return [eventId, result]
+                }
+            }))
+        }
+    )
+}
 
-export const selectMapGroupIdToProps = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => createSelector(
-    [selectGroups(config)],
-    (groups) => config.mapGroupsToProps(groups),
-)
+export const selectMapGroupIdToProps = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => {
+    let previousArgs: Record<string, G> = {}
+    let previousResult: Record<string, G_> = {}
+    return createSelector(
+        [selectGroups(config)],
+        (groups) => {
+            return Object.fromEntries(Object.entries(groups).map(([groupId, group]) => {
+                if (previousArgs[groupId] === group) {
+                    return [groupId, previousResult[groupId]]
+                } else {
+                    let result = config.mapGroupsToProps(group)
+                    previousArgs[groupId] = group
+                    previousResult[groupId] = result
+                    return [groupId, result]
+                }
+            }))
+        }
+    )
+}
 
 // Returns {eventId1: true, eventId2: false, ...}
 export const selectMapEventIdToSelected = <E extends RED, G extends RGD, E_ extends {}, G_ extends {}>(config: BusinessLogic<E, G, E_, G_>) => createSelector(
