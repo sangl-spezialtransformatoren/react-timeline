@@ -9,7 +9,7 @@ import {
     updateEvents,
     updateEventsIntermediary,
     updateGroups,
-    updateGroupsIntermediary
+    updateGroupsIntermediary,
 } from '../store/actions'
 import {DragOffset, EventState} from './canvas'
 import {
@@ -40,7 +40,7 @@ import {OnEventSpace, useCanvasContext} from '../context/canvasContext'
 import {DefaultEventComponent} from '../presentational/event'
 import {activateBodyScroll, boundingBoxRelativeToSVGRoot, deactivateBodyScroll} from '../functions/misc'
 import {PureInterval} from '../store/reducers/events'
-import {RequiredEventData, RequiredGroupData} from "../store/shape"
+import {RequiredEventData, RequiredGroupData} from '../store/shape'
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -156,7 +156,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
             selected={selected}
             dragHandle={ref}
             dragStartHandle={startRef}
-            dragEndHandle={endRef}/>
+            dragEndHandle={endRef} />
     }
     return React.memo(EventComponent)
 }
@@ -202,7 +202,7 @@ export const Events_ = React.memo(
 export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventComponent}) => {
     return <OnEventSpace>
         <DragOffset>
-            <Events_ component={component}/>
+            <Events_ component={component} />
         </DragOffset>
     </OnEventSpace>
 }
@@ -233,25 +233,25 @@ function onEventDrag<E extends RequiredEventData, G extends RequiredGroupData, E
     let action: Thunk<E, G> = async (dispatch, getState) => {
         let state = getState()
         let numberOfSelectedEvents = selectNumberOfSelectedEvents(config)(state)
-        let currentEvents = selectEvents(config)(state)
-        let currentGroups = selectGroups(config)(state)
+        let currentEvents = selectEvents(config)(state) as Record<string, E>
+        let currentGroups = selectGroups(config)(state) as Record<string, G>
         let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents
         if (numberOfSelectedEvents === 0) {
-            selectedEvents = {[id]: currentEvents[id]}
+            selectedEvents = [id]
         } else {
             selectedEvents = selectSelectedEvents(config)(state)
-            if (!Object.keys(selectedEvents).includes(id)) {
+            if (!selectedEvents.includes(id)) {
                 return
             }
         }
 
         let timePerPixel = selectTimePerPixel(config)(state)
         let dt = dx * timePerPixel
-        let newIntervals = Object.fromEntries(Object.entries(selectedEvents).map(
-            ([eventId, event]) => {
-                let oldInterval = internalEventData?.[eventId]?.initialInterval || event.interval
+        let newIntervals = Object.fromEntries(selectedEvents.map(
+            (eventId) => {
+                let oldInterval = internalEventData?.[eventId]?.initialInterval || currentEvents?.[eventId].interval
                 let newInterval = {
                     start: oldInterval.start + dt,
                     end: oldInterval.end + dt,
@@ -294,10 +294,10 @@ function onEventDrag<E extends RequiredEventData, G extends RequiredGroupData, E
                 newGroupId = lowestGroup
             }
             if (newGroupId !== '') {
-                newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, newGroupId]))
+                newGroups = Object.fromEntries(selectedEvents.map(eventId => [eventId, newGroupId]))
             }
             if (nearestGroupId !== '') {
-                newGroups = Object.fromEntries(Object.keys(selectedEvents).map(eventId => [eventId, nearestGroupId]))
+                newGroups = Object.fromEntries(selectedEvents.map(eventId => [eventId, nearestGroupId]))
             }
         }
 
@@ -307,7 +307,7 @@ function onEventDrag<E extends RequiredEventData, G extends RequiredGroupData, E
                 newIntervals: newIntervals,
                 newGroupAssignments: newGroups,
                 currentEvents: currentEvents,
-                currentGroups: currentGroups
+                currentGroups: currentGroups,
             })
             if (updatedEvents || deletedEvents) {
                 dispatch(updateEventsIntermediary({updatedEvents, deletedEvents}))
@@ -322,7 +322,7 @@ function onEventDrag<E extends RequiredEventData, G extends RequiredGroupData, E
                     newIntervals: newIntervals,
                     newGroupAssignments: newGroups,
                     currentEvents: currentEvents,
-                    currentGroups: currentGroups
+                    currentGroups: currentGroups,
                 })
                 if (updatedEvents || deletedEvents) {
                     dispatch(updateEvents({updatedEvents, deletedEvents}))
@@ -353,13 +353,13 @@ function onEventStartDrag<E extends RequiredEventData, G extends RequiredGroupDa
 
     let action: Thunk<E, G> = async (dispatch, getState) => {
         let state = getState()
-        let currentEvents = selectEvents(config)(state)
-        let currentGroups = selectGroups(config)(state)
+        let currentEvents = selectEvents(config)(state) as Record<string, E>
+        let currentGroups = selectGroups(config)(state) as Record<string, G>
         let event = currentEvents[id]
         let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents = selectSelectedEvents(config)(state)
-        if (!selectedEvents[id]) {
+        if (!selectedEvents.includes(id)) {
             return
         }
 
@@ -390,7 +390,7 @@ function onEventStartDrag<E extends RequiredEventData, G extends RequiredGroupDa
                     manipulatedEventId: id,
                     newIntervals: {[id]: newInterval},
                     currentEvents,
-                    currentGroups
+                    currentGroups,
                 })
                 if (updatedEvents || deletedEvents) {
                     dispatch(updateEvents({updatedEvents, deletedEvents}))
@@ -421,13 +421,13 @@ function onEventEndDrag<E extends RequiredEventData, G extends RequiredGroupData
 
     let action: Thunk<E, G> = async (dispatch, getState) => {
         let state = getState()
-        let currentEvents = selectEvents(config)(state)
-        let currentGroups = selectGroups(config)(state)
+        let currentEvents = selectEvents(config)(state) as Record<string, E>
+        let currentGroups = selectGroups(config)(state) as Record<string, G>
         let event = currentEvents[id]
         let internalEventData = selectInternalEventData(config)(state)
 
         let selectedEvents = selectSelectedEvents(config)(state)
-        if (!selectedEvents[id]) {
+        if (!selectedEvents.includes(id)) {
             return
         }
 
@@ -445,7 +445,7 @@ function onEventEndDrag<E extends RequiredEventData, G extends RequiredGroupData
                 manipulatedEventId: id,
                 newIntervals: {[id]: newInterval},
                 currentEvents: currentEvents,
-                currentGroups: currentGroups
+                currentGroups: currentGroups,
             })
             if (updatedEvents || deletedEvents) {
                 dispatch(updateEventsIntermediary({updatedEvents, deletedEvents}))
@@ -459,7 +459,7 @@ function onEventEndDrag<E extends RequiredEventData, G extends RequiredGroupData
                     manipulatedEventId: id,
                     newIntervals: {[id]: newInterval},
                     currentEvents,
-                    currentGroups
+                    currentGroups,
                 })
                 if (updatedEvents || deletedEvents) {
                     dispatch(updateEvents({updatedEvents, deletedEvents}))
