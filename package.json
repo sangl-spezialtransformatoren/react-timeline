@@ -22,7 +22,9 @@
     "build-storybook": "build-storybook"
   },
   "peerDependencies": {
-    "react": "16.8"
+    "react": "^16.8",
+    "react-dom": "^16.8",
+    "redux": "^4.0.5"
   },
   "prettier": {
     "printWidth": 80,
@@ -63,7 +65,10 @@
     "cssnano": "^4.1.10",
     "husky": "^4.3.0",
     "node-sass": "^5.0.0",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
     "react-is": "^16.13.1",
+    "redux": "^4.0.5",
     "rollup-plugin-scss": "^2.6.1",
     "size-limit": "^4.9.0",
     "tsdx": "^0.14.1",
@@ -74,13 +79,10 @@
     "@reduxjs/toolkit": "^1.5.0",
     "date-fns": "^2.16.1",
     "date-fns-tz": "^1.0.12",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
     "react-fast-compare": "^3.2.0",
     "react-redux": "^7.2.2",
     "react-spring": "^9.0.0-rc.3",
     "react-use-gesture": "^8.0.1",
-    "redux": "^4.0.5",
     "reselect": "^4.0.0",
     "schedule-fns": "git+https://github.com/adrianschneider94/schedule-fns.git#fbcc4d94917144740fd0e92f99181965d38da228"
   }
