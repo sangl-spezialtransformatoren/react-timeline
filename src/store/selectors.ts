@@ -486,9 +486,9 @@ export const selectNumberOfGroups = select(
 
 export const selectEventYs = select(
     config => createSelector(
-        [selectEventIdsOrderedForPainting(config), selectGroupPadding(config), selectEventHeight(config), selectEventMargin(config), selectEventPositionsInGroup(config), selectGroupYs(config), selectMapEventsToGroup(config)],
-        function selectEventYsCombiner(events, groupPadding, eventHeight, eventDistance, eventPositions, groupYs, eventToGroup) {
-            return Object.fromEntries(events.map(eventId => [eventId, groupPadding / 2 + (eventHeight + eventDistance) * eventPositions[eventId] + groupYs[eventToGroup[eventId]]])) as Record<string, number>
+        [selectEventIdsOrderedForPainting(config), selectGroupPadding(config), selectEventHeight(config), selectEventMargin(config), selectEventPositionsInGroup(config)],
+        function selectEventYsCombiner(events, groupPadding, eventHeight, eventDistance, eventPositions) {
+            return Object.fromEntries(events.map(eventId => [eventId, groupPadding / 2 + (eventHeight + eventDistance) * eventPositions[eventId]])) as Record<string, number>
         },
     ),
 )

@@ -12,7 +12,7 @@ export const DefaultEventComponent: PresentationalEventComponent = (
         dragEndHandle,
         selected,
     }) => {
-    return <g>
+    return <>
         <rect ref={dragHandle} fill={'gray'} height={height} style={{paintOrder: 'stroke'}} y={y} x={x}
               width={width} />
         <rect ref={dragStartHandle} fill={'rgba(0,0,0,0.1)'} y={y} height={height} x={x} width={10}
@@ -20,5 +20,5 @@ export const DefaultEventComponent: PresentationalEventComponent = (
         <rect ref={dragEndHandle} fill={'rgba(0,0,0,0.1)'} y={y} height={height} x={x + width} width={10}
               style={{cursor: 'ew-resize'}}
               transform={'translate(-10, 0)'} visibility={selected ? 'display' : 'hidden'} />
-    </g>
+    </>
 }

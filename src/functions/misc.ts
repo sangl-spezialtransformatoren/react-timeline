@@ -64,3 +64,7 @@ export function activateBodyScroll(document: Document) {
         }
     }
 }
+
+export function cssEscape(input: string) {
+    return CSS.escape(input.replace(/(?![a-zA-Z0-9_-]).*/g, ''))
+}

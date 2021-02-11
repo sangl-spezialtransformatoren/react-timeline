@@ -1,4 +1,4 @@
-import React, {MutableRefObject, RefObject, useCallback, useMemo, useRef} from 'react'
+import React, {MutableRefObject, RefObject, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {animated, to, useSpring} from 'react-spring'
 import {useDrag} from 'react-use-gesture'
 import {useBusinessLogic, useTimePerPixelSpring} from '../context'
@@ -21,6 +21,7 @@ import {
     useEventIntervals,
     useEventYs,
     useGroupHeights,
+    useGroupYs,
     useInitialized,
     useMapEventIdToProps,
     useMapEventIdToSelected,
@@ -38,9 +39,10 @@ import {
 } from '../store/selectors'
 import {OnEventSpace, useCanvasContext} from '../context/canvasContext'
 import {DefaultEventComponent} from '../presentational/event'
-import {activateBodyScroll, boundingBoxRelativeToSVGRoot, deactivateBodyScroll} from '../functions/misc'
+import {activateBodyScroll, boundingBoxRelativeToSVGRoot, cssEscape, deactivateBodyScroll} from '../functions/misc'
 import {PureInterval} from '../store/reducers/events'
 import {RequiredEventData, RequiredGroupData} from '../store/shape'
+import {shallowEqual} from 'react-redux'
 
 export type PresentationalEventComponentProps = {
     x: number,
@@ -51,6 +53,8 @@ export type PresentationalEventComponentProps = {
     groupId: string,
     eventId: string,
     groupHeight?: number,
+    groupY?: number,
+    transform: string,
     dragHandle: MutableRefObject<any>,
     dragStartHandle: MutableRefObject<any>,
     dragEndHandle: MutableRefObject<any>
@@ -66,7 +70,7 @@ export type EventComponentProps<T extends any> = {
     selected: boolean
 }
 
-export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number, selected: boolean}>
+export type EventComponentType<T = {}> = React.FC<Omit<EventComponentProps<T>, keyof PresentationalEventComponentProps> & {y: number, groupHeight?: number, selected: boolean, transform: string, groupY: number, groupId: string}>
 
 
 export function createEventComponent<T>(component: React.FC<T>) {
@@ -76,9 +80,12 @@ export function createEventComponent<T>(component: React.FC<T>) {
             y,
             eventHeight = 20,
             groupHeight,
+            groupY,
             interval,
             eventProps,
             selected,
+            transform,
+            groupId,
         }) => {
         let PresentationalComponent = animated(component)
 
@@ -107,12 +114,30 @@ export function createEventComponent<T>(component: React.FC<T>) {
         let onDragStart = useCallback((eventState: EventState<'drag'>) => onEventStartDrag(dispatch, businessLogic, eventState, svgRef, id), [dispatch, businessLogic, svgRef, id])
         let onDragEnd = useCallback((eventState: EventState<'drag'>) => onEventEndDrag(dispatch, businessLogic, eventState, svgRef, id), [dispatch, businessLogic, svgRef, id])
 
+        let [useTransform, setUseTransform] = useState<boolean | undefined>(undefined)
+
+        // On group change
+        useEffect(() => {
+            setUseTransform((value) => value === undefined)
+            setTotalY({
+                to: {totalY: groupY + y},
+            })
+        }, [groupId])
+
         // Springs
         let [{ySpring}] = useSpring({
             ySpring: y,
             config: springConfig,
             immediate: !animate || !initialized,
         }, [springConfig, animate, initialized, y])
+
+        // Springs
+        let [{totalY}, setTotalY] = useSpring({
+            totalY: groupY + y,
+            config: springConfig,
+            immediate: !animate || !initialized,
+            onRest: () => setUseTransform(() => true),
+        }, [springConfig, animate])
 
         let [{intervalStartSpring}] = useSpring({
             intervalStartSpring: interval.start,
@@ -138,6 +163,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
         // Interpolations
         let xSpring = to([timePerPixelSpring, intervalStartSpring], xInterpolator)
         let widthSpring = to([timePerPixelSpring, intervalStartSpring, intervalEndSpring], widthInterpolator)
+        let ySpring_ = to([ySpring, totalY], (y, totalY) => !useTransform ? totalY : y)
 
         // Attach gestures
         useDrag(onDrag, {domTarget: ref})
@@ -145,26 +171,35 @@ export function createEventComponent<T>(component: React.FC<T>) {
         useDrag(onDragEnd, {domTarget: endRef})
 
         // @ts-ignore
-        return <PresentationalComponent
+        return <g style={{transform: useTransform ? transform : 'translate(0, 0)'}}><PresentationalComponent
             {...eventProps}
             eventId={id}
             x={xSpring}
-            y={ySpring}
+            y={ySpring_}
             width={widthSpring}
             height={eventHeight}
             groupHeight={groupHeightSpring}
             selected={selected}
             dragHandle={ref}
             dragStartHandle={startRef}
-            dragEndHandle={endRef} />
+            dragEndHandle={endRef} /></g>
     }
-    return React.memo(EventComponent)
+    return React.memo(EventComponent, (function myComparison(prevProps, nextProps) {
+        if (prevProps === nextProps) {
+            return true
+        } else {
+            let {groupY: _, ...prev} = prevProps
+            let {groupY: __, ...next} = nextProps
+            return shallowEqual(prev, next)
+        }
+    }))
 }
 
 
 export type TimelineGroupProps = {
     component?: React.FC<PresentationalEventComponentProps>
 }
+
 
 export const Events_ = React.memo(
     function Events({component = DefaultEventComponent}: TimelineGroupProps) {
@@ -181,22 +216,36 @@ export const Events_ = React.memo(
         let mapEventToSelected = useMapEventIdToSelected()
         let mapEventToProps = useMapEventIdToProps()
         let groupHeightsPixel = useGroupHeights()
+        let groupYs = useGroupYs()
         let eventYs = useEventYs()
+        let animate = useAnimate()
+        let initialized = useInitialized()
+        let springConfig = useSpringConfig()
 
-        return <>
+        let [props] = useSpring({
+            ...(Object.fromEntries(Object.entries(groupYs).map(([groupId, y]) => [cssEscape(`--${groupId}`), `translate(0, ${y}px)`])) as React.CSSProperties),
+            config: springConfig,
+            immediate: !animate || !initialized,
+        }, [springConfig, animate, initialized, groupYs])
+
+        // @ts-ignore
+        return <animated.g style={props}>
             {events.map((eventId) => <Component
                     key={eventId}
                     id={eventId}
                     eventHeight={eventHeight}
                     y={eventYs[eventId]}
+                    groupId={eventToGroup[eventId]}
                     groupHeight={groupHeightsPixel[eventToGroup[eventId]]}
+                    groupY={groupYs[eventToGroup[eventId]]}
                     interval={mapEventToInterval[eventId]}
                     selected={mapEventToSelected[eventId]}
+                    transform={`var(${cssEscape(`--${eventToGroup[eventId]}`)})`}
                     // @ts-ignore
                     eventProps={mapEventToProps[eventId]}
                 />,
             )}
-        </>
+        </animated.g>
     })
 
 export const Events: React.FC<TimelineGroupProps> = ({component = DefaultEventComponent}) => {
