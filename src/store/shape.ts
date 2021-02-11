@@ -35,7 +35,7 @@ export type InternalGroupData = {
     }
 }
 
-export type StoreShape<Event extends RequiredEventData = RequiredEventData, Group extends RequiredGroupData = RequiredGroupData> = {
+export type StoreShape<Event extends RequiredEventData, Group extends RequiredGroupData> = {
     animate: boolean
     events: Record<string, Event>
     internalEventData: Record<string, InternalEventData>
