@@ -11,7 +11,7 @@ import {
     selectDrawerWidth,
     selectEventHeight,
     selectEventIdsOrderedForPainting,
-    selectEventIdToGroupIdMap,
+    selectMapEventIdToGroupId,
     selectEventIntervals,
     selectEventMargin,
     selectEventPositionsInGroup,
@@ -40,7 +40,7 @@ import {
 export const useAnimate = () => useSelector(selectAnimate, shallowEqual)
 export const useGroupOffsets = () => useSelector(getGroupOffsets)
 export const useEventIdsOrderedForPainting = () => useSelector(selectEventIdsOrderedForPainting)
-export const useEventAndGroupIds = () => useSelector(selectEventIdToGroupIdMap)
+export const useEventAndGroupIds = () => useSelector(selectMapEventIdToGroupId)
 export const useGroupEventHeights = () => useSelector(selectGroupEventHeights)
 export const useGroupIndices = () => useSelector(selectGroupIndices)
 export const useGetHeaderIntervals = (intervalCreator: IntervalCreator, intervalLength: number) => useSelector(getHeaderIntervals(intervalCreator, intervalLength))

@@ -53,14 +53,16 @@ export const internalEventData: PartialTimelineReducer<'internalEventData'> = ()
             if (updatedEvents) {
                 let mergedData: Record<string, InternalEventData> = Object.fromEntries(Object.entries(updatedEvents).map(([eventId, newEvent]) => {
                     return [eventId, {
-                        ...newEvent,
-                        selected: newState?.[eventId]?.selected
+                        initialInterval: newState?.[eventId]?.initialInterval || newEvent.interval,
+                        interval: newEvent.interval,
+                        groupId: newEvent.groupId,
+                        selected: newState?.[eventId]?.selected,
 
                     }]
                 }))
                 newState = {
                     ...newState,
-                    ...mergedData
+                    ...mergedData,
                 }
             }
             break

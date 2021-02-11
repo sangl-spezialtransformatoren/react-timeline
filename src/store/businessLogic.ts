@@ -65,11 +65,11 @@ export type BusinessLogic<E extends RequiredEventData = RequiredEventData, G ext
     validateAfterDrag: (data: ValidateAfterDragInput) => Promise<ValidateAfterDragOutput>
     validateDuringResize: (data: ValidateDuringResizeInput<E, G>) => ValidateDuringResizeOutput<E, G>
     validateAfterResize: (data: ValidateAfterResizeInput<E, G>) => Promise<ValidateAfterResizeOutput<E, G>>
-    orderGroups: (currentGroups: Record<string, G>) => string[],
+    orderGroups: (groups: Record<string, G>) => string[],
     orderEventsForPositioning: (data: Record<string, E>) => string[],
-    mapEventsToLayer: (data: Record<string, E>) => Record<string, number>,
-    mapEventsToProps: (data: E) => EventProps
-    mapGroupsToProps: (data: G) => GroupProps
+    mapEventToLayer: (data: E) => number,
+    mapEventToProps: (data: E) => EventProps
+    mapGroupToProps: (data: G) => GroupProps
     displayEventsInSameRow: (data: Record<string, E>) => string[][]
     mergeNewEvents: (currentEvents: Record<string, E>, newEvents: Record<string, E>) => Record<string, E>
     mergeNewGroups: (currentGroups: Record<string, G>, newGroups: Record<string, G>) => Record<string, G>
@@ -130,11 +130,9 @@ export const DefaultBusinessLogic: BusinessLogic = {
     orderEventsForPositioning: data => {
         return Object.entries(data).sort(([_a, EventA], [_b, EventB]) => compareAsc(EventA.interval.start, EventB.interval.start)).map(([eventId]) => eventId)
     },
-    mapEventsToLayer: data => {
-        return Object.fromEntries(Object.keys(data).map((key, _) => [key, 0])) as Record<string, number>
-    },
-    mapEventsToProps: data => data,
-    mapGroupsToProps: data => data,
+    mapEventToLayer: () => 0,
+    mapEventToProps: data => data,
+    mapGroupToProps: data => data,
     displayEventsInSameRow: _ => [],
     mergeNewEvents: (_, newEvents) => newEvents,
     mergeNewGroups: (_, newGroups) => newGroups,

@@ -6,14 +6,13 @@ import {useDispatch as useReduxDispatch, useSelector as useReduxSelector} from '
 import {RequiredEventData, RequiredGroupData, StoreShape} from './shape'
 import {useMemo} from 'react'
 import {useBusinessLogic} from '../context'
-//@ts-ignore
-import {registerSelectors} from 'reselect-tools'
-import {createSelector as reselectCreateSelector} from "reselect"
+import {createSelector as reselectCreateSelector} from 'reselect'
 
 export type Dispatch<E extends RequiredEventData, G extends RequiredGroupData> = ThunkDispatch<StoreShape<E, G>, undefined, Actions>
 
 
 export const createSelector = reselectCreateSelector
+
 
 export function useSelector<E extends RequiredEventData, G extends RequiredGroupData, E_ extends {}, G_ extends {}, TSelected>(selector: (config: BusinessLogic<E, G, E_, G_>) => ((state: StoreShape<E, G>) => TSelected), equalityFn?: (left: TSelected, right: TSelected) => boolean): TSelected {
     let config = useBusinessLogic<E, G, E_, G_>()
