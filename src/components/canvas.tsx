@@ -1,6 +1,6 @@
 import React, {RefObject, useEffect, useMemo, useRef, useState} from 'react'
 import {useDrag, usePinch, useWheel} from 'react-use-gesture'
-import {animated, to, useSpring} from 'react-spring'
+import {animated, to, useSpring} from '@react-spring/web'
 import {Dispatch as ReduxDispatch} from 'redux'
 import {EventTypes, FullGestureState, Omit, StateKey} from 'react-use-gesture/dist/types'
 
@@ -225,7 +225,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
     let startDateSpring = useStartDateSpring()
     let timePerPixelSpring = useTimePerPixelSpring()
     let dateZero = useDateZero()
-    let offset = to([startDateSpring, timePerPixelSpring], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()}px, 0)`)
+    let offset = to([startDateSpring, timePerPixelSpring], (startDate , timePerPixel) => `translate(${(dateZero.valueOf() - (startDate as Date|number).valueOf()) / (timePerPixel as Date|number).valueOf()}px, 0)`)
     return <>
         <div className={'react-timeline'} style={{...style}} ref={divRef}>
             <animated.svg

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import {useAnimate, useDateZero, useHeaderHeight, useInitialized, useSize, useSpringConfig} from '../store/hooks'
-import {animated, to, useSpring} from 'react-spring'
+import {animated, to, useSpring} from '@react-spring/web'
 import {useTimePerPixelSpring} from '../context'
 import {OnEventSpace} from "../context/canvasContext"
 import {DragOffset} from '../components/canvas'

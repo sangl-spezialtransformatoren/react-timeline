@@ -1,5 +1,5 @@
 import React, {createContext, useContext} from 'react'
-import {SpringValue, useSpring} from 'react-spring'
+import {SpringValue, useSpring} from '@react-spring/web'
 import {SpringConstant} from '../definitions'
 import {useAnimate, useInitialized, useSize, useSpringConfig, useStartDate, useTimePerPixel} from '../store/hooks'
 

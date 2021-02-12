@@ -16,7 +16,7 @@ import {
 } from '../store/hooks'
 import {AsGroupLabels} from '../context/canvasContext'
 import {DefaultGroupLabel, DefaultGroupLabelBackground} from '../presentational/group'
-import {animated, useSpring} from 'react-spring'
+import {animated, useSpring} from '@react-spring/web'
 
 export type GroupLabelProps = {
     groupId: string,

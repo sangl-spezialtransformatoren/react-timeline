@@ -1,4 +1,4 @@
-import {config} from 'react-spring'
+import {config} from '@react-spring/web'
 import {PartialTimelineReducer} from '../index'
 import {SET_SPRING_CONFIG} from '../actions'
 

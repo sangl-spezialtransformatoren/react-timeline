@@ -1,5 +1,5 @@
 import React, {MutableRefObject, RefObject, useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {animated, to, useSpring} from 'react-spring'
+import {animated, to, useSpring} from '@react-spring/web'
 import {useDrag} from 'react-use-gesture'
 import {useBusinessLogic, useTimePerPixelSpring} from '../context'
 import {

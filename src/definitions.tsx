@@ -1,5 +1,5 @@
 import React from 'react'
-import {config, SpringConfig, SpringValue} from 'react-spring'
+import {config, SpringConfig, SpringValue} from '@react-spring/web'
 import {BusinessLogic, DefaultBusinessLogic} from './store/businessLogic'
 import {RequiredEventData, RequiredGroupData} from './store/shape'
 import {PresentationalEventComponent} from "./components/event"

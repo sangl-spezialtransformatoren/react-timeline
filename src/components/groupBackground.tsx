@@ -1,5 +1,5 @@
 import React, {useMemo, useRef} from 'react'
-import {animated, useSpring} from 'react-spring'
+import {animated, useSpring} from '@react-spring/web'
 import {
     useAnimate,
     useGroupEventHeights,

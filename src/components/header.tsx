@@ -13,7 +13,7 @@ import {
     generateYearIntervals,
     intervalCreatorOptions,
 } from '../functions/intervals'
-import {animated, to} from 'react-spring'
+import {animated, to} from '@react-spring/web'
 import {useTimePerPixelSpring} from '../context'
 import {useDateZero, useGetHeaderIntervals} from '../store/hooks'
 
@@ -29,9 +29,9 @@ function createHeaderElement<T>(component: HeaderComponent<T>) {
         let timePerPixelSpring = useTimePerPixelSpring()
         let dateZero = useDateZero()
 
-        let x = to([timePerPixelSpring], (timePerPixel) => ((start.valueOf() - dateZero.valueOf()) / timePerPixel.valueOf()))
+        let x = to([timePerPixelSpring], (timePerPixel) => ((start.valueOf() - dateZero.valueOf()) / (timePerPixel as number)))
         let y = 0
-        let width = to([timePerPixelSpring], (timePerPixel) => (end.valueOf() - start.valueOf()) / timePerPixel)
+        let width = to([timePerPixelSpring], (timePerPixel) => (end.valueOf() - start.valueOf()) / (timePerPixel as number))
         let height = 25
 
         let AnimatedHeader = animated(component)
