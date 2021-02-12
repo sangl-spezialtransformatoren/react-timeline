@@ -40,14 +40,9 @@ import {useDispatch} from '../store'
 
 export const DragOffset: React.FC = React.memo(
     function DragOffset({children}) {
-        let startDateSpring = useStartDateSpring()
-        let timePerPixelSpring = useTimePerPixelSpring()
-        let dateZero = useDateZero()
-        let offset = to([startDateSpring, timePerPixelSpring], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()} 0)`)
-
-        return <animated.g transform={offset}>
+        return <g style={{transform: "var(--timeOffset)"}}>
             {children}
-        </animated.g>
+        </g>
     }
 )
 
@@ -212,8 +207,8 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
 
 
     // Interpolations
-    let scrollTransform = to([scrollOffsetSpring], scrollPosition => `translate(0 ${headerHeight + scrollPosition})`)
-    let drawerTransform = to([scrollOffsetSpring, drawerOpeningSpring], (scrollPosition, drawerOpening) => `translate(${drawerOpening} ${headerHeight + scrollPosition})`)
+    let scrollTransform = to([scrollOffsetSpring], scrollPosition => `translate(0, ${headerHeight + scrollPosition}px)`)
+    let drawerTransform = to([drawerOpeningSpring], (drawerOpening) => `translate(${drawerOpening}px, 0)`)
     let scrollbarY = to([scrollOffsetSpring], scrollOffset => contentHeight !== 0 ? headerHeight + (-scrollOffset * (divHeight - headerHeight) / contentHeight) + 3 : 0)
 
     let canvasContextValue = useMemo(() => {
@@ -228,15 +223,26 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
         }
     }, [svgRef, gridRef, headerRef, groupBackgroundsRef, groupLabelsRef, eventsRef, foregroundRef])
 
+    let startDateSpring = useStartDateSpring()
+    let timePerPixelSpring = useTimePerPixelSpring()
+    let dateZero = useDateZero()
+    let offset = to([startDateSpring, timePerPixelSpring], (startDate, timePerPixel) => `translate(${(dateZero.valueOf() - startDate.valueOf()) / timePerPixel.valueOf()}px, 0)`)
     return <>
         <div className={'react-timeline'} style={{...style}} ref={divRef}>
             <animated.svg
                 viewBox={`0 0 ${divWidth} ${divHeight}`}
                 className={'react-timeline-svg'}
-                ref={svgRef}>
+                ref={svgRef}
+                style={{
+                    "--timeOffset": offset,
+                    "--scrollOffset": scrollTransform,
+                    "--drawerOffset": drawerTransform
+                } as any}
+            >
                 <CanvasContext.Provider value={canvasContextValue}>
                     <g id={'grid'} ref={gridRef}/>
-                    <animated.g id={'group-backgrounds'} ref={groupBackgroundsRef} transform={scrollTransform}/>
+                    <animated.g id={'group-backgrounds'} ref={groupBackgroundsRef}
+                                style={{transform: "var(--scrollOffset)"}}/>
 
                     {
                         //Mask background so that the pinch event is handled correctly
@@ -246,8 +252,11 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
                               fill={'transparent'}
                               ref={scrollRef}/>
                     </g>
-                    <animated.g id={'events'} ref={eventsRef} transform={scrollTransform}/>
-                    <animated.g id={'group-labels'} ref={groupLabelsRef} transform={drawerTransform}/>
+                    <animated.g id={'events'} ref={eventsRef} style={{transform: "var(--scrollOffset)"}}/>
+                    <animated.g style={{transform: "var(--scrollOffset)"}}>
+                        <animated.g id={'group-labels'} ref={groupLabelsRef}
+                                    style={{transform: "var(--drawerOffset)"}}/>
+                    </animated.g>
                     {initialized && children}
                     <g id={'scrollbar'}>
                         <animated.rect width={3}
