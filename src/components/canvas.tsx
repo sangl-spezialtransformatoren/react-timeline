@@ -15,7 +15,6 @@ import {
     useSpringConfig,
 } from '../store/hooks'
 import {useResizeObserver} from '../functions/hooks'
-import isEqual from 'react-fast-compare'
 import {CanvasContext} from '../context/canvasContext'
 import {
     closeDrawer,
@@ -274,7 +273,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
             </animated.svg>
         </div>
     </>
-}, isEqual)
+})
 
 // Event handlers
 export type EventState<T extends StateKey> = Omit<FullGestureState<StateKey<T>>, 'event'> & {event: EventTypes[T]}
