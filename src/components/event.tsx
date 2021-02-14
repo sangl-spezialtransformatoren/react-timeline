@@ -137,7 +137,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
             config: springConfig,
             immediate: !animate || !initialized,
             onRest: () => setUseTransform(() => true),
-        }, [springConfig, animate])
+        }, [springConfig, animate, y, groupY])
 
         let [{intervalStartSpring}] = useSpring({
             intervalStartSpring: interval.start,
