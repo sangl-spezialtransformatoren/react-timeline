@@ -171,7 +171,7 @@ export function createEventComponent<T>(component: React.FC<T>) {
         useDrag(onDragEnd, {domTarget: endRef})
 
         // @ts-ignore
-        return <g style={{transform: useTransform ? transform : 'translate(0, 0)'}}><PresentationalComponent
+        return <g style={{transform: useTransform ? transform : 'translate3d(0, 0, 0)'}}><PresentationalComponent
             {...eventProps}
             eventId={id}
             x={xSpring}
@@ -223,7 +223,7 @@ export const Events_ = React.memo(
         let springConfig = useSpringConfig()
 
         let [props] = useSpring({
-            ...(Object.fromEntries(Object.entries(groupYs).map(([groupId, y]) => [cssEscape(`--${groupId}`), `translate(0, ${y}px)`])) as React.CSSProperties),
+            ...(Object.fromEntries(Object.entries(groupYs).map(([groupId, y]) => [cssEscape(`--${groupId}`), `translate3d(0, ${y}px, 0)`])) as React.CSSProperties),
             config: springConfig,
             immediate: !animate || !initialized,
         }, [springConfig, animate, initialized, groupYs])

@@ -206,8 +206,8 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
 
 
     // Interpolations
-    let scrollTransform = to([scrollOffsetSpring], scrollPosition => `translate(0, ${headerHeight + scrollPosition}px)`)
-    let drawerTransform = to([drawerOpeningSpring], (drawerOpening) => `translate(${drawerOpening}px, 0)`)
+    let scrollTransform = to([scrollOffsetSpring], scrollPosition => `translate3d(0, ${headerHeight + scrollPosition}px, 0)`)
+    let drawerTransform = to([drawerOpeningSpring], (drawerOpening) => `translate3d(${drawerOpening}px, 0, 0)`)
     let scrollbarY = to([scrollOffsetSpring], scrollOffset => contentHeight !== 0 ? headerHeight + (-scrollOffset * (divHeight - headerHeight) / contentHeight) + 3 : 0)
 
     let canvasContextValue = useMemo(() => {
@@ -225,7 +225,7 @@ export const TimelineCanvas: React.FC<Pick<TimelineProps, 'initialStartDate' | '
     let startDateSpring = useStartDateSpring()
     let timePerPixelSpring = useTimePerPixelSpring()
     let dateZero = useDateZero()
-    let offset = to([startDateSpring, timePerPixelSpring], (startDate , timePerPixel) => `translate(${(dateZero.valueOf() - (startDate as Date|number).valueOf()) / (timePerPixel as Date|number).valueOf()}px, 0)`)
+    let offset = to([startDateSpring, timePerPixelSpring], (startDate , timePerPixel) => `translate3d(${(dateZero.valueOf() - (startDate as Date|number).valueOf()) / (timePerPixel as Date|number).valueOf()}px, 0, 0)`)
     return <>
         <div className={'react-timeline'} style={{...style}} ref={divRef}>
             <animated.svg
