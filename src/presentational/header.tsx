@@ -35,7 +35,7 @@ function createLabelTemporalHeader(mapDateToLabel: (date: Date | number, optiona
         return <>
             <rect x={x} y={y} width={width} height={height} fill={headerColor} stroke={headerColor} />
             <text x={x + width / 2} y={y + height / 2} alignmentBaseline={'central'} textAnchor={'middle'}
-                  fontFamily={'sans-serif'}>{label}</text>
+                  fontFamily={'sans-serif'} textRendering={"optimizeSpeed"}>{label}</text>
         </>
     }
 }
@@ -65,7 +65,7 @@ const DefaultDayHeader: TemporalHeaderComponent = ({x, y, width, height, date}) 
     return <>
         <rect x={x} y={y} width={width} height={height} fill={headerColor} />
         <text x={x + width / 2} y={y + height - 8} textAnchor={'middle'} fill={color}
-              fontFamily={'sans-serif'}>{label}</text>
+              fontFamily={'sans-serif'} textRendering={"optimizeSpeed"}>{label}</text>
     </>
 }
 export const DayHeader = createDayHeader(DefaultDayHeader)
@@ -173,7 +173,7 @@ export const AutomaticHeader: React.FC = () => {
         <DragOffset>
             {intervals.map(({name, component: Component}, index) => {
                 return render[index] &&
-                  <g key={name} transform={`translate(0 ${75 - 25 * positions[index + 1]})`}
+                  <g key={name} style={{transform: `translate3d(0, ${75 - 25 * positions[index + 1]}px, 0)`}}
                      visibility={show[index] ? 'show' : 'hidden'}>
                     <Component />
                   </g>
