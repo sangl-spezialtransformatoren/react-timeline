@@ -1,91 +1,76 @@
 {
+  "name": "react-timeline",
   "version": "0.1.0",
+  "author": "adrianschneider94",
   "license": "MIT",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "src"
-  ],
-  "engines": {
-    "node": ">=10"
-  },
+  "main": "lib/index.js",
+  "module": "lib/index.esm.js",
+  "typings": "lib/index.d.ts",
   "scripts": {
-    "start": "tsdx watch",
-    "build": "tsdx build",
-    "test": "tsdx test --passWithNoTests",
-    "lint": "tsdx lint",
-    "prepare": "tsdx build",
-    "size": "size-limit",
-    "analyze": "size-limit --why",
-    "storybook": "start-storybook -p 6006",
+    "postinstall": "patch-package",
+    "storybook": "start-storybook -p 6006 -h 10.136.58.149",
+    "build": "rollup -c",
     "build-storybook": "build-storybook",
-    "postinstall": "patch-package"
+    "test": "npx jest",
+    "depcheck": "depcheck"
   },
   "peerDependencies": {
-    "react": "^16.8.6 || ^17.0.1",
-    "react-dom": "^16.8.6 || ^17.0.1",
-    "redux": "^4.0.5"
-  },
-  "prettier": {
-    "printWidth": 80,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "name": "react-timeline",
-  "author": "adrianschneider94",
-  "module": "dist/react-timeline.esm.js",
-  "size-limit": [
-    {
-      "path": "dist/react-timeline.cjs.production.min.js",
-      "limit": "10 KB"
-    },
-    {
-      "path": "dist/react-timeline.esm.js",
-      "limit": "10 KB"
-    }
-  ],
-  "devDependencies": {
-    "@babel/core": "^7.12.8",
-    "@size-limit/preset-small-lib": "^4.9.0",
-    "@storybook/addon-essentials": "^6.1.4",
-    "@storybook/addon-info": "^5.3.21",
-    "@storybook/addon-links": "^6.1.4",
-    "@storybook/addons": "^6.1.4",
-    "@storybook/react": "^6.1.4",
-    "@types/body-scroll-lock": "^2.6.1",
-    "@types/react": "^16.8.6",
-    "@types/react-custom-scrollbars": "^4.0.7",
-    "@types/react-dom": "^16.8.6",
-    "@types/react-redux": "^7.1.15",
-    "@types/resize-observer-browser": "^0.1.5",
-    "@types/uuid": "^8.3.0",
-    "autoprefixer": "^10.0.4",
-    "babel-loader": "^8.2.1",
-    "cssnano": "^4.1.10",
-    "husky": "^4.3.0",
-    "react": ">= 16.8.0",
-    "react-dom": ">= 16.8.0",
-    "react-is": "^16.13.1",
-    "redux": "^4.0.5",
-    "rollup-plugin-scss": "^2.6.1",
-    "size-limit": "^4.9.0",
-    "tsdx": "^0.14.1",
-    "tslib": "^2.0.3",
-    "typescript": "^4.1.2"
+    "react": "^16.8.0 || ^17.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0"
   },
   "dependencies": {
-    "@react-spring/types": "^9.2.3",
-    "@react-spring/web": "^9.2.3",
-    "@reduxjs/toolkit": "^1.5.0",
-    "date-fns": "^2.16.1",
-    "date-fns-tz": "^1.0.12",
-    "react-fast-compare": "^3.2.0",
-    "react-redux": "^7.2.2",
-    "react-use-gesture": "^8.0.1",
-    "reselect": "^4.0.0",
-    "sass": "^1.35.1",
-    "schedule-fns": "github:adrianschneider94/schedule-fns#fbcc4d94"
+    "@react-spring/web": "^9.4.3",
+    "@use-gesture/react": "^10.2.6",
+    "body-scroll-lock": "*",
+    "collections": "^5.1.13",
+    "dayjs": "^1.10.7",
+    "extra-bigint": "^0.0.62",
+    "react-merge-refs": "^1.1.0",
+    "requestidlecallback-polyfill": "^1.0.2",
+    "worker-rpc": "^0.1.1",
+    "zustand": "^3.6.9"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.12",
+    "@rollup/plugin-replace": "^4.0.0",
+    "@storybook/react": "^6.4.17",
+    "@types/body-scroll-lock": "^3.1.0",
+    "@types/collections": "^5.1.2",
+    "@types/jest": "^27.4.0",
+    "@types/react": "^17.0.38",
+    "@typescript-eslint/eslint-plugin": "^5.12.0",
+    "@typescript-eslint/parser": "^5.12.0",
+    "depcheck": "^1.4.3",
+    "eslint": "^8.9.0",
+    "eslint-plugin-react": "^7.28.0",
+    "eslint-plugin-react-hooks": "^4.3.0",
+    "jest": "^27.5.1",
+    "patch-package": "^6.4.7",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "rollup": "^2.68.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-glob-import": "^0.5.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.31.2",
+    "ts-jest": "^27.1.3",
+    "typescript": "^4.5.5"
+  },
+  "browserslist": {
+    "production": [
+      "chrome >= 67",
+      "edge >= 79",
+      "firefox >= 68",
+      "opera >= 54",
+      "safari >= 14"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

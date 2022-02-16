@@ -1,0 +1,49 @@
+:root {
+    --time-offset: 0px;
+    --time-zero-update: 0;
+    --time-scaling: 1;
+}
+
+.canvas {
+    user-select: none;
+    touch-action: none;
+    overflow: hidden;
+    overscroll-behavior-x: contain;
+}
+
+.timely {
+    transform: scaleX(var(--time-scaling)) translateX(var(--time-offset));
+    transform-origin: var(--time-offset) 0;
+    transform-box: view-box;
+    will-change: transform;
+}
+
+.timely-dont-scale {
+    transform: scaleX(calc(1 / var(--time-scaling))) translate3d(0, 0, 0);
+    transform-origin: center;
+    transform-box: fill-box;
+    will-change: transform;
+}
+
+.non-scaling-stroke {
+    vector-effect: non-scaling-stroke;
+}
+
+.easing {
+}
+
+.drag-target {
+    touch-action: none;
+}
+
+.hide-header {
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 2s;
+}
+
+.show-header {
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 2s;
+}

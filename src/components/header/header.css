@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono&family=Fredoka&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500&family=Noto+Sans&family=Overpass+Mono:wght@400;500&family=Roboto:wght@300;400;500&family=Ubuntu+Mono&display=swap');
+
+.header {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.header-background {
+    fill: none;
+    stroke: none;
+}

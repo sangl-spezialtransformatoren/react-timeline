@@ -1,0 +1,2 @@
+ignores: ["*.stories.tsx"]
+skip-missing: false

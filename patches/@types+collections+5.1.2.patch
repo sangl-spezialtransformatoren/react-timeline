@@ -1,0 +1,13 @@
+diff --git a/node_modules/@types/collections/sorted-set.d.ts b/node_modules/@types/collections/sorted-set.d.ts
+index d26b660..acf2c01 100644
+--- a/node_modules/@types/collections/sorted-set.d.ts
++++ b/node_modules/@types/collections/sorted-set.d.ts
+@@ -6,7 +6,7 @@ declare namespace SortedSet {
+     type SortedSet<T> = internal.SortedSet<T>;
+ }
+ 
+-declare namespace internal {
++export declare namespace internal {
+     interface SortedSetStatic {
+         <T>(
+             values?: T[],
