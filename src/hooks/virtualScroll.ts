@@ -1,4 +1,4 @@
-import {CanvasStoreShape, useCanvasStore} from '../components/canvas/canvas'
+import {CanvasStoreShape, useCanvasStore} from "../components/canvas/canvasStore"
 
 function logRound(value: number, base = 2) {
     return base ** (Math.round(Math.log(value) / Math.log(base)))
@@ -9,7 +9,7 @@ function roundTo(value: number, size: number) {
 }
 
 const selector = (base: number, factor: number) => (state: CanvasStoreShape) => {
-    const timeWidth = state.width * state.timePerPixel
+    const timeWidth = state.containerWidth * state.timePerPixel
     const timeEnd = state.timeStart + timeWidth
 
     // Use logarithmic rounding to find a scale independent quantization

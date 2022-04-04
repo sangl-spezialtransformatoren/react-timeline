@@ -1,12 +1,13 @@
 import React, {useMemo} from 'react'
 import {OpUnitType} from 'dayjs'
 import {useIntervals} from '../../hooks/timeIntervals'
-import {useCanvasWidth, useTimePerPixel, useTimePerPixelAnchor, useTimeZero} from '../canvas/canvas'
 import {IntervalToMs} from '../../units'
 
 import '../canvas/canvas.css'
 import "./header.css"
-import {Defer} from "../../functions/Defer"
+import {useCanvasWidth, useTimePerPixel, useTimePerPixelSpring, useTimeStartSpring} from "../canvas/canvasStore"
+import {animated, to} from "@react-spring/web"
+import {round} from "../../functions/round"
 
 type DisplayInterval = {
     key: string,
@@ -203,38 +204,28 @@ export const IntervalHeader: React.FC<IntervalHeaderProps> = React.memo((
         formatStart,
         formatEnd,
     }) => {
-    const timeZero = useTimeZero()
-    const timePerPixel = useTimePerPixelAnchor()
     const intervals = useIntervals(amount, unit, formatStart, formatEnd)
+    let timeStartSpring = useTimeStartSpring()
+    let timePerPixelSpring = useTimePerPixelSpring()
 
-    return <g className={'timely'}>
-        <Defer chunkSize={10}>
+    return <>
+        <g>
             {intervals?.map(([key, {start, end, label}]) => {
-                return <g key={key}>
-                    <rect
-                        className={'non-scaling-stroke header-background'}
-                        x={(start.valueOf() - timeZero) / timePerPixel}
-                        width={(end.valueOf() - start.valueOf()) / timePerPixel}
-                        y={0}
-                        height={20}
-                    />
-                    <g className={'timely-dont-scale'}>
-                        <text
-                            x={((start + end) / 2 - timeZero) / timePerPixel}
-                            textAnchor={'middle'}
-                            y={15}
-                            width={20}
-                            style={{textTransform: 'capitalize'}}
-                            fill={'white'}
-                            className={"header"}
-                            height={20}>
-                            {label}
-                        </text>
-                    </g>
-                </g>
+                return <animated.text
+                    key={key}
+                    x={to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => round(((start + end) / 2 - timeStart) / timePerPixel))}
+                    textAnchor={'middle'}
+                    y={15}
+                    width={20}
+                    style={{textTransform: 'capitalize', pointerEvents: "none"}}
+                    fill={'white'}
+                    className={"header"}
+                    height={20}>
+                    {label}
+                </animated.text>
             })}
-        </Defer>
-    </g>
+        </g>
+    </>
 })
 
 IntervalHeader.displayName = 'IntervalHeader'
@@ -273,7 +264,7 @@ export const Header = React.memo(() => {
     let width = useCanvasWidth()
 
     return <>
-        <rect x={-50} y={-50} width={width + 100} height={110} fill={"rgba(77,77,77,0.82)"}
+        <rect x={0} y={0} width={width} height={60} fill={"rgba(77,77,77,0.82)"}
               style={{filter: "drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.2))"}}/>
         {displayedUnits.filter(x => x.coarser || x.coarsest || x.coarse).map(x => {
             return <g

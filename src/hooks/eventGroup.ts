@@ -55,6 +55,7 @@ export const useEventGroupStore = create<EventGroupStoreShape>(set => ({
 
 let groupSets: Record<string, {points: Entry[]}> = {}
 
+
 export const useEventGroupPosition = (groupId: string, eventId: string, from: number, to: number) => {
     let setPositions = useEventGroupStore(state => state.setGroupPositions)
 

@@ -1,75 +1,14 @@
-import React, {useCallback, useEffect, useRef} from 'react'
-import create from 'zustand'
+import React, {CSSProperties, useCallback, useEffect, useRef} from 'react'
 import {useGesture} from '@use-gesture/react'
-import {animated, to, useSpring} from '@react-spring/web'
 import {disableBodyScroll, enableBodyScroll} from 'body-scroll-lock'
 import {Handler} from '@use-gesture/core/src/types/handlers'
 
+import {useCanvasStore, useCanvasStoreApi, useTimePerPixelSpring, useTimeStartSpring} from "./canvasStore"
 import './canvas.css'
 
-export type CanvasStoreShape = {
-    width: number
-    height: number
-    timeZero: number
-    timePerPixel: number
-    timePerPixelAnchor: number
-    timeStart: number
-    setWidth: (_: number) => unknown
-    setHeight: (_: number) => unknown
-    setTimeZero: (_: number) => unknown
-    setTimePerPixel: (_: number) => unknown
-    setTimePerPixelAnchor: (_: number) => unknown
-    setTimeStart: (_: number) => unknown,
-    realign: () => unknown
-}
-
-export const useCanvasStore = create<CanvasStoreShape>(set => ({
-    width: 600,
-    height: 400,
-    timeZero: new Date().valueOf(),
-    timePerPixel: 172800,
-    timePerPixelAnchor: 172800,
-    timeStart: new Date().valueOf(),
-    setWidth: (width: number) => set(state => ({...state, width})),
-    setHeight: (height: number) => set(state => ({...state, height})),
-    setTimeZero: (timeZero: number) => set(state => ({...state, timeZero})),
-    setTimePerPixel: (timePerPixel: number) => set(state => ({...state, timePerPixel})),
-    setTimeStart: (timeStart: number) => set(state => ({...state, timeStart})),
-    setTimePerPixelAnchor: (timePerPixelAnchor: number) => set(state => ({...state, timePerPixelAnchor})),
-    realign: () => set(state => ({...state, timePerPixelAnchor: state.timePerPixel, timeZero: state.timeStart}))
-}))
-
-export const useTimeZero = () => {
-    return useCanvasStore(state => state.timeZero)
-}
-
-export const useTimeStart = () => {
-    return useCanvasStore(state => state.timeStart)
-}
-
-export const useTimePerPixel = () => {
-    return useCanvasStore(state => state.timePerPixel)
-}
-
-export const useTimePerPixelAnchor = () => {
-    return useCanvasStore(state => state.timePerPixelAnchor)
-}
-
-export const useCanvasHeight = () => {
-    return useCanvasStore(state => state.height)
-}
-
-export const useCanvasWidth = () => {
-    return useCanvasStore(state => state.width)
-}
-
-export const useRealign = () => {
-    return useCanvasStore(state => state.realign)
-}
-
 type CanvasProps = {
-    width?: string | number
-    height?: string | number
+    width?: CSSProperties["width"]
+    height?: CSSProperties["height"]
 }
 
 function calculatePinchPoints(center: [number, number], da: [number, number]) {
@@ -82,24 +21,27 @@ function calculatePinchPoints(center: [number, number], da: [number, number]) {
 
 const MaxTimePerPixel = 6.3e8
 const MinTimePerPixel = 2
+const WheelThrottle = 2
+const PinchThrottle = 2
+const DragThrottle = 1
 
-export const Canvas: React.FC<CanvasProps> = ({width, height, children}) => {
+export const Canvas: React.FC<CanvasProps> = React.memo(({width, height, children}) => {
     let ref = useRef<HTMLDivElement>(null)
 
     // Global state
-    let timeZero = useTimeZero()
-    let timeStart = useTimeStart()
-    let timePerPixelAnchor = useTimePerPixelAnchor()
-    let timePerPixel = useTimePerPixel()
-    let realign = useRealign()
+    let canvasStoreApi = useCanvasStoreApi()
 
     // State updates
-    let setWidth = useCanvasStore(state => state.setWidth)
-    let setHeight = useCanvasStore(state => state.setHeight)
-    let setTimeZero = useCanvasStore(state => state.setTimeZero)
+    let setWidth = useCanvasStore(state => state.setContainerWidth)
+    let setHeight = useCanvasStore(state => state.setContainerHeight)
+    let setOffsetLeft = useCanvasStore(state => state.setContainerLeft)
     let setTimeStart = useCanvasStore(state => state.setTimeStart)
     let setTimePerPixel = useCanvasStore(state => state.setTimePerPixel)
-    let setTimePerPixelAnchor = useCanvasStore(state => state.setTimePerPixelAnchor)
+    let setScrollOffset = useCanvasStore(state => state.setScrollOffset)
+
+    // Springs
+    let timePerPixelSpring = useTimePerPixelSpring()
+    let timeStartSpring = useTimeStartSpring()
 
     // Disable body scroll on canvas
     useEffect(() => {
@@ -115,11 +57,12 @@ export const Canvas: React.FC<CanvasProps> = ({width, height, children}) => {
         }
     }, [])
 
-    // Track the size of the container div
+    // Track the size of the container div and its left Border (to reduce layout thrashing)
     const resizeCallback = useCallback<ResizeObserverCallback>((result) => {
         setWidth(result[0].contentRect.width)
         setHeight(result[0].contentRect.height)
-    }, [setHeight, setWidth])
+        setOffsetLeft(result[0].contentRect.left)
+    }, [setHeight, setOffsetLeft, setWidth])
 
     useEffect(() => {
         if (ref.current) {
@@ -129,97 +72,97 @@ export const Canvas: React.FC<CanvasProps> = ({width, height, children}) => {
         }
     }, [resizeCallback])
 
-    // Realign points when dragging or scaling away to avoid discretization issues
-    useEffect(() => {
-        if ((Math.abs((timeStart.valueOf() - timeZero.valueOf()) / timePerPixel) > 1000) || Math.abs(Math.log(timePerPixel / timePerPixelAnchor)) > 0.13) {
-            realign()
-        }
-    }, [timeStart, timeZero, timePerPixel, timePerPixelAnchor, setTimeZero, setTimePerPixelAnchor, realign])
-
-    // Dragging
-    let dragRoot = useRef<number>(timeStart)
+    // Dragging callback
+    let dragRoot = useRef<number>(0)
     let wasPinching = useRef<boolean>(false)
+    let dragEventCount = useRef(1)
     let onDragCallback = useCallback<Handler<'drag'>>((state) => {
-        let x = (state.xy[0] - (ref.current?.offsetLeft || 0))
+        let {containerLeft, timePerPixel, timeStart, scrollOffset} = canvasStoreApi.getState()
+
+        let x = (state.xy[0] - containerLeft)
         if (state.first || wasPinching.current) {
             dragRoot.current = timeStart + x * timePerPixel
         } else {
-            setTimeStart(dragRoot.current - x * timePerPixel)
+            if (dragEventCount.current % DragThrottle == 0) {
+                setTimeStart(dragRoot.current - x * timePerPixel)
+                setScrollOffset(scrollOffset - state.delta[1])
+                dragEventCount.current = 0
+            }
+            dragEventCount.current += 1
         }
         wasPinching.current = !!state.pinching
-    }, [setTimeStart, timePerPixel, timeStart])
+    }, [canvasStoreApi, setScrollOffset, setTimeStart])
 
-    // Zooming (wheel)
+    // Zooming (wheel) callback
+    let wheelEventCount = useRef(1)
     let onWheelCallback = useCallback<Handler<'wheel'>>((state) => {
         if (state.altKey) {
-            let x = state.event.clientX - (ref.current?.offsetLeft || 0)
-            let center = timeStart + x * timePerPixel
-            let scale = 0.95
-            let factor = state.delta[1] > 0 ? scale : 1 / scale
+            let {containerLeft: offsetLeft, timePerPixel, timeStart} = canvasStoreApi.getState()
+            if (wheelEventCount.current % WheelThrottle == 0) {
+                let x = state.event.clientX - offsetLeft
+                let center = timeStart + x * timePerPixel
+                let scale = 1 - 0.05 * WheelThrottle
+                let factor = state.delta[1] > 0 ? scale : 1 / scale
 
-            let newTimeStart = center - (center - timeStart) * factor
-            let newTimePerPixel = factor * timePerPixel
+                let newTimeStart = center - (center - timeStart) * factor
+                let newTimePerPixel = factor * timePerPixel
 
-            if (newTimePerPixel < MaxTimePerPixel && newTimePerPixel > MinTimePerPixel) {
-                setTimeStart(newTimeStart)
-                setTimePerPixel(newTimePerPixel)
+                if (newTimePerPixel < MaxTimePerPixel && newTimePerPixel > MinTimePerPixel) {
+                    setTimeStart(newTimeStart)
+                    setTimePerPixel(newTimePerPixel)
+                }
+                wheelEventCount.current = 0
             }
+            wheelEventCount.current += 1
         }
-    }, [setTimePerPixel, setTimeStart, timePerPixel, timeStart])
+    }, [canvasStoreApi, setTimePerPixel, setTimeStart])
 
-    // Zooming (pinching)
+    // Zooming (pinching) callback
     let leftPinchTime = useRef<number>()
     let rightPinchTime = useRef<number>()
+    let pinchEventCount = useRef(1)
     let onPinchCallback = useCallback<Handler<'pinch'>>((state) => {
         let [p1, p2] = calculatePinchPoints(state.origin, state.da)
+        let {containerLeft: offsetLeft} = canvasStoreApi.getState()
         if (state.first) {
-            let [t1, t2] = [p1[0], p2[0]].map(x => timeStart + (x - (ref.current?.clientLeft || 0)) * timePerPixel)
+            let [t1, t2] = [p1[0], p2[0]].map(x => timeStartSpring.get() + (x - offsetLeft) * timePerPixelSpring.get())
             leftPinchTime.current = t1
             rightPinchTime.current = t2
         }
+        if (pinchEventCount.current % PinchThrottle == 0) {
+            if (leftPinchTime.current && rightPinchTime.current) {
+                let newTimePerPixel = Math.abs((leftPinchTime.current - rightPinchTime.current) / (p1[0] - p2[0]))
+                let newTimeStart = leftPinchTime.current - p1[0] * newTimePerPixel
+                if (newTimePerPixel < MaxTimePerPixel && newTimePerPixel > MinTimePerPixel) {
+                    setTimeStart(newTimeStart)
+                    setTimePerPixel(newTimePerPixel)
+                }
+            }
+            pinchEventCount.current = 0
+        }
+        pinchEventCount.current = pinchEventCount.current + 1
+    }, [canvasStoreApi, setTimePerPixel, setTimeStart, timePerPixelSpring, timeStartSpring])
 
-        if (leftPinchTime.current && rightPinchTime.current) {
-            let newTimePerPixel = Math.abs((leftPinchTime.current - rightPinchTime.current) / (p1[0] - p2[0]))
-            let newTimeStart = leftPinchTime.current - p1[0] * newTimePerPixel
-            if (newTimePerPixel < MaxTimePerPixel && newTimePerPixel > MinTimePerPixel) {
-                setTimeStart(newTimeStart)
-                setTimePerPixel(newTimePerPixel)
+    // Attach gestures
+    const bind = useGesture(
+        {
+            onDrag: onDragCallback,
+            onWheel: onWheelCallback,
+            onPinch: onPinchCallback,
+        },
+        {
+            drag: {
+                axis: "lock"
             }
         }
-    }, [setTimePerPixel, setTimeStart, timePerPixel, timeStart])
+    )
 
-    const bind = useGesture({
-        onDrag: onDragCallback,
-        onWheel: onWheelCallback,
-        onPinch: onPinchCallback,
-    })
-
-    // Animations
-    let {timeStartSpring, timePerPixelSpring} = useSpring({
-        timeStartSpring: timeStart,
-        timePerPixelSpring: timePerPixel,
-        onRest: realign,
-        config: {
-            mass: 1,
-            tension: 210,
-            friction: 28,
-            clamp: true
-        },
-    })
-
-    let timeOffset = to([timeStartSpring, timePerPixelSpring], (timeStart: number, timePerPixel) => `${(timeZero - timeStart) / timePerPixel}px`)
-    let timeScaling = timePerPixelSpring.to((timePerPixel) => `${timePerPixelAnchor / timePerPixel}`)
-
-
+    // Render
     return <div style={{width, height}} ref={ref} className={'canvas'} {...bind()}>
-        <animated.svg width={'100%'} height={'100%'}
-                      style={{
-                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                          // @ts-ignore
-                          '--time-offset': timeOffset,
-                          '--time-scaling': timeScaling,
-                      }}>
+        <svg width={'100%'} height={'100%'}>
             {children}
-        </animated.svg>
+        </svg>
     </div>
-}
+})
+
+Canvas.displayName = "Canvas"

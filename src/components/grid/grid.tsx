@@ -1,10 +1,11 @@
 import React, {useMemo} from 'react'
 import {OpUnitType} from 'dayjs'
 
-import {useCanvasHeight, useTimePerPixelAnchor, useTimeZero} from '../canvas/canvas'
 import {useIntervals} from '../../hooks/timeIntervals'
 import {IntervalToMs} from '../../units'
-import {Defer} from "../../functions/Defer"
+import {useCanvasHeight, useTimelyTransform, useTimePerPixelAnchor, useTimeZero} from "../canvas/canvasStore"
+import {animated} from '@react-spring/web'
+import {round} from "../../functions/round"
 
 export const Lines: React.FC<{amount: number, unit: OpUnitType}> = React.memo(
     ({
@@ -16,6 +17,7 @@ export const Lines: React.FC<{amount: number, unit: OpUnitType}> = React.memo(
         const canvasHeight = useCanvasHeight()
 
         let intervals = useIntervals(amount, unit)
+
         let render = useMemo(() => {
             return amount * IntervalToMs[unit] / timePerPixelAnchor > 20
         }, [amount, timePerPixelAnchor, unit])
@@ -24,21 +26,21 @@ export const Lines: React.FC<{amount: number, unit: OpUnitType}> = React.memo(
             return amount * IntervalToMs[unit] / timePerPixelAnchor > 25
         }, [amount, timePerPixelAnchor, unit])
 
-        return render ? <g className={'timely easing'}>
-            <Defer chunkSize={10}>
-                {intervals?.map(([key, {start}]) => {
-                    return <line
-                        key={key}
-                        className={'non-scaling-stroke'}
-                        style={{opacity: visible ? 1 : 0}}
-                        x1={(start - timeZero) / timePerPixelAnchor}
-                        x2={(start - timeZero) / timePerPixelAnchor}
-                        y1={0}
-                        y2={canvasHeight}
-                        stroke={'rgba(0, 0, 0, 0.2)'}/>
-                })}
-            </Defer>
-        </g> : <></>
+        let {transform, transformOrigin} = useTimelyTransform()
+
+        return render ? <animated.g className={'non-scaling-stroke'} style={{transform, transformOrigin}}>
+            {intervals?.map(([key, {start}]) => {
+                return <line
+                    key={key}
+                    className={'non-scaling-stroke'}
+                    style={{display: visible ? "initial" : "none"}}
+                    x1={round((start - timeZero) / timePerPixelAnchor)}
+                    x2={round((start - timeZero) / timePerPixelAnchor)}
+                    y1={0}
+                    y2={round(canvasHeight)}
+                    stroke={'rgba(0, 0, 0, 0.2)'}/>
+            })}
+        </animated.g> : <></>
     })
 Lines.displayName = 'Lines'
 
@@ -47,40 +49,46 @@ export const WeekendMarkers: React.FC = React.memo(() => {
     const timeZero = useTimeZero()
     const timePerPixel = useTimePerPixelAnchor()
     const canvasHeight = useCanvasHeight()
+    let {transform, transformOrigin} = useTimelyTransform()
 
     const days = useIntervals(1, 'day')
     const weekends = useMemo(() => {
         return days?.filter(([_, {isWeekend}]) => isWeekend)
     }, [days])
-    let visible = useMemo(() => {
-        return IntervalToMs['day'] / timePerPixel > 3
+
+    let render = useMemo(() => {
+        return IntervalToMs['day'] / timePerPixel > 20
     }, [timePerPixel])
 
-    return <g className={'timely easing'}
-              style={{
-                  opacity: visible ? 1 : 0,
-                  transition: "opacity 0.2s",
-                  willChange: "opacity, transform"
-              }}>
-        <Defer chunkSize={10}>
+    let visible = useMemo(() => {
+        return IntervalToMs['day'] / timePerPixel > 25
+    }, [timePerPixel])
+
+    return render ? <>
+        <animated.g
+            style={{
+                display: visible ? "initial" : "none",
+                transform,
+                transformOrigin
+            }}>
             {weekends?.map(([key, {start, end}]) => {
                 return <rect
-                    key={key}
                     className={'non-scaling-stroke'}
-                    x={(start - timeZero) / timePerPixel}
-                    width={(end - start) / timePerPixel}
+                    key={key}
+                    x={round((start - timeZero) / timePerPixel)}
+                    width={round((end - start) / timePerPixel)}
                     y={0}
                     height={canvasHeight}
                     fill={'rgb(224,224,224)'}/>
             })}
-        </Defer>
-    </g>
+        </animated.g>
+    </> : <></>
 })
 
 WeekendMarkers.displayName = 'WeekendMarkers'
 
 export const Grid = React.memo(() => {
-    return <>
+    return <g style={{shapeRendering: "geometricPrecision"}}>
         <WeekendMarkers/>
         <Lines amount={100} unit={'years'}/>
         <Lines amount={10} unit={'years'}/>
@@ -98,7 +106,7 @@ export const Grid = React.memo(() => {
         <Lines amount={100} unit={'milliseconds'}/>
         <Lines amount={10} unit={'milliseconds'}/>
         <Lines amount={1} unit={'milliseconds'}/>
-    </>
+    </g>
 })
 
 Grid.displayName = 'Grid'

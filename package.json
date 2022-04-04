@@ -8,7 +8,7 @@
   "typings": "lib/index.d.ts",
   "scripts": {
     "postinstall": "patch-package",
-    "storybook": "start-storybook -p 6006 -h 10.136.58.149",
+    "storybook": "start-storybook -p 6006",
     "build": "rollup -c",
     "build-storybook": "build-storybook",
     "test": "npx jest",

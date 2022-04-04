@@ -91,7 +91,7 @@ export function limitTimestampSetLength(timestampSet: internal.SortedSet<Interva
 }
 
 
-export function updateTimestamps(timestampSet: internal.SortedSet<Interval>, from: number, to: number, n: number, interval: OpUnitType, labelFactory: (from: Dayjs, to: Dayjs) => string = (a, _) => a.format()) {
+export function updateTimestamps(timestampSet: internal.SortedSet<Interval>, from: number, to: number, n: number, interval: OpUnitType, labelFactory: (_from: Dayjs, _to: Dayjs) => string = (a, _) => a.format()) {
     let min = timestampSet.min()?.start
     let max = timestampSet.max()?.start
 
