@@ -1,20 +1,30 @@
+export {TimelineContext} from "./components/context/context"
 export {Grid} from './components/grid/grid'
 export {Now} from './components/now/now'
-export {Event, Vacation} from './components/event/event'
+export {Event} from './components/event/event'
 export {Header} from './components/header/header'
+export {Canvas} from './components/canvas/canvas'
 
+export {useEventGroupPosition, useEventGroupStore} from "./hooks/newEventGroup"
+export {useVirtualScrollBounds} from "./hooks/virtualScroll"
+export {useIntervalCalculator, useIntervals} from "./hooks/timeIntervals"
 export {
-    Canvas,
-    useCanvasStore,
-    useCanvasWidth,
-    useCanvasHeight,
-    useTimePerPixelAnchor,
+    useRealign,
     useTimePerPixel,
     useTimeStart,
     useTimeZero,
-    useRealign
-} from './components/canvas/canvas'
+    useTimePerPixelAnchor,
+    useTimelyTransform,
+    useTimePerPixelSpring,
+    useTimeStartSpring,
+    useCanvasStore,
+    useCanvasStoreApi,
+    useCanvasHeight,
+    useCanvasOffsetLeft,
+    useCanvasWidth
+} from "./components/canvas/canvasStore"
 
-export {useEventGroupPosition, useEventGroupStore} from "./hooks/eventGroup"
-export {useVirtualScrollBounds} from "./hooks/virtualScroll"
-export {useIntervalCalculator, useIntervals} from "./hooks/timeIntervals"
+export type{
+    CanvasStoreHandle,
+    CanvasStoreShape
+} from "./components/canvas/canvasStore"

@@ -1,7 +1,8 @@
-import React, {useEffect} from 'react'
+import React, {useEffect, useRef} from 'react'
 import {Meta} from '@storybook/react/types-6-0'
 import {Grid} from './grid'
-import {Canvas, useCanvasStore} from '../canvas/canvas'
+import {Canvas} from '../canvas/canvas'
+import {ReactTimelineHandle, TimelineContext} from "../context/context"
 
 export default {
     title: 'Components/Grid',
@@ -18,19 +19,20 @@ export default {
     },
 } as Meta
 
-export const x = ({timePerPixelControl, timeStartControl}: any) => {
-    let setTimePerPixel = useCanvasStore(state => state.setTimePerPixel)
-    let setTimeStart = useCanvasStore(state => state.setTimeStart)
+export const X = ({timePerPixelControl, timeStartControl}: any) => {
+    let ref = useRef<ReactTimelineHandle>(null)
 
     useEffect(() => {
-        setTimePerPixel(timePerPixelControl)
+        ref.current?.setTimePerPixel?.(timePerPixelControl)
     }, [timePerPixelControl])
 
     useEffect(() => {
-        setTimeStart(timeStartControl)
+        ref.current?.setTimeStart?.(timeStartControl)
     }, [timeStartControl])
 
-    return <Canvas width={1200} height={500}>
-        <Grid />
-    </Canvas>
+    return <TimelineContext ref={ref}>
+        <Canvas width={1200} height={500}>
+            <Grid/>
+        </Canvas>
+    </TimelineContext>
 }

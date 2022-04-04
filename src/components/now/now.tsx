@@ -1,12 +1,12 @@
 import React, {useEffect, useState} from "react"
-import {animated, useSpring} from "@react-spring/web"
+import {animated, to, useSpring} from "@react-spring/web"
 
-import {useCanvasHeight, useTimePerPixelAnchor, useTimeZero} from "../canvas/canvas"
+import {useCanvasHeight, useTimePerPixelSpring, useTimeStartSpring} from "../canvas/canvasStore"
 
 export const Now: React.FC = () => {
     let height = useCanvasHeight()
-    let timeZero = useTimeZero()
-    let timePerPixel = useTimePerPixelAnchor()
+    let timeStartSpring = useTimeStartSpring()
+    let timePerPixelSpring = useTimePerPixelSpring()
 
     let [now, setNow] = useState<number>(new Date().valueOf())
 
@@ -21,9 +21,9 @@ export const Now: React.FC = () => {
         nowSpring: now
     })
 
-    let xSpring = nowSpring.to(now => (now - timeZero) / timePerPixel)
+    let xSpring = to([nowSpring, timePerPixelSpring, timeStartSpring], (now, timePerPixel, timeStart) => (now - timeStart) / timePerPixel)
 
     return <>
-        <animated.line className={"timely non-scaling-stroke"} stroke={"red"} x1={xSpring} x2={xSpring} y1={0} y2={height}/>
+        <animated.line className={"non-scaling-stroke"} stroke={"red"} x1={xSpring} x2={xSpring} y1={0} y2={height}/>
     </>
 }

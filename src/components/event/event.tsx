@@ -1,22 +1,27 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react'
-import {useCanvasStore, useRealign, useTimePerPixelAnchor, useTimeZero} from '../canvas/canvas'
 import {useDrag} from '@use-gesture/react'
 import {animated, config, to, useSpring} from '@react-spring/web'
 import dayjs from 'dayjs'
-import {useEventGroupPosition} from '../../hooks/eventGroup'
+import {
+    useCanvasStoreApi,
+    useRealign,
+    useTimePerPixelAnchor,
+    useTimePerPixelSpring,
+    useTimeStartSpring
+} from "../canvas/canvasStore"
+import {useEventGroupPosition} from "../../hooks/newEventGroup"
 
 let width = 48 * 3600 * 1000
-export const Event: React.FC<{groupId: string, eventId: string, label?: string, note?: string}> = (
+export const Event: React.FC<{groupId: string, eventId: string, label?: string, note?: string}> = React.memo((
     {
         groupId,
         eventId,
         label = "IT 18.189L",
         note = " 3 Stk."
     }) => {
-    let timeZero = useTimeZero()
     let timePerPixel = useTimePerPixelAnchor()
     let realign = useRealign()
-
+    let canvasStore = useCanvasStoreApi()
 
     let [offset, setOffset] = useState(new Date().valueOf())
     let dragStart = useRef(0)
@@ -26,10 +31,13 @@ export const Event: React.FC<{groupId: string, eventId: string, label?: string, 
             realign()
             dragStart.current = offset
         }
-        let timePerPixel = useCanvasStore.getState().timePerPixel
+        let timePerPixel = canvasStore.getState().timePerPixel
         state.event.stopPropagation()
         setOffset(dayjs(dragStart.current + state.movement[0] * timePerPixel).startOf('day').valueOf())
     }, [])
+
+    let timeStartSpring = useTimeStartSpring()
+    let timePerPixelSpring = useTimePerPixelSpring()
 
 
     let [mainLabelWidth, setMainLabelWidth] = useState<number | undefined>(undefined)
@@ -74,20 +82,20 @@ export const Event: React.FC<{groupId: string, eventId: string, label?: string, 
         }
     }, [label?.length, mainLabelCharWidths, timePerPixel])
 
-    let y = useEventGroupPosition(groupId, eventId, offset, offset + width)
+    let y = useEventGroupPosition(eventId, groupId, offset, offset + width)
     let {offsetSpring, ySpring} = useSpring({
         offsetSpring: offset,
         ySpring: y * 24 + 70,
         config: config.stiff,
     })
-    let transform = to([offsetSpring, ySpring], (offset, y) => `translate(${(offset - timeZero) / timePerPixel} ${y})`)
+    let transform = to([offsetSpring, ySpring, timePerPixelSpring, timeStartSpring], (offset, y, timePerPixel, timeStart) => `translate(${(offset - timeStart) / timePerPixel} ${y})`)
     return <>
-        <g className={'timely drag-target'} {...bind()}>
+        <animated.g className={'drag-target'} {...bind()} style={{transform}}>
             <animated.g transform={transform}>
-                <rect
+                <animated.rect
                     x={0}
                     y={0}
-                    width={width / timePerPixel}
+                    width={to([timePerPixelSpring], (timePerPixel) => width / timePerPixel)}
                     height={24}
                     rx={3}
                     ry={3}
@@ -96,51 +104,36 @@ export const Event: React.FC<{groupId: string, eventId: string, label?: string, 
                         stroke: "rgba(24,117,52,0.79)"
                     }}
                 />
-                <g className={"timely-dont-scale"} style={{transformOrigin: "left"}}>
-                    <text
-                        x={8}
-                        y={12}
-                        width={0.75 * width / timePerPixel}
-                        height={24}
-                        style={{
-                            fill: "white",
-                            fontFamily: "Roboto"
-                        }}>
-                        <tspan
-                            fontWeight={500}
-                            fontSize={"0.9em"}
-                            dominantBaseline={"middle"}
-                            ref={mainLabelRef}>
-                            {label?.slice(0, iMax).trim()}{iMax && iMax < label?.length ? "…" : ""}
-                        </tspan>
-                        <tspan
-                            fontSize={"0.75em"}
-                            fontWeight={400}
-                            dominantBaseline={"middle"}
-                            ref={noteRef}
-                            style={{
-                                opacity: mainLabelWidth && noteWidth && (mainLabelWidth + noteWidth) < width / timePerPixel - 20 ? 1 : 0,
-                                transition: "opacity 0.1s"
-                            }}>
-                            {note}
-                        </tspan>
-                    </text>
-                </g>
             </animated.g>
-        </g>
+            <animated.text
+                x={to([offsetSpring, timeStartSpring, timePerPixelSpring], (offset, timeStart, timePerPixel) => (offset - timeStart) / timePerPixel + 8)}
+                y={to([ySpring], (y) => y + 12)}
+                height={24}
+                style={{
+                    fill: "white",
+                    fontFamily: "Roboto",
+                    pointerEvents: "none"
+                }}>
+                <tspan
+                    fontWeight={500}
+                    fontSize={"0.9em"}
+                    dominantBaseline={"middle"}
+                    ref={mainLabelRef}>
+                    {label?.slice(0, iMax).trim()}{iMax && iMax < label?.length ? "…" : ""}
+                </tspan>
+                <tspan
+                    fontSize={"0.75em"}
+                    fontWeight={400}
+                    dominantBaseline={"middle"}
+                    ref={noteRef}
+                    style={{
+                        opacity: mainLabelWidth && noteWidth && (mainLabelWidth + noteWidth) < width / timePerPixel - 20 ? 1 : 0,
+                        transition: "opacity 0.1s"
+                    }}>
+                    {note}
+                </tspan>
+            </animated.text>
+        </animated.g>
     </>
-}
-
-export const Vacation: React.FC = () => {
-    let timeZero = useTimeZero()
-    let timePerPixel = useTimePerPixelAnchor()
-
-    let [offset, setOffset] = useState(dayjs().startOf("day").valueOf())
-    return <rect
-        className={"timely"}
-        x={(offset - timeZero) / timePerPixel}
-        y={60}
-        width={72 * 3600 * 1000 / timePerPixel}
-        height={100}
-        fill={"rgba(132,210,157,0.79)"}/>
-}
+})
+Event.displayName = "Event"

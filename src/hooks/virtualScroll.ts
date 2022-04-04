@@ -1,4 +1,4 @@
-import {CanvasStoreShape, useCanvasStore} from '../components/canvas/canvas'
+import {CanvasStoreShape, useCanvasStore} from "../components/canvas/canvasStore"
 
 function logRound(value: number, base = 2) {
     return base ** (Math.round(Math.log(value) / Math.log(base)))
