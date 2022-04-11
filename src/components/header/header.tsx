@@ -4,9 +4,10 @@ import {useIntervals} from '../../hooks/timeIntervals'
 import {IntervalToMs} from '../../units'
 
 import '../canvas/canvas.css'
-import "./header.css"
-import {useCanvasWidth, useTimePerPixel, useTimePerPixelSpring, useTimeStartSpring} from "../canvas/canvasStore"
-import {animated, to} from "@react-spring/web"
+import './header.css'
+import {useCanvasWidth, useTimePerPixel, useTimePerPixelSpring, useTimeStartSpring} from '../canvas/canvasStore'
+import {animated, to} from '@react-spring/konva'
+import {Group, Rect} from 'react-konva'
 
 type DisplayInterval = {
     key: string,
@@ -208,22 +209,19 @@ export const IntervalHeader: React.FC<IntervalHeaderProps> = React.memo((
     let timePerPixelSpring = useTimePerPixelSpring()
 
     return <>
-        <g>
+        <Group>
             {intervals?.map(([key, {start, end, label}]) => {
-                return <animated.text
+                return <animated.Text
                     key={key}
-                    x={to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => ((start + end) / 2 - timeStart) / timePerPixel)}
-                    textAnchor={'middle'}
-                    y={15}
-                    width={20}
-                    style={{textTransform: 'capitalize', pointerEvents: "none"}}
-                    fill={'white'}
-                    className={"header"}
-                    height={20}>
-                    {label}
-                </animated.text>
+                    x={to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => ((start + end) / 2 - timeStart) / timePerPixel - 100)}
+                    y={5}
+                    height={20}
+                    width={200}
+                    align={"center"}
+                    fill={"white"}
+                    text={label} />
             })}
-        </g>
+        </Group>
     </>
 })
 
@@ -263,38 +261,30 @@ export const Header = React.memo(() => {
     let width = useCanvasWidth()
 
     return <>
-        <rect x={-50} y={-50} width={width + 100} height={110} fill={"rgba(77,77,77,0.82)"}
-              style={{filter: "drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.2))"}}/>
+        <Rect x={-50} y={-50} width={width + 100} height={110} fill={'rgba(77,77,77,0.82)'} />
         {displayedUnits.filter(x => x.coarser || x.coarsest || x.coarse).map(x => {
-            return <g
+            return <Group
                 key={x.key}
-                style={{
-                    opacity: x.coarse || x.coarsest ? 0 : 1,
-                    transition: "0.1s"
-                }}
+                visible={!(x.coarse || x.coarsest)}
             >
                 <IntervalHeader
                     amount={x.amount}
                     unit={x.unit}
                     formatStart={x.headerFormatStart}
-                    formatEnd={x.headerFormatEnd}/>
-            </g>
+                    formatEnd={x.headerFormatEnd} />
+            </Group>
         })}
         {displayedUnits.filter(x => x.render).map(x => {
-            return <g
+            return <Group
                 key={x.key}
-                opacity={x.coarser || x.finer ? 0 : 1}
-                style={{
-                    transform: x.coarse || x.coarser ? 'translateY(20px)' : x.fine || x.finer ? 'translateY(40px)' : undefined,
-                    transition: "0.1s",
-                    willChange: "transform, opacity"
-                }}>
+                visible={!(x.coarser || x.finer)}
+                y={x.coarse || x.coarser ? 20 : x.fine || x.finer ? 40 : 0}>
                 <IntervalHeader
                     amount={x.amount}
                     unit={x.unit}
                     formatStart={x.formatStart}
-                    formatEnd={x.formatEnd}/>
-            </g>
+                    formatEnd={x.formatEnd} />
+            </Group>
         })}
     </>
 })

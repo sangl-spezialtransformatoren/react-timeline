@@ -8,23 +8,26 @@
   "typings": "lib/index.d.ts",
   "scripts": {
     "postinstall": "patch-package",
-    "storybook": "start-storybook -p 6006",
+    "storybook": "start-storybook -p 6007",
     "build": "rollup -c",
     "build-storybook": "build-storybook",
     "test": "npx jest",
     "depcheck": "depcheck"
   },
   "peerDependencies": {
-    "react": "^16.8.0 || ^17.0.0",
-    "react-dom": "^16.8.0 || ^17.0.0"
+    "react": "^17.0.0",
+    "react-dom": "^17.0.0"
   },
   "dependencies": {
+    "@react-spring/konva": "^9.4.4",
     "@react-spring/web": "^9.4.3",
     "@use-gesture/react": "^10.2.6",
     "body-scroll-lock": "*",
     "collections": "^5.1.13",
     "dayjs": "^1.10.7",
     "extra-bigint": "^0.0.62",
+    "konva": "^8.3.5",
+    "react-konva": "^17.0.2-6",
     "react-merge-refs": "^1.1.0",
     "requestidlecallback-polyfill": "^1.0.2",
     "worker-rpc": "^0.1.1",

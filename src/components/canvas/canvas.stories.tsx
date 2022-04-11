@@ -1,11 +1,12 @@
-import React, {useEffect, useRef} from 'react'
+import React, {useEffect, useMemo, useRef} from 'react'
 import {Meta} from '@storybook/react/types-6-0'
 import {Canvas} from './canvas'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import {useTimePerPixelAnchor, useTimeZero} from "./canvasStore"
-import {ReactTimelineHandle, TimelineContext} from "../context/context"
+import {useTimePerPixelAnchor, useTimePerPixelSpring, useTimeStartSpring, useTimeZero} from './canvasStore'
+import {ReactTimelineHandle, TimelineContext} from '../context/context'
+import {animated, to} from '@react-spring/konva'
 
 dayjs.extend(timezone)
 dayjs.extend(utc)
@@ -16,17 +17,26 @@ export default {
 } as Meta
 
 
-const ExampleEvent: React.FC = () => {
-    let timePerPixelAnchor = useTimePerPixelAnchor()
-    let timeZero = useTimeZero()
+export const ExampleEvent: React.FC = () => {
+    let value = useMemo(() => new Date().valueOf() + 3600 * 1000, [])
+    let timeStartSpring = useTimeStartSpring()
+    let timePerPixelSpring = useTimePerPixelSpring()
 
-    return <rect
-        className={'timely'}
-        x={(new Date().valueOf() + 3600 * 1000 - timeZero) / timePerPixelAnchor}
-        y={0}
-        width={2 * 3600 * 1000 / timePerPixelAnchor}
-        height={20}
-        fill={'black'}/>
+    let timeZero = useTimeZero()
+    let timePerPixelAnchor = useTimePerPixelAnchor()
+    let translate = to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => (timeStart - timeZero) / timePerPixel)
+    let scale = to([timePerPixelSpring], (timePerPixel) => timePerPixelAnchor / timePerPixel)
+
+    return <animated.Group offsetX={translate}>
+        <animated.Group scaleX={scale}>
+            <animated.Rect
+                x={(value - timeZero) / timePerPixelAnchor}
+                y={0}
+                width={2 * 3600 * 1000 / timePerPixelAnchor}
+                height={20}
+                fill={'black'} />
+        </animated.Group>
+    </animated.Group>
 }
 
 export const CanvasDemo = () => {
@@ -41,7 +51,7 @@ export const CanvasDemo = () => {
 
     return <TimelineContext ref={ref}>
         <Canvas width={'100%'} height={500}>
-            <ExampleEvent/>
+            <ExampleEvent />
         </Canvas>
     </TimelineContext>
 }

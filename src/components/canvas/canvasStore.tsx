@@ -1,7 +1,7 @@
-import create from "zustand"
-import createContext from "zustand/context"
-import React, {useContext, useEffect, useImperativeHandle} from "react"
-import {SpringRef, SpringValue, to, useSpring} from "@react-spring/web"
+import create from 'zustand'
+import React, {useContext, useEffect, useImperativeHandle, useRef} from 'react'
+import {SpringRef, SpringValue, to, useSpring} from '@react-spring/konva'
+import {StateSelector} from 'zustand/vanilla'
 
 export type CanvasStoreShape = {
     width: number
@@ -41,13 +41,31 @@ const createCanvasStore = () => create<CanvasStoreShape>(set => ({
     }),
 }))
 
-const {Provider, useStore: useCanvasStore, useStoreApi: useCanvasStoreApi} = createContext<CanvasStoreShape>()
+export const CanvasStoreContext = React.createContext(createCanvasStore())
+
+let Provider: React.FC = ({children}) => {
+    let store = useRef(createCanvasStore())
+
+    return <CanvasStoreContext.Provider value={store.current}>
+        {children}
+    </CanvasStoreContext.Provider>
+}
+
+let useCanvasStoreApi = () => {
+    return useContext(CanvasStoreContext)
+}
+
+let useCanvasStore = <U, >(selector: StateSelector<CanvasStoreShape, U>) => {
+    return useContext(CanvasStoreContext)(selector)
+}
+
 
 export type CanvasStoreHandle = {
     setTimeStart: (_: number) => void
     setTimePerPixel: (_: number) => void
 }
 
+export {Provider, createCanvasStore}
 // eslint-disable-next-line react-hooks/rules-of-hooks
 export const SpringContext = React.createContext<SpringRef<{timeStartSpring: number; timePerPixelSpring: number;}> | undefined>(undefined)
 
@@ -72,13 +90,13 @@ const CanvasAgent = React.forwardRef<CanvasStoreHandle, Record<string, unknown>>
             tension: 210,
             friction: 29,
             clamp: true,
-        }
+        },
     }))
 
     useEffect(() => {
         api.update({
             timeStartSpring: timeStart,
-            timePerPixelSpring: timePerPixel
+            timePerPixelSpring: timePerPixel,
         })
         api.start()
     }, [api, timePerPixel, timeStart])
@@ -92,7 +110,7 @@ const CanvasAgent = React.forwardRef<CanvasStoreHandle, Record<string, unknown>>
             setTimePerPixel: (timePerPixel) => {
                 setTimePerPixel(timePerPixel)
                 setTimePerPixelAnchor(timePerPixel)
-            }
+            },
         }
     }, [setTimePerPixel, setTimePerPixelAnchor, setTimeStart, setTimeZero])
 
@@ -100,17 +118,17 @@ const CanvasAgent = React.forwardRef<CanvasStoreHandle, Record<string, unknown>>
         {children}
     </SpringContext.Provider>
 })
-CanvasAgent.displayName = "CanvasAgent"
+CanvasAgent.displayName = 'CanvasAgent'
 
 export const CanvasStoreProvider = React.forwardRef<CanvasStoreHandle, Record<string, unknown>>(({children}, forwardedRef) => {
-    return <Provider createStore={createCanvasStore}>
+    return <Provider>
         <CanvasAgent ref={forwardedRef}>
             {children}
         </CanvasAgent>
     </Provider>
 })
 
-CanvasStoreProvider.displayName = "CanvasStoreProvider"
+CanvasStoreProvider.displayName = 'CanvasStoreProvider'
 
 export {useCanvasStore, useCanvasStoreApi}
 
@@ -147,11 +165,13 @@ export const useRealign = () => {
 }
 
 export const useTimeStartSpring = () => {
+    useTimeStart()
     let controller = useContext(SpringContext)
     return controller?.current?.[0]?.springs.timeStartSpring || new SpringValue(0)
 }
 
 export const useTimePerPixelSpring = () => {
+    useTimePerPixel()
     let controller = useContext(SpringContext)
     return controller?.current?.[0]?.springs.timePerPixelSpring || new SpringValue(1)
 }
@@ -175,6 +195,6 @@ export const useTimelyTransform = () => {
 
     return {
         transform: transform,
-        transformOrigin: timeOffset
+        transformOrigin: timeOffset,
     }
 }

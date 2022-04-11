@@ -1,22 +1,29 @@
-import React, {CSSProperties, useCallback, useEffect, useRef} from 'react'
+import React, {CSSProperties, useCallback, useEffect, useLayoutEffect, useRef} from 'react'
 import {useGesture} from '@use-gesture/react'
 import {disableBodyScroll, enableBodyScroll} from 'body-scroll-lock'
 import {Handler} from '@use-gesture/core/src/types/handlers'
 
 import {
+    CanvasStoreContext,
+    SpringContext,
+    useCanvasHeight,
     useCanvasOffsetLeft,
     useCanvasStore,
+    useCanvasWidth,
     useRealign,
     useTimePerPixel,
     useTimePerPixelAnchor,
     useTimeStart,
-    useTimeZero
-} from "./canvasStore"
+    useTimeZero,
+} from './canvasStore'
 import './canvas.css'
+import {Layer, Stage} from 'react-konva'
+import Konva from 'konva'
+import FastLayer = Konva.FastLayer
 
 type CanvasProps = {
-    width?: CSSProperties["width"]
-    height?: CSSProperties["height"]
+    width?: CSSProperties['width']
+    height?: CSSProperties['height']
 }
 
 function calculatePinchPoints(center: [number, number], da: [number, number]) {
@@ -146,11 +153,26 @@ export const Canvas: React.FC<CanvasProps> = React.memo(({width, height, childre
     })
 
     // Render
+    let canvasWidth = useCanvasWidth()
+    let canvasHeight = useCanvasHeight()
+
+
     return <div style={{width, height}} ref={ref} className={'canvas'} {...bind()}>
-        <svg width={'100%'} height={'100%'}>
-            {children}
-        </svg>
+        <CanvasStoreContext.Consumer>
+            {value1 => <SpringContext.Consumer>{
+                value2 => <Stage width={canvasWidth} height={canvasHeight} listening={false}>
+                    <Layer>
+                        <CanvasStoreContext.Provider value={value1}>
+                            <SpringContext.Provider value={value2}>
+                                {children}
+                            </SpringContext.Provider>
+                        </CanvasStoreContext.Provider>
+                    </Layer>
+                </Stage>}
+            </SpringContext.Consumer>
+            }
+        </CanvasStoreContext.Consumer>
     </div>
 })
 
-Canvas.displayName = "Canvas"
+Canvas.displayName = 'Canvas'

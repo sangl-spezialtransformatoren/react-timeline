@@ -1,8 +1,9 @@
-import React, {useEffect, useRef} from 'react'
+import React, {useRef} from 'react'
 import {Meta} from '@storybook/react/types-6-0'
 import {Grid} from './grid'
 import {Canvas} from '../canvas/canvas'
-import {ReactTimelineHandle, TimelineContext} from "../context/context"
+import {ReactTimelineHandle, TimelineContext} from '../context/context'
+import {ExampleEvent} from '../canvas/canvas.stories'
 
 export default {
     title: 'Components/Grid',
@@ -22,17 +23,10 @@ export default {
 export const X = ({timePerPixelControl, timeStartControl}: any) => {
     let ref = useRef<ReactTimelineHandle>(null)
 
-    useEffect(() => {
-        ref.current?.setTimePerPixel?.(timePerPixelControl)
-    }, [timePerPixelControl])
-
-    useEffect(() => {
-        ref.current?.setTimeStart?.(timeStartControl)
-    }, [timeStartControl])
-
     return <TimelineContext ref={ref}>
         <Canvas width={1200} height={500}>
-            <Grid/>
+            <ExampleEvent/>
+            <Grid />
         </Canvas>
     </TimelineContext>
 }
