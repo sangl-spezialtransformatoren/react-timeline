@@ -17,7 +17,8 @@ module.exports = {
     "staticDirs": [
         "../workers",
     ],
-    webpackFinal: async (config, {configType}) => {
+    webpackFinal: async (config) => {
+        config.devtool = 'inline-source-map'
         return config;
     },
 }

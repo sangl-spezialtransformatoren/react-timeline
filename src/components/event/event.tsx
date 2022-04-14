@@ -11,6 +11,7 @@ import {
 } from "../canvas/canvasStore"
 import {useEventGroupPosition} from "../../hooks/newEventGroup"
 import {round} from "../../functions/round"
+import {usePrevious} from "../../hooks/general"
 
 let width = 48 * 3600 * 1000
 export const Event: React.FC<{groupId: string, eventId: string, label?: string, note?: string}> = React.memo((
@@ -84,14 +85,17 @@ export const Event: React.FC<{groupId: string, eventId: string, label?: string, 
     }, [label?.length, mainLabelCharWidths, timePerPixel])
 
     let y = useEventGroupPosition(eventId, groupId, offset, offset + width)
+    let previousY = usePrevious(y)
     let {offsetSpring, ySpring} = useSpring({
         offsetSpring: offset,
-        ySpring: y * 24 + 70,
+        ySpring: y !== undefined ? y * 24 + 70 : 0,
+        immediate: previousY === undefined,
         config: config.stiff,
     })
     let transform = to([offsetSpring, ySpring, timePerPixelSpring, timeStartSpring], (offset, y, timePerPixel, timeStart) => `translate(${round((offset - timeStart) / timePerPixel)} ${round(y)})`)
     return <>
-        <animated.g className={'drag-target'} {...bind()} style={{transform}}>
+        <animated.g className={'drag-target'} {...bind()} style={{transform}}
+                    display={y !== undefined ? "initial" : "none"}>
             <animated.g transform={transform}>
                 <animated.rect
                     x={0}

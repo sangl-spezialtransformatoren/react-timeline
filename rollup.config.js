@@ -39,7 +39,11 @@ export default [
     plugins: [
       peerDepsExternal(),
       resolve(),
-      commonjs(),
+      commonjs({
+        namedExports: {
+          'lethargy': ['Lethargy'],
+        },
+      }),
       typescript({ useTsconfigDeclarationDir: true }),
       postcss(),
       replace({

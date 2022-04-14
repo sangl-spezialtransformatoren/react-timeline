@@ -1,8 +1,8 @@
-import React, {useCallback, useEffect, useImperativeHandle} from 'react'
+import React, {MutableRefObject, useCallback, useContext, useEffect, useImperativeHandle, useRef} from 'react'
 import create from 'zustand'
 import createContext from "zustand/context"
-import {usePrevious} from "./general"
-import * as bigint from 'extra-bigint'
+import * as bigint from "extra-bigint"
+import 'requestidlecallback-polyfill';
 
 type Entry = {
     point: number,
@@ -24,18 +24,45 @@ let sortFunction = (a: Entry, b: Entry) => {
     }
 }
 
-export type GroupStructure = {
-    label: string,
-    members: string[]
-}[]
+export function calculatePositions(groupSet: Entry[]): [Record<string, number>, number] {
+    let positions: Record<string, number> = {}
+    let occupation = 0n
+    let size = 0
+
+    groupSet.forEach(({isEnd, key}: Entry) => {
+        if (isEnd) {
+            occupation = occupation & ~(2n ** BigInt(positions[key]))
+        } else {
+            let firstFreeSlot = bigint.log2(~occupation & -~occupation)
+            let positonAsNumber = Number(firstFreeSlot)
+            positions[key] = positonAsNumber
+            if (positonAsNumber > size) {
+                size = positonAsNumber
+            }
+            occupation = occupation | (2n ** firstFreeSlot)
+        }
+    })
+    return [positions, size]
+}
+
+type EventStore = {
+    events: Record<string, {from: number, to: number, groupId: string}>
+    dirtyGroups: Set<string>
+    changes: ({action: 'delete', eventId: string} | {action: 'set', eventId: string, from: number, to: number, groupId: string})[]
+}
+
+export const EventStoreContext = React.createContext<MutableRefObject<EventStore> | undefined>(undefined)
+
+export const useEventStore = () => {
+    return useContext(EventStoreContext)
+}
+
 
 export type EventGroupStoreShape = {
-    events: {[key: string]: {groupId: string, from: number, to: number}}
     eventPositions: Record<string, number>
-    registerEvent: (_eventId: string, _groupId: string, _from: number, _to: number) => void
-    unregisterEvent: (_eventId: string) => void
-    updatePositions: () => void
-    setGroupStructure: (_structure: GroupStructure) => void
+    groupSizes: Record<string, number>
+    updateEventPositions: (_: Record<string, number>) => void
+    updateGroupSizes: (_: Record<string, number>) => void
 }
 
 const {
@@ -46,79 +73,78 @@ const {
 
 export {useEventGroupStore, useEventGroupStoreApi}
 
+
 const createStore = () => create<EventGroupStoreShape>((set) => ({
-    events: {},
     eventPositions: {},
-    registerEvent: (eventId, groupId, from, to) => {
-        set(state => ({events: {...state.events, [eventId]: {groupId, from, to}}}))
-    },
-    unregisterEvent: (eventId) => {
-        set(state => ({events: Object.fromEntries(Object.entries(state.events).filter(([key, _]) => key !== eventId))}))
-    },
-    updatePositions: () => {
-        set(state => {
-            let groups: Record<string, {eventIds: string[], points: Entry[]}> = {}
-            for (let [eventId, event] of Object.entries(state.events)) {
-                groups[event.groupId] = {
-                    eventIds: [...(groups?.[event.groupId]?.eventIds || []), eventId],
-                    points: [
-                        ...(groups?.[event.groupId]?.points || []),
-                        {
-                            key: eventId,
-                            isEnd: false,
-                            point: event.from
-                        },
-                        {
-                            key: eventId,
-                            isEnd: true,
-                            point: event.to
-                        }
-                    ]
-                }
-
-            }
-            let eventPositions: Record<string, number> = {}
-            for (let group of Object.values(groups)) {
-                let occupation = 0n
-                let groupSet = group.points.sort(sortFunction)
-
-                groupSet.forEach(({isEnd, key}: Entry) => {
-                    if (isEnd) {
-                        occupation = occupation & ~(2n ** BigInt(eventPositions[key]))
-                    } else {
-                        let firstFreeSlot = bigint.log2(~occupation & -~occupation)
-                        eventPositions[key] = Number(firstFreeSlot)
-                        occupation = occupation | (2n ** firstFreeSlot)
-                    }
-                })
-            }
-            return {
-                eventPositions
-            }
-        })
-    },
-    setGroupStructure: () => {
-        // pass
-    }
+    groupSizes: {},
+    updateEventPositions: (eventPositions) => set(state => ({eventPositions: {...state.eventPositions, ...eventPositions}})),
+    updateGroupSizes: (groupSizes) => set(state => ({groupSizes: {...state.groupSizes, ...groupSizes}})),
 }))
 
 export type EventGroupStoreHandle = Record<string, unknown>
 
 const EventGroupStoreAgent = React.forwardRef<EventGroupStoreHandle, Record<string, unknown>>((_, forwardRef) => {
-    let events = useEventGroupStore(state => state.events)
-    let updatePositions = useEventGroupStore(state => state.updatePositions)
-
-    let previousEvents = usePrevious(events)
-
-    useEffect(() => {
-        if (events !== previousEvents) {
-            updatePositions()
-        }
-    }, [events, previousEvents, updatePositions])
-
     useImperativeHandle(forwardRef, () => {
         return {}
     }, [])
+
+    let eventStore = useEventStore()
+
+    let updateEventPositions = useEventGroupStore(state => state.updateEventPositions)
+    let updateGroupSizes = useEventGroupStore(state => state.updateGroupSizes)
+
+    useEffect(() => {
+        let callback = () => {
+            if (eventStore?.current && eventStore.current.changes.length > 0) {
+
+                // Incorporate changes
+                let current = eventStore.current.changes.shift()
+                while (current) {
+                    if (current.action === "set") {
+                        eventStore.current.events[current.eventId] = {
+                            groupId: current.groupId,
+                            from: current.from,
+                            to: current.to
+                        }
+                        eventStore.current.dirtyGroups.add(current.groupId)
+                    } else if (current.action === "delete") {
+                        let groupId = eventStore.current.events[current.eventId].groupId
+                        delete eventStore.current.events[current.eventId]
+                        eventStore.current.dirtyGroups.add(groupId)
+                    }
+                    current = eventStore.current.changes.shift()
+                }
+
+                // Calculate group sets
+                let dirtyGroups = Array.from(eventStore.current.dirtyGroups)
+                let groupPoints: Record<string, Entry[]> = Object.fromEntries(dirtyGroups.map(groupId => [groupId, []]))
+                for (let [eventId, event] of Object.entries(eventStore.current.events)) {
+                    if (dirtyGroups.includes(event.groupId)) {
+                        groupPoints[event.groupId].push({key: eventId, point: event.from, isEnd: false}, {
+                            key: eventId,
+                            point: event.to,
+                            isEnd: true
+                        })
+                    }
+                }
+
+                // Calculate positions
+                let groupSizes: Record<string, number> = {}
+                let eventPositions: Record<string, number> = {}
+                for (let [groupId, points] of Object.entries(groupPoints)) {
+                    let [positions, size] = calculatePositions(points.sort(sortFunction))
+                    groupSizes[groupId] = size
+                    Object.assign(eventPositions, positions)
+                }
+                updateEventPositions(eventPositions)
+                updateGroupSizes(groupSizes)
+                eventStore.current.dirtyGroups.clear()
+            }
+            window.requestIdleCallback(callback, {timeout: 50})
+        }
+
+        callback()
+    }, [eventStore, updateEventPositions, updateGroupSizes])
 
     return <></>
 })
@@ -126,25 +152,50 @@ const EventGroupStoreAgent = React.forwardRef<EventGroupStoreHandle, Record<stri
 EventGroupStoreAgent.displayName = "EventGroupStoreAgent"
 
 export const EventGroupStoreProvider = React.forwardRef<EventGroupStoreHandle, Record<string, unknown>>(({children}, forwardRef) => {
-    return <Provider createStore={createStore}>
-        <EventGroupStoreAgent ref={forwardRef}/>
-        {children}
-    </Provider>
+    let ref = useRef<EventStore>({events: {}, dirtyGroups: new Set<string>(), changes: []})
+
+    return <EventStoreContext.Provider value={ref}>
+        <Provider createStore={createStore}>
+            <EventGroupStoreAgent ref={forwardRef}/>
+            {children}
+        </Provider>
+    </EventStoreContext.Provider>
 })
 
 EventGroupStoreProvider.displayName = "EventGroupStoreProvider"
 
+let useRegister = () => {
+    let eventStore = useEventStore()
+    return useCallback((eventId: string, groupId: string, from: number, to: number) => {
+        if (eventStore?.current) {
+            eventStore.current.changes.push({action: 'set', eventId, groupId, from, to})
+        }
+    }, [eventStore])
+}
+
+let useUnRegister = () => {
+    let eventStore = useEventStore()
+    return useCallback((eventId: string) => {
+        if (eventStore?.current) {
+            eventStore.current.changes.push({action: 'delete', eventId})
+        }
+    }, [eventStore])
+}
+
+
 export const useEventGroupPosition = (eventId: string, groupId: string, from: number, to: number) => {
-    let registerEvent = useEventGroupStore(state => state.registerEvent)
-    let unregisterEvent = useEventGroupStore(state => state.unregisterEvent)
+    let registerEvent = useRegister()
+    let unregisterEvent = useUnRegister()
 
     useEffect(() => {
         registerEvent(eventId, groupId, from, to)
+    }, [eventId, groupId, from, to, registerEvent, unregisterEvent])
+
+    useEffect(() => {
         return () => {
             unregisterEvent(eventId)
         }
-    }, [eventId, groupId, from, to, registerEvent, unregisterEvent])
-
+    }, [eventId, unregisterEvent])
 
     let selector = useCallback((state: EventGroupStoreShape) => {
         return state.eventPositions?.[eventId]

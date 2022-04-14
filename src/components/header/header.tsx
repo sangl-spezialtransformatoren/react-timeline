@@ -4,10 +4,19 @@ import {useIntervals} from '../../hooks/timeIntervals'
 import {IntervalToMs} from '../../units'
 
 import '../canvas/canvas.css'
-import "./header.css"
-import {useCanvasWidth, useTimePerPixel, useTimePerPixelSpring, useTimeStartSpring} from "../canvas/canvasStore"
-import {animated, to} from "@react-spring/web"
-import {round} from "../../functions/round"
+import './header.css'
+import {
+    useCanvasStore,
+    useTimePerPixel,
+    useTimePerPixelAnchor,
+    useTimePerPixelSpring,
+    useTimeStartSpring,
+    useTimeZero
+} from '../canvas/canvasStore'
+import {createPortal} from 'react-dom'
+import {animated, to} from '@react-spring/web'
+import {round} from '../../functions/round'
+import {useVirtualScrollBounds} from '../../hooks/virtualScroll'
 
 type DisplayInterval = {
     key: string,
@@ -27,7 +36,7 @@ export const displayIntervals: DisplayInterval[] = [
         amount: 1,
         unit: 'millisecond',
         formatStart: 'SSS',
-        headerFormatStart: 'DD.MM.YY HH:mm:ss SSS',
+        headerFormatStart: 'DD.MM.YY HH:mm:ss SSS'
     },
     {
         key: 'ms10',
@@ -37,7 +46,7 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'SSS',
         headerFormatStart: 'DD.MM.YY HH:mm:ss SSS - ',
         headerFormatEnd: 'SSS',
-        minWidth: 90,
+        minWidth: 90
     },
     {
         key: 'ms100',
@@ -47,14 +56,14 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'SSS',
         headerFormatStart: 'DD.MM.YY HH:mm:ss SSS - ',
         headerFormatEnd: 'SSS',
-        minWidth: 90,
+        minWidth: 90
     },
     {
         key: 's',
         amount: 1,
         unit: 'second',
         formatStart: 's"',
-        headerFormatStart: 'DD.MM.YY HH:mm:ss',
+        headerFormatStart: 'DD.MM.YY HH:mm:ss'
     },
     {
         key: 's15',
@@ -63,14 +72,14 @@ export const displayIntervals: DisplayInterval[] = [
         formatStart: 's" - ',
         formatEnd: 's"',
         headerFormatStart: 'DD.MM.YY HH:mm:ss',
-        minWidth: 75,
+        minWidth: 75
     },
     {
         key: 'm',
         amount: 1,
         unit: 'minute',
         formatStart: 'm\'',
-        headerFormatStart: 'DD.MM.YY HH:mm',
+        headerFormatStart: 'DD.MM.YY HH:mm'
     },
     {
         key: 'm15',
@@ -80,14 +89,14 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'm\'',
         headerFormatStart: 'DD.MM.YY HH:mm[ - ]',
         headerFormatEnd: 'HH:mm',
-        minWidth: 70,
+        minWidth: 70
     },
     {
         key: 'h',
         amount: 1,
         unit: 'hour',
         formatStart: 'H[h]',
-        headerFormatStart: 'DD.MM.YY H[h]',
+        headerFormatStart: 'DD.MM.YY H[h]'
     },
     {
         key: 'h4',
@@ -97,14 +106,14 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'H[h]',
         headerFormatStart: 'DD.MM.YY HH[h] - ',
         headerFormatEnd: 'HH[h]',
-        minWidth: 80,
+        minWidth: 80
     },
     {
         key: 'd',
         amount: 1,
         unit: 'day',
         formatStart: 'D.',
-        headerFormatStart: 'DD.MM.YY',
+        headerFormatStart: 'DD.MM.YY'
     },
     {
         key: 'w',
@@ -112,7 +121,7 @@ export const displayIntervals: DisplayInterval[] = [
         unit: 'week',
         formatStart: '[KW ]W',
         headerFormatStart: '[KW] W YYYY',
-        minWidth: 60,
+        minWidth: 60
     },
     {
         key: 'M',
@@ -120,21 +129,21 @@ export const displayIntervals: DisplayInterval[] = [
         unit: 'month',
         formatStart: 'MMMM',
         headerFormatStart: 'MMMM YYYY',
-        minWidth: 95,
+        minWidth: 95
     },
     {
         key: 'Q',
         amount: 3,
         unit: 'months',
         formatStart: '[Q]Q',
-        headerFormatStart: '[Q]Q YYYY',
+        headerFormatStart: '[Q]Q YYYY'
     },
     {
         key: 'y',
         amount: 1,
         unit: 'year',
         formatStart: 'YYYY',
-        headerFormatStart: 'YYYY',
+        headerFormatStart: 'YYYY'
     },
     {
         key: 'y10',
@@ -144,7 +153,7 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'YYYY',
         headerFormatStart: 'YYYY - ',
         headerFormatEnd: 'YYYY',
-        minWidth: 120,
+        minWidth: 120
     },
     {
         key: 'y100',
@@ -154,7 +163,7 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'YYYY',
         headerFormatStart: 'YYYY - ',
         headerFormatEnd: 'YYYY',
-        minWidth: 120,
+        minWidth: 120
     },
     {
         key: 'y1000',
@@ -164,7 +173,7 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'YYYY',
         headerFormatStart: 'YYYY - ',
         headerFormatEnd: 'YYYY',
-        minWidth: 120,
+        minWidth: 120
     },
     {
         key: 'y10000',
@@ -174,7 +183,7 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'YYYY',
         headerFormatStart: 'YYYY - ',
         headerFormatEnd: 'YYYY',
-        minWidth: 120,
+        minWidth: 120
     },
     {
         key: 'y100000',
@@ -184,8 +193,8 @@ export const displayIntervals: DisplayInterval[] = [
         formatEnd: 'YYYY',
         headerFormatStart: 'YYYY - ',
         headerFormatEnd: 'YYYY',
-        minWidth: 120,
-    },
+        minWidth: 120
+    }
 ]
 
 export type IntervalHeaderProps = {
@@ -195,7 +204,11 @@ export type IntervalHeaderProps = {
     display?: boolean
     formatStart?: string,
     formatEnd?: string,
+    y?: number
+    visible?: boolean
 }
+
+let width = 100
 
 export const IntervalHeader: React.FC<IntervalHeaderProps> = React.memo((
     {
@@ -203,29 +216,32 @@ export const IntervalHeader: React.FC<IntervalHeaderProps> = React.memo((
         unit,
         formatStart,
         formatEnd,
+        y = 0,
+        visible = true
+
     }) => {
     const intervals = useIntervals(amount, unit, formatStart, formatEnd)
-    let timeStartSpring = useTimeStartSpring()
-    let timePerPixelSpring = useTimePerPixelSpring()
+    let timeZero = useTimeZero()
+    let timePerPixelAnchor = useTimePerPixelAnchor()
+    let {from, to} = useVirtualScrollBounds()
 
-    return <>
-        <g>
-            {intervals?.map(([key, {start, end, label}]) => {
-                return <animated.text
-                    key={key}
-                    x={to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => round(((start + end) / 2 - timeStart) / timePerPixel))}
-                    textAnchor={'middle'}
-                    y={15}
-                    width={20}
-                    style={{textTransform: 'capitalize', pointerEvents: "none"}}
-                    fill={'white'}
-                    className={"header"}
-                    height={20}>
-                    {label}
-                </animated.text>
-            })}
-        </g>
-    </>
+    return <>{
+        intervals?.map(([key, {start, end, label}]) => {
+            return <span key={key} style={{
+                position: 'absolute',
+                transform: `translateX(calc(var(--time-scale) * ${round(((start + end) / 2 - timeZero) / (10 * timePerPixelAnchor))}px))`,
+                left: 0,
+                top: y,
+                width: width,
+                opacity: visible ? 1 : 0,
+                transition: 'opacity 0.3s',
+                textAlign: 'center',
+                display: (start + end) / 2 > from && (start + end) / 2 < to ? 'initial' : 'none'
+            }}>
+                {label}
+            </span>
+        })
+    }</>
 })
 
 IntervalHeader.displayName = 'IntervalHeader'
@@ -256,47 +272,65 @@ export const Header = React.memo(() => {
                 coarser: interval.key == coarser,
                 coarse: interval.key === coarse,
                 fine: interval.key === fine,
-                finer: interval.key === finer,
+                finer: interval.key === finer
             }
         })
     }, [timePerPixel])
 
-    let width = useCanvasWidth()
+    let timeZero = useTimeZero()
+    let timePerPixelAnchor = useTimePerPixelAnchor()
+    let timePerPixelSpring = useTimePerPixelSpring()
+    let timeStartSpring = useTimeStartSpring()
+    let transform = to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => {
+        let timeOffset = (timeZero - timeStart) / timePerPixel
+        return `matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ${timeOffset - width / 2}, 0, 0, 1)`
+    })
 
-    return <>
-        <rect x={0} y={0} width={width} height={60} fill={"rgba(77,77,77,0.82)"}
-              style={{filter: "drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.2))"}}/>
-        {displayedUnits.filter(x => x.coarser || x.coarsest || x.coarse).map(x => {
-            return <g
-                key={x.key}
-                style={{
-                    opacity: x.coarse || x.coarsest ? 0 : 1,
-                    transition: "0.1s"
-                }}
-            >
-                <IntervalHeader
+    let timeScale = to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => {
+        return round(10 * timePerPixelAnchor / timePerPixel, 1000)
+    })
+
+    let containerRef = useCanvasStore(state => state.containerRef)
+    return containerRef?.current ? createPortal(<>
+        <div style={{
+            width: '100%',
+            height: 60,
+            top: 0,
+            left: 0,
+            background: 'rgba(77,77,77,0.82)',
+            filter: 'drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.2))',
+            position: 'absolute'
+        }} />
+        <animated.div style={{
+            transform: transform,
+            width: 0,
+            height: 0,
+            top: 0,
+            left: 0,
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            '--time-scale': timeScale
+        }}>
+            {displayedUnits.filter(x => x.coarser || x.coarsest || x.coarse).map(x => {
+                return <IntervalHeader
+                    key={x.key}
+                    visible={!(x.coarse || x.coarsest)}
                     amount={x.amount}
                     unit={x.unit}
                     formatStart={x.headerFormatStart}
-                    formatEnd={x.headerFormatEnd}/>
-            </g>
-        })}
-        {displayedUnits.filter(x => x.render).map(x => {
-            return <g
-                key={x.key}
-                opacity={x.coarser || x.finer ? 0 : 1}
-                style={{
-                    transform: x.coarse || x.coarser ? 'translateY(20px)' : x.fine || x.finer ? 'translateY(40px)' : undefined,
-                    transition: "0.1s",
-                    willChange: "transform, opacity"
-                }}>
-                <IntervalHeader
+                    formatEnd={x.headerFormatEnd} />
+            })}
+            {displayedUnits.filter(x => x.render).map(x => {
+                return <IntervalHeader
+                    y={x.coarse || x.coarser ? 20 : x.fine || x.finer ? 40 : 0}
+                    visible={!(x.coarser || x.finer)}
+                    key={x.key}
                     amount={x.amount}
                     unit={x.unit}
                     formatStart={x.formatStart}
-                    formatEnd={x.formatEnd}/>
-            </g>
-        })}
-    </>
+                    formatEnd={x.formatEnd} />
+            })}
+        </animated.div>
+    </>, containerRef.current) : <></>
 })
 Header.displayName = 'Header'

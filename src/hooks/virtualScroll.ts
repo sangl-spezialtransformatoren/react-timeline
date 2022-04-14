@@ -1,4 +1,5 @@
-import {CanvasStoreShape, useCanvasStore} from "../components/canvas/canvasStore"
+import {CanvasStoreShape, useCanvasStore} from '../components/canvas/canvasStore'
+import {useMemo} from 'react'
 
 function logRound(value: number, base = 2) {
     return base ** (Math.round(Math.log(value) / Math.log(base)))
@@ -28,5 +29,6 @@ const comparer = (a: ReturnType<ReturnType<typeof selector>>, b: ReturnType<Retu
 }
 
 export const useVirtualScrollBounds = (base = 1.5, factor = 0.7) => {
-    return useCanvasStore(selector(base, factor), comparer)
+    let memoizedSelector = useMemo(() => selector(base, factor), [base, factor])
+    return useCanvasStore(memoizedSelector, comparer)
 }

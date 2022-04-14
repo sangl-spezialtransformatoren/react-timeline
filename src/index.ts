@@ -22,7 +22,8 @@ export {
     useCanvasStoreApi,
     useCanvasHeight,
     useCanvasOffsetLeft,
-    useCanvasWidth
+    useCanvasWidth,
+    useIsIdle
 } from "./components/canvas/canvasStore"
 
 export type{

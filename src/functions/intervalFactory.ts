@@ -55,7 +55,7 @@ export function getKeysAndTimestamps(timeStampSet: internal.SortedSet<Interval>,
     if (f && t) {
         let i = timeStampSet.indexOf(f)
         let j = timeStampSet.indexOf(t)
-        return timeStampSet.slice(i, j).map((x, i) => [i, x])
+        return timeStampSet.slice(i + 1, j - 1).map((x, i) => [i, x])
     }
     throw Error('')
 }

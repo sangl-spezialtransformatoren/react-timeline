@@ -26,7 +26,7 @@ export const Scroll: React.FC = ({children}) => {
 
 
     let scrollOffsetSpring = useScrollOffsetSpring()
-    let transform = to([scrollOffsetSpring], (scrollOffset) => `translateY(${-scrollOffset}px)`)
+    let transform = to([scrollOffsetSpring], (scrollOffset) => `translate(0, ${-scrollOffset}px)`)
 
     return <g ref={ref}>
         <animated.g style={{transform}}>

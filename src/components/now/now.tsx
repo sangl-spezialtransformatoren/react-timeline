@@ -25,6 +25,7 @@ export const Now: React.FC = () => {
     let xSpring = to([nowSpring, timePerPixelSpring, timeStartSpring], (now, timePerPixel, timeStart) => round((now - timeStart) / timePerPixel))
 
     return <>
-        <animated.line className={"non-scaling-stroke"} stroke={"red"} shapeRendering={"geometricPrecision"} x1={xSpring} x2={xSpring} y1={0} y2={height}/>
+        <animated.line className={"non-scaling-stroke"} stroke={"red"} shapeRendering={"geometricPrecision"}
+                       x1={xSpring} x2={xSpring} y1={0} y2={height}/>
     </>
 }

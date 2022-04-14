@@ -3,6 +3,7 @@ import {Meta} from '@storybook/react/types-6-0'
 import {Grid} from './grid'
 import {Canvas} from '../canvas/canvas'
 import {ReactTimelineHandle, TimelineContext} from "../context/context"
+import {orderedArraySetAdd, orderedArraySetRemove, indexOf, indexOfFirstGreaterThan} from "../../functions/orderedArray"
 
 export default {
     title: 'Components/Grid',
@@ -29,6 +30,13 @@ export const X = ({timePerPixelControl, timeStartControl}: any) => {
     useEffect(() => {
         ref.current?.setTimeStart?.(timeStartControl)
     }, [timeStartControl])
+
+    useEffect(() => {
+        let array = ["a", "b", "c"]
+        array = orderedArraySetAdd(array, "ab")
+        array = orderedArraySetAdd(array, "aa")
+        array = orderedArraySetRemove(array, "ab")
+    })
 
     return <TimelineContext ref={ref}>
         <Canvas width={1200} height={500}>

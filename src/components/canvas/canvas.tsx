@@ -1,14 +1,15 @@
-import React, {CSSProperties, useCallback, useEffect, useRef} from 'react'
+import React, {CSSProperties, useCallback, useEffect, useMemo, useRef} from 'react'
 import {useGesture} from '@use-gesture/react'
 import {disableBodyScroll, enableBodyScroll} from 'body-scroll-lock'
 import {Handler} from '@use-gesture/core/src/types/handlers'
+import { Lethargy } from 'lethargy'
 
-import {useCanvasStore, useCanvasStoreApi, useTimePerPixelSpring, useTimeStartSpring} from "./canvasStore"
+import {useCanvasStore, useCanvasStoreApi, useTimePerPixelSpring, useTimeStartSpring} from './canvasStore'
 import './canvas.css'
 
 type CanvasProps = {
-    width?: CSSProperties["width"]
-    height?: CSSProperties["height"]
+    width?: CSSProperties['width']
+    height?: CSSProperties['height']
 }
 
 function calculatePinchPoints(center: [number, number], da: [number, number]) {
@@ -21,12 +22,18 @@ function calculatePinchPoints(center: [number, number], da: [number, number]) {
 
 const MaxTimePerPixel = 6.3e8
 const MinTimePerPixel = 2
-const WheelThrottle = 2
-const PinchThrottle = 2
+const WheelThrottle = 1
+const PinchThrottle = 1
 const DragThrottle = 1
 
 export const Canvas: React.FC<CanvasProps> = React.memo(({width, height, children}) => {
     let ref = useRef<HTMLDivElement>(null)
+    let contentDivRef = useRef<HTMLDivElement>(null)
+    let setContainerRef = useCanvasStore(state => state.setContainerRef)
+
+    useEffect(() => {
+        setContainerRef(contentDivRef)
+    }, [setContainerRef])
 
     // Global state
     let canvasStoreApi = useCanvasStoreApi()
@@ -95,27 +102,30 @@ export const Canvas: React.FC<CanvasProps> = React.memo(({width, height, childre
 
     // Zooming (wheel) callback
     let wheelEventCount = useRef(1)
+    let lethargy = useMemo(() => new Lethargy(), [])
     let onWheelCallback = useCallback<Handler<'wheel'>>((state) => {
-        if (state.altKey) {
-            let {containerLeft: offsetLeft, timePerPixel, timeStart} = canvasStoreApi.getState()
-            if (wheelEventCount.current % WheelThrottle == 0) {
-                let x = state.event.clientX - offsetLeft
-                let center = timeStart + x * timePerPixel
-                let scale = 1 - 0.05 * WheelThrottle
-                let factor = state.delta[1] > 0 ? scale : 1 / scale
+        if (lethargy.check(state.event) !== false) {
+            if (state.altKey) {
+                let {containerLeft: offsetLeft, timePerPixel, timeStart} = canvasStoreApi.getState()
+                if (wheelEventCount.current % WheelThrottle == 0) {
+                    let x = state.event.clientX - offsetLeft
+                    let center = timeStart + x * timePerPixel
+                    let scale = 1 - 0.05 * WheelThrottle
+                    let factor = state.delta[1] > 0 ? scale : 1 / scale
 
-                let newTimeStart = center - (center - timeStart) * factor
-                let newTimePerPixel = factor * timePerPixel
+                    let newTimeStart = center - (center - timeStart) * factor
+                    let newTimePerPixel = factor * timePerPixel
 
-                if (newTimePerPixel < MaxTimePerPixel && newTimePerPixel > MinTimePerPixel) {
-                    setTimeStart(newTimeStart)
-                    setTimePerPixel(newTimePerPixel)
+                    if (newTimePerPixel < MaxTimePerPixel && newTimePerPixel > MinTimePerPixel) {
+                        setTimeStart(newTimeStart)
+                        setTimePerPixel(newTimePerPixel)
+                    }
+                    wheelEventCount.current = 0
                 }
-                wheelEventCount.current = 0
+                wheelEventCount.current += 1
             }
-            wheelEventCount.current += 1
         }
-    }, [canvasStoreApi, setTimePerPixel, setTimeStart])
+    }, [canvasStoreApi, lethargy, setTimePerPixel, setTimeStart])
 
     // Zooming (pinching) callback
     let leftPinchTime = useRef<number>()
@@ -148,21 +158,42 @@ export const Canvas: React.FC<CanvasProps> = React.memo(({width, height, childre
         {
             onDrag: onDragCallback,
             onWheel: onWheelCallback,
-            onPinch: onPinchCallback,
+            onPinch: onPinchCallback
         },
         {
             drag: {
-                axis: "lock"
+                axis: 'lock'
             }
         }
     )
 
+    let style: CSSProperties = useMemo(() => {
+        return {
+            width,
+            height,
+            position: 'relative'
+        }
+    }, [width, height])
+
     // Render
-    return <div style={{width, height}} ref={ref} className={'canvas'} {...bind()}>
-        <svg width={'100%'} height={'100%'}>
-            {children}
-        </svg>
-    </div>
+    return <React.StrictMode>
+        <div style={style} ref={ref} className={'canvas'} {...bind()}>
+            <svg width={'100%'} height={'100%'}>
+                {children}
+            </svg>
+            <div ref={contentDivRef} style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                fontFamily: 'Roboto',
+                color: 'white',
+                fontSize: '0.9em'
+            }} />
+        </div>
+    </React.StrictMode>
 })
 
-Canvas.displayName = "Canvas"
+Canvas.displayName = 'Canvas'

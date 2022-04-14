@@ -30,7 +30,7 @@ rpcProvider.registerRpcHandler('createIntervals', (params: {from: number, to: nu
     if (params) {
         let {from, to, n, interval, formatStart, formatEnd} = params
 
-        if ((to - from) / (n * IntervalToMs[interval]) < 200) {
+        if ((to - from) / (n * IntervalToMs[interval]) < 500) {
             let key = JSON.stringify([n, interval, formatStart, formatEnd])
 
             let timestampSet = timestampSets?.[key]

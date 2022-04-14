@@ -36,13 +36,12 @@ export const C = ({timePerPixelControl, timeStartControl}: any) => {
 
     let [show, setShow] = useState(false)
     useEffect(() => {
-        setTimeout(() => setShow(true), 1000)
+        setTimeout(() => setShow(show => !show), 3000)
     }, [])
 
     return <TimelineContext ref={ref}>
         <Canvas width={"80vw"} height={"80vh"}>
             <Grid/>
-            <Now/>
             <Scroll>
                 <Event groupId={"1"} eventId={"1"}/>
                 <Event groupId={"1"} eventId={"2"}/>
@@ -55,36 +54,36 @@ export const C = ({timePerPixelControl, timeStartControl}: any) => {
                 <Event groupId={"1"} eventId={"24"}/>
             </Scroll>
             <Scroll>
-                {show && <Event groupId={"1"} eventId={"25"}/>}
-                {show && <Event groupId={"1"} eventId={"31"}/>}
-                {show && <Event groupId={"1"} eventId={"32"}/>}
-                {show && <Event groupId={"1"} eventId={"33"}/>}
-                {show && <Event groupId={"1"} eventId={"34"}/>}
-                {show && <Event groupId={"1"} eventId={"35"}/>}
-                {show && <Event groupId={"1"} eventId={"321"}/>}
-                {show && <Event groupId={"1"} eventId={"322"}/>}
-                {show && <Event groupId={"1"} eventId={"323"}/>}
-                {show && <Event groupId={"1"} eventId={"324"}/>}
-                {show && <Event groupId={"1"} eventId={"325"}/>}
-                {show && <Event groupId={"1"} eventId={"a2"}/>}
-                {show && <Event groupId={"1"} eventId={"a3"}/>}
-                {show && <Event groupId={"1"} eventId={"a4"}/>}
-                {show && <Event groupId={"1"} eventId={"a5"}/>}
-                {show && <Event groupId={"1"} eventId={"a21"}/>}
-                {show && <Event groupId={"1"} eventId={"a22"}/>}
-                {show && <Event groupId={"1"} eventId={"a23"}/>}
-                {show && <Event groupId={"1"} eventId={"a24"}/>}
-                {show && <Event groupId={"1"} eventId={"a25"}/>}
-                {show && <Event groupId={"1"} eventId={"a31"}/>}
-                {show && <Event groupId={"1"} eventId={"a32"}/>}
-                {show && <Event groupId={"1"} eventId={"a33"}/>}
-                {show && <Event groupId={"1"} eventId={"a34"}/>}
-                {show && <Event groupId={"1"} eventId={"a35"}/>}
-                {show && <Event groupId={"1"} eventId={"a321"}/>}
-                {show && <Event groupId={"1"} eventId={"a322"}/>}
-                {show && <Event groupId={"1"} eventId={"a323"}/>}
-                {show && <Event groupId={"1"} eventId={"a324"}/>}
-                {show && <Event groupId={"1"} eventId={"a325"}/>}
+                {show && <Event groupId={"2"} eventId={"25"}/>}
+                {show && <Event groupId={"2"} eventId={"31"}/>}
+                {show && <Event groupId={"2"} eventId={"32"}/>}
+                {show && <Event groupId={"2"} eventId={"33"}/>}
+                {show && <Event groupId={"2"} eventId={"34"}/>}
+                {show && <Event groupId={"2"} eventId={"35"}/>}
+                {show && <Event groupId={"2"} eventId={"321"}/>}
+                {show && <Event groupId={"2"} eventId={"322"}/>}
+                {show && <Event groupId={"2"} eventId={"323"}/>}
+                {show && <Event groupId={"2"} eventId={"324"}/>}
+                {show && <Event groupId={"2"} eventId={"325"}/>}
+                {show && <Event groupId={"2"} eventId={"a2"}/>}
+                {show && <Event groupId={"2"} eventId={"a3"}/>}
+                {show && <Event groupId={"2"} eventId={"a4"}/>}
+                {show && <Event groupId={"2"} eventId={"a5"}/>}
+                {show && <Event groupId={"2"} eventId={"a21"}/>}
+                {show && <Event groupId={"2"} eventId={"a22"}/>}
+                {show && <Event groupId={"2"} eventId={"a23"}/>}
+                {show && <Event groupId={"2"} eventId={"a24"}/>}
+                {show && <Event groupId={"2"} eventId={"a25"}/>}
+                {show && <Event groupId={"2"} eventId={"a31"}/>}
+                {show && <Event groupId={"2"} eventId={"a32"}/>}
+                {show && <Event groupId={"2"} eventId={"a33"}/>}
+                {show && <Event groupId={"2"} eventId={"a34"}/>}
+                {show && <Event groupId={"2"} eventId={"a35"}/>}
+                {show && <Event groupId={"2"} eventId={"a321"}/>}
+                {show && <Event groupId={"2"} eventId={"a322"}/>}
+                {show && <Event groupId={"2"} eventId={"a323"}/>}
+                {show && <Event groupId={"2"} eventId={"a324"}/>}
+                {show && <Event groupId={"2"} eventId={"a325"}/>}
             </Scroll>
             <Header/>
         </Canvas>

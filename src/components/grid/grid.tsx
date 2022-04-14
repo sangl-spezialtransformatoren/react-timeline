@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react'
+import React, {CSSProperties, useMemo} from 'react'
 import {OpUnitType} from 'dayjs'
 
 import {useIntervals} from '../../hooks/timeIntervals'
@@ -12,6 +12,7 @@ export const Lines: React.FC<{amount: number, unit: OpUnitType}> = React.memo(
          amount,
          unit,
      }) => {
+        let transform = useTimelyTransform()
         const timeZero = useTimeZero()
         const timePerPixelAnchor = useTimePerPixelAnchor()
         const canvasHeight = useCanvasHeight()
@@ -26,14 +27,14 @@ export const Lines: React.FC<{amount: number, unit: OpUnitType}> = React.memo(
             return amount * IntervalToMs[unit] / timePerPixelAnchor > 25
         }, [amount, timePerPixelAnchor, unit])
 
-        let {transform, transformOrigin} = useTimelyTransform()
+        let style = useMemo(() => ({display: visible ? "initial" : "none"}), [visible])
 
-        return render ? <animated.g className={'non-scaling-stroke'} style={{transform, transformOrigin}}>
+        return render ? <animated.g className={'non-scaling-stroke'} style={transform}>
             {intervals?.map(([key, {start}]) => {
                 return <line
                     key={key}
                     className={'non-scaling-stroke'}
-                    style={{display: visible ? "initial" : "none"}}
+                    style={style}
                     x1={round((start - timeZero) / timePerPixelAnchor)}
                     x2={round((start - timeZero) / timePerPixelAnchor)}
                     y1={0}
@@ -49,7 +50,7 @@ export const WeekendMarkers: React.FC = React.memo(() => {
     const timeZero = useTimeZero()
     const timePerPixel = useTimePerPixelAnchor()
     const canvasHeight = useCanvasHeight()
-    let {transform, transformOrigin} = useTimelyTransform()
+    let style = useTimelyTransform()
 
     const days = useIntervals(1, 'day')
     const weekends = useMemo(() => {
@@ -66,11 +67,10 @@ export const WeekendMarkers: React.FC = React.memo(() => {
 
     return render ? <>
         <animated.g
-            style={{
-                display: visible ? "initial" : "none",
-                transform,
-                transformOrigin
-            }}>
+            display={visible ? "initial" : "none"}
+            style={style}
+        >
+
             {weekends?.map(([key, {start, end}]) => {
                 return <rect
                     className={'non-scaling-stroke'}
@@ -88,7 +88,8 @@ export const WeekendMarkers: React.FC = React.memo(() => {
 WeekendMarkers.displayName = 'WeekendMarkers'
 
 export const Grid = React.memo(() => {
-    return <g style={{shapeRendering: "geometricPrecision"}}>
+    let style: CSSProperties = useMemo(() => ({shapeRendering: "geometricPrecision"}), [])
+    return <g style={style}>
         <WeekendMarkers/>
         <Lines amount={100} unit={'years'}/>
         <Lines amount={10} unit={'years'}/>
