@@ -1,11 +1,12 @@
 import SortedSet, {internal} from 'collections/sorted-set'
-import dayjs, {Dayjs, OpUnitType} from 'dayjs'
+import dayjs, {Dayjs, ManipulateType} from 'dayjs'
 import weekOfYear from 'dayjs/plugin/weekOfYear'
 import weekday from 'dayjs/plugin/weekday'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import advancedFormat from 'dayjs/plugin/advancedFormat'
 import {createIntervals} from './index'
-import {IntervalToMs} from '../units'
+
+import {IntervalToMs} from "./units"
 
 dayjs.extend(weekOfYear)
 dayjs.extend(weekday)
@@ -91,7 +92,7 @@ export function limitTimestampSetLength(timestampSet: internal.SortedSet<Interva
 }
 
 
-export function updateTimestamps(timestampSet: internal.SortedSet<Interval>, from: number, to: number, n: number, interval: OpUnitType, labelFactory: (_from: Dayjs, _to: Dayjs) => string = (a, _) => a.format()) {
+export function updateTimestamps(timestampSet: internal.SortedSet<Interval>, from: number, to: number, n: number, interval: ManipulateType, labelFactory: (_from: Dayjs, _to: Dayjs) => string = (a, _) => a.format()) {
     let min = timestampSet.min()?.start
     let max = timestampSet.max()?.start
 

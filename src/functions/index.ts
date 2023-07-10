@@ -1,52 +1,7 @@
-import {Dayjs, OpUnitType} from 'dayjs'
+import {Dayjs, ManipulateType, OpUnitType} from 'dayjs'
+import {getParentUnit} from "./units"
 
-export function getParentUnit(unit: OpUnitType): [OpUnitType, number] {
-    switch (unit) {
-        case 'year':
-        case 'years': {
-            return ['years', 1]
-        }
-        case 'month':
-        case 'months': {
-            return ['years', 12]
-        }
-        case 'week':
-        case 'weeks': {
-            return ['years', 52]
-        }
-        case 'd':
-        case 'date':
-        case 'day':
-        case 'days': {
-            throw Error(`Can't create grid of days as months hava different amounts of days.`)
-        }
-        case 'h':
-        case 'hours':
-        case 'hour': {
-            return ['day', 24]
-        }
-        case 'm':
-        case 'minute':
-        case 'minutes': {
-            return ['hour', 60]
-        }
-        case 's':
-        case 'second':
-        case 'seconds': {
-            return ['minute', 60]
-        }
-        case 'ms':
-        case 'millisecond':
-        case 'milliseconds': {
-            return ['second', 1000]
-        }
-        default: {
-            throw Error('Not implemented.')
-        }
-    }
-}
-
-export function getStart(date: Dayjs, n: number, interval: OpUnitType) {
+export function getStart(date: Dayjs, n: number, interval: ManipulateType) {
     if (n === 1) {
         if (interval === 'week' || interval === 'weeks') {
             return date.startOf('isoWeek')
@@ -79,7 +34,7 @@ export function getStart(date: Dayjs, n: number, interval: OpUnitType) {
                 }
             }
             case 'd':
-            case 'date':
+            case 'D':
             case 'day':
             case 'days': {
                 throw Error(`Can't create grid of ${n} days as months hava different amounts of days.`)
@@ -127,7 +82,7 @@ export function getStart(date: Dayjs, n: number, interval: OpUnitType) {
     }
 }
 
-export const createIntervals = (from: Dayjs, to: Dayjs, n: number, interval: OpUnitType) => {
+export const createIntervals = (from: Dayjs, to: Dayjs, n: number, interval: ManipulateType) => {
     const start = getStart(from, n, interval)
     let result: Dayjs[] = []
     let i = 0

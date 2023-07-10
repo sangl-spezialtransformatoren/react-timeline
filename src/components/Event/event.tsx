@@ -2,16 +2,10 @@ import React, {useCallback, useMemo, useRef, useState} from 'react'
 import {useDrag} from '@use-gesture/react'
 import {animated, config, to, useSpring} from '@react-spring/web'
 import dayjs from 'dayjs'
-import {
-    useCanvasStoreApi,
-    useRealign,
-    useTimePerPixelAnchor,
-    useTimePerPixelSpring,
-    useTimeStartSpring
-} from "../canvas/canvasStore"
 import {useEventGroupPosition} from "../../hooks/newEventGroup"
 import {round} from "../../functions/round"
-import {usePrevious} from "../../hooks/general"
+import {useTimePerPixelAnchor, useTimePerPixel, useTimeStart} from '../Canvas/store'
+import {usePrevious} from "../../hooks/previous"
 
 let width = 48 * 3600 * 1000
 export const Event: React.FC<{groupId: string, eventId: string, label?: string, note?: string}> = React.memo((
@@ -22,24 +16,20 @@ export const Event: React.FC<{groupId: string, eventId: string, label?: string, 
         note = " 3 Stk."
     }) => {
     let timePerPixel = useTimePerPixelAnchor()
-    let realign = useRealign()
-    let canvasStore = useCanvasStoreApi()
 
     let [offset, setOffset] = useState(new Date().valueOf())
     let dragStart = useRef(0)
     let bind = useDrag(state => {
         if (state.first) {
             // Realign canvas to prevent scaling problems in safari
-            realign()
             dragStart.current = offset
         }
-        let timePerPixel = canvasStore.getState().timePerPixel
         state.event.stopPropagation()
         setOffset(dayjs(dragStart.current + state.movement[0] * timePerPixel).startOf('day').valueOf())
-    }, [])
+    }, {})
 
-    let timeStartSpring = useTimeStartSpring()
-    let timePerPixelSpring = useTimePerPixelSpring()
+    let timeStartSpring = useTimeStart()
+    let timePerPixelSpring = useTimePerPixel()
 
 
     let [mainLabelWidth, setMainLabelWidth] = useState<number | undefined>(undefined)

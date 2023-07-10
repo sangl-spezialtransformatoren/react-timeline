@@ -1,6 +1,5 @@
 import {OpUnitType} from 'dayjs'
-import {useCallback, useEffect, useState} from 'react'
-import {useVirtualScrollBounds} from './virtualScroll'
+import {useCallback} from 'react'
 import {RpcProvider} from 'worker-rpc'
 import {Interval} from '../functions/intervalFactory'
 
@@ -42,18 +41,4 @@ export const useIntervalCalculator = () => {
     }, [rpcProvider])
 
     return {rpcProvider, createIntervals}
-}
-
-export const useIntervals = (n: number, interval: OpUnitType, formatStart?: string, formatEnd?: string) => {
-    let {from, to} = useVirtualScrollBounds()
-    let [intervals, setIntervals] = useState<[number, Interval][]>()
-    let {createIntervals} = useIntervalCalculator()
-
-    useEffect(() => {
-        createIntervals(from, to, n, interval, formatStart, formatEnd).then((result) => {
-            setIntervals(result)
-        })
-    }, [from, to, n, interval, formatStart, formatEnd, createIntervals])
-
-    return intervals
 }

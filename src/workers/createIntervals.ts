@@ -1,5 +1,5 @@
 import {RpcProvider} from 'worker-rpc'
-import dayjs, {Dayjs, OpUnitType} from 'dayjs'
+import dayjs, {Dayjs, ManipulateType} from 'dayjs'
 
 
 import {internal} from 'collections/sorted-set'
@@ -9,16 +9,16 @@ import {
     getKeysAndTimestamps,
     Interval,
     limitTimestampSetLength,
-    updateTimestamps,
+    updateTimestamps
 } from '../functions/intervalFactory'
-import {IntervalToMs} from '../units'
 import 'dayjs/locale/de'
+import {IntervalToMs} from "../functions/units"
 
 dayjs.locale('de')
 
 
 const rpcProvider = new RpcProvider(
-    (message) => postMessage(message),
+    (message) => postMessage(message)
 )
 
 onmessage = e => rpcProvider.dispatch(e.data)
@@ -26,7 +26,14 @@ onmessage = e => rpcProvider.dispatch(e.data)
 
 let timestampSets: Record<string, internal.SortedSet<Interval>> = {}
 
-rpcProvider.registerRpcHandler('createIntervals', (params: {from: number, to: number, n: number, interval: OpUnitType, formatStart?: string, formatEnd?: string} | undefined) => {
+rpcProvider.registerRpcHandler('createIntervals', (params: {
+    from: number,
+    to: number,
+    n: number,
+    interval: ManipulateType,
+    formatStart?: string,
+    formatEnd?: string
+} | undefined) => {
     if (params) {
         let {from, to, n, interval, formatStart, formatEnd} = params
 

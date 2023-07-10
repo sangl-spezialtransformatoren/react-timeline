@@ -1,29 +1,19 @@
 import React, {useMemo} from 'react'
-import {OpUnitType} from 'dayjs'
-import {useIntervals} from '../../hooks/timeIntervals'
-import {IntervalToMs} from '../../units'
+import {ManipulateType, OpUnitType} from 'dayjs'
 
-import '../canvas/canvas.css'
 import './header.css'
-import {
-    useCanvasStore,
-    useTimePerPixel,
-    useTimePerPixelAnchor,
-    useTimePerPixelSpring,
-    useTimeStartSpring,
-    useTimeZero
-} from '../canvas/canvasStore'
 import {createPortal} from 'react-dom'
 import {animated, to} from '@react-spring/web'
 import {round} from '../../functions/round'
-import {useVirtualScrollBounds} from '../../hooks/virtualScroll'
+
+import {IntervalToMs} from "../../functions/units"
 
 type DisplayInterval = {
     key: string,
     formatStart?: string,
     formatEnd?: string,
     amount: number,
-    unit: OpUnitType,
+    unit: ManipulateType,
     headerFormatStart?: string,
     headerFormatEnd?: string,
     minWidth?: number
@@ -279,8 +269,8 @@ export const Header = React.memo(() => {
 
     let timeZero = useTimeZero()
     let timePerPixelAnchor = useTimePerPixelAnchor()
-    let timePerPixelSpring = useTimePerPixelSpring()
-    let timeStartSpring = useTimeStartSpring()
+    let timePerPixelSpring = useTimePerPixel()
+    let timeStartSpring = useTimeStart()
     let transform = to([timeStartSpring, timePerPixelSpring], (timeStart, timePerPixel) => {
         let timeOffset = (timeZero - timeStart) / timePerPixel
         return `matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ${timeOffset - width / 2}, 0, 0, 1)`
@@ -290,7 +280,7 @@ export const Header = React.memo(() => {
         return round(10 * timePerPixelAnchor / timePerPixel, 1000)
     })
 
-    let containerRef = useCanvasStore(state => state.containerRef)
+    let containerRef = {current: undefined}
     return containerRef?.current ? createPortal(<>
         <div style={{
             width: '100%',
@@ -300,7 +290,7 @@ export const Header = React.memo(() => {
             background: 'rgba(77,77,77,0.82)',
             filter: 'drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.2))',
             position: 'absolute'
-        }} />
+        }}/>
         <animated.div style={{
             transform: transform,
             width: 0,
@@ -318,7 +308,7 @@ export const Header = React.memo(() => {
                     amount={x.amount}
                     unit={x.unit}
                     formatStart={x.headerFormatStart}
-                    formatEnd={x.headerFormatEnd} />
+                    formatEnd={x.headerFormatEnd}/>
             })}
             {displayedUnits.filter(x => x.render).map(x => {
                 return <IntervalHeader
@@ -328,7 +318,7 @@ export const Header = React.memo(() => {
                     amount={x.amount}
                     unit={x.unit}
                     formatStart={x.formatStart}
-                    formatEnd={x.formatEnd} />
+                    formatEnd={x.formatEnd}/>
             })}
         </animated.div>
     </>, containerRef.current) : <></>
