@@ -32,6 +32,10 @@
         "caughtErrorsIgnorePattern": "^_"
       }
     ],
+    "react-hooks/exhaustive-deps": [
+      "warn", {
+      "additionalHooks": "(useIntervals)"
+    }],
     "prefer-const": "off"
   }
 }

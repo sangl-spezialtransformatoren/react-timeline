@@ -7,7 +7,8 @@ import {Meta} from '@storybook/react'
 import {Grid} from '../Grid/grid'
 import {useTimePerPixel, useTimeStart} from './store'
 import {animated, to} from '@react-spring/web'
-import {Now, TimeEnd, TimeStart} from '../Markers/Markers'
+import {Now} from '../Markers/Markers'
+import {Header} from '../Header/Header'
 
 dayjs.extend(timezone)
 dayjs.extend(utc)
@@ -30,7 +31,7 @@ const ExampleEvent: React.FC = () => {
     return <animated.rect
         className={'timely'}
         x={to([timeStart, timePerPixelSpring], (timeStart, timePerPixel) => (start - timeStart) / timePerPixel)}
-        y={0}
+        y={80}
         width={to(timePerPixelSpring, (timePerPixel) => (end - start) / timePerPixel)}
         height={20}
         fill={'black'} />
@@ -41,5 +42,6 @@ export const CanvasNewDemo = () => {
         <Grid />
         <Now />
         <ExampleEvent />
+        <Header />
     </Canvas>
 }

@@ -17,13 +17,21 @@ type SpringApi = {
     springApi: SpringRef<CanvasValues>
 }
 
-export type CanvasStoreShape = SpringApi & SpringType<CanvasValues>
-type InitialCanvasStoreShape = SpringApi & SpringType<CanvasValues>
+type Elements = {
+    header: HTMLDivElement | undefined
+}
+
+export type CanvasStoreShape = SpringApi & SpringType<CanvasValues> & Elements & {
+    setHeader: (_: HTMLDivElement) => unknown
+}
+
+type InitialCanvasStoreShape = SpringApi & SpringType<CanvasValues> & Elements
 
 export type CanvasStore = ReturnType<typeof createCanvasStore>
 
-export let createCanvasStore = (initialState: InitialCanvasStoreShape) => createStore<CanvasStoreShape>(() => ({
-    ...initialState
+export let createCanvasStore = (initialState: InitialCanvasStoreShape) => createStore<CanvasStoreShape>((set) => ({
+    ...initialState,
+    setHeader: (header: HTMLDivElement) => set({header})
 }))
 
 export const CanvasStoreContext = createContext<CanvasStore | null>(null)

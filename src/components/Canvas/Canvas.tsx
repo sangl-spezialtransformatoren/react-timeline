@@ -1,9 +1,9 @@
-import React, {CSSProperties, useCallback, useRef} from 'react'
+import React, {CSSProperties, useCallback, useEffect, useRef, useState} from 'react'
 import {useSpring} from '@react-spring/web'
 import {CanvasStoreContext, createCanvasStore} from './store'
 import {useGesture} from '@use-gesture/react'
 
-import {useResizeObserver} from "../../hooks/resizeObserver"
+import {useResizeObserver} from '../../hooks/resizeObserver'
 
 const DEFAULT_DECAY = 0.988
 const MIN_PINCH_DISTANCE = 20
@@ -16,7 +16,8 @@ let initialState = {
     config: {
         mass: 0.6,
         tension: 210,
-        friction: 19
+        friction: 19,
+        clamp: true
     }
 }
 
@@ -38,7 +39,8 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
         timeStart,
         timePerPixel,
         canvasWidth,
-        canvasHeight
+        canvasHeight,
+        header: undefined
     }))
 
     // Handle drag and zoom
@@ -90,7 +92,6 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
                     pinchStartDistance.current = distanceX
                     pinchStartTimePerPixel.current = timePerPixel.get()
                     pinchStartOffset.current = centerX
-                    console.log(centerX)
                 }
                 let factor = pinchStartDistance.current / distanceX
                 pinchOffset.current = (factor * pinchStartTimePerPixel.current - pinchStartTimePerPixel.current) * pinchStartOffset.current
@@ -145,12 +146,26 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
 
     useResizeObserver(container, handleResize)
 
+    let [initialized, setInitialized] = useState(false)
+    useEffect(() => {
+        if (!initialized) {
+            setInitialized(true)
+        } else {
+            timeStart.start(timeStart.get() + 1)
+            timePerPixel.start(timePerPixel.get() + 0.0001)
+        }
+    }, [initialized, timePerPixel, timeStart])
 
-    return <div style={{...style, touchAction: "none"}} ref={container}>
+
+    return <div style={{...style, position: 'relative', touchAction: 'none'}} ref={container}>
         <CanvasStoreContext.Provider value={store.current}>
             <svg style={{width: '100%', height: '100%'}}>
                 {children}
             </svg>
+            <div
+                ref={(element) => element && store.current.getState().setHeader(element)}
+                style={{position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, overflow: "hidden"}}
+            />
         </CanvasStoreContext.Provider>
     </div>
 }

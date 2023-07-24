@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect} from 'react'
 import {animated, SpringValue, to, useSpring} from '@react-spring/web'
 import {useCanvasHeight, useCanvasWidth, useTimePerPixel, useTimeStart} from '../Canvas/store'
 import {round} from '../../functions/round'
@@ -46,22 +46,18 @@ export const Now: React.FC = () => {
     let timeStartSpring = useTimeStart()
     let timePerPixelSpring = useTimePerPixel()
 
-    let [now, setNow] = useState<number>(new Date().valueOf())
-
+    let [{nowSpring}, api] = useSpring(() => ({
+        nowSpring: new Date().valueOf()
+    }))
     useEffect(() => {
-        let intervalId = setInterval(() => setNow(new Date().setMilliseconds(0).valueOf()), 1000)
+        let intervalId = setInterval(() => api.start({nowSpring: new Date().setMilliseconds(0).valueOf()}), 1000)
         return () => {
             clearInterval(intervalId)
         }
-    }, [])
-
-    let {nowSpring} = useSpring({
-        nowSpring: now
-    })
+    }, [api])
 
     let xSpring = to([nowSpring, timePerPixelSpring, timeStartSpring], (now, timePerPixel, timeStart) => round((now - timeStart) / timePerPixel))
-
     return <>
-        <animated.line stroke={"green"} x1={xSpring} x2={xSpring} y1={0} y2={height}/>
+        <animated.line stroke={'red'} x1={xSpring} x2={xSpring} y1={0} y2={height} />
     </>
 }

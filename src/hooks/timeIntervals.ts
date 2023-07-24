@@ -1,33 +1,28 @@
 import {ManipulateType, OpUnitType} from 'dayjs'
-import {useCallback, useRef} from 'react'
+import {DependencyList, useCallback, useMemo, useRef} from 'react'
 import {RpcProvider} from 'worker-rpc'
 import {Interval} from '../functions/intervalFactory'
-import {useCanvasWidth, useTimePerPixel, useTimeStart} from "../components/Canvas/store"
-import {useAnimationFrame} from "./animationFrame"
-import {IntervalToMs} from "../functions/units"
+import {useCanvasWidth, useTimePerPixel, useTimeStart} from '../components/Canvas/store'
+import {useAnimationFrame} from './animationFrame'
+
+function isPromise(p: unknown) {
+    return p && Object.prototype.toString.call(p) === '[object Promise]'
+}
 
 let workerSingleton: Worker | undefined = undefined
 let rpcProviderSingleton: RpcProvider | undefined = undefined
 
 const workerPath = 'createIntervals.js'
-export const defaultUnits: [number, ManipulateType][] = [
-    [100, 'years'],
-    [10, 'years'],
-    [1, 'year'],
-    [3, 'months'],
-    [1, 'month'],
-    [1, 'week'],
-    [1, 'day'],
-    [4, 'hours'],
-    [1, 'hour'],
-    [15, 'minutes'],
-    [1, 'minute'],
-    [15, 'seconds'],
-    [1, 'second'],
-    [100, 'milliseconds'],
-    [10, 'milliseconds'],
-    [1, 'milliseconds']
-]
+
+export type TimeUnit = {
+    key: string,
+    amount: number
+    unit: ManipulateType
+    formatStart?: string
+    formatEnd?: string
+}
+
+
 export const useIntervalCalculator = () => {
     if (!workerSingleton) {
         workerSingleton = new Worker(workerPath)
@@ -36,7 +31,7 @@ export const useIntervalCalculator = () => {
 
     if (!rpcProviderSingleton) {
         rpcProviderSingleton = new RpcProvider(
-            (message) => worker.postMessage(message),
+            (message) => worker.postMessage(message)
         )
         worker.onmessage = (e: unknown & {data: object}) => rpcProvider.dispatch(e.data)
     }
@@ -44,7 +39,7 @@ export const useIntervalCalculator = () => {
 
     let createIntervals = useCallback(async (from: number, to: number, n: number, interval: OpUnitType, formatStart = '', formatEnd = '') => {
         if (rpcProvider) {
-            return await rpcProvider.rpc(
+            let rpcResult: [string, Interval][] = await rpcProvider.rpc(
                 'createIntervals',
                 {
                     from: from.valueOf(),
@@ -52,11 +47,15 @@ export const useIntervalCalculator = () => {
                     n,
                     interval,
                     formatStart,
-                    formatEnd,
-                },
-            ) as [number, Interval][]
+                    formatEnd
+                }
+            )
+            if (!rpcResult) {
+                throw new Error('Error in calculating intervals.')
+            }
+            return Object.fromEntries(rpcResult) as Record<string, Interval>
         } else {
-            return [] as [number, Interval][]
+            return {} as Record<string, Interval>
         }
     }, [rpcProvider])
 
@@ -72,9 +71,16 @@ function roundTo(value: number, size: number) {
 }
 
 const base = 1.1
-const factor = 0.1
+const factor = 0.3
 
-export const useIntervalCallback = (onChange: (_intervals: [number, Interval][][]) => unknown, units = defaultUnits, minWidth = 30) => {
+export type IntervalCallbackOptions = {
+    units: () => TimeUnit[]
+    callback: (result: {key: string, intervals: Record<string, Interval>}[]) => unknown | Promise<unknown>
+}
+
+export const useIntervals = (config: () => IntervalCallbackOptions, deps: DependencyList) => {
+    let {callback, units} = useMemo(config, [config, ...deps])
+
     let {createIntervals} = useIntervalCalculator()
     let timeStartSpring = useTimeStart()
     let timePerPixelSpring = useTimePerPixel()
@@ -87,7 +93,6 @@ export const useIntervalCallback = (onChange: (_intervals: [number, Interval][][
     useAnimationFrame(async () => {
         let timeStart = timeStartSpring.get()
         let timePerPixel = timePerPixelSpring.get()
-        let timePerPixelGoal = timePerPixelSpring.goal
         let canvasWidth = canvasWidthSpring.get()
 
         let timeEnd = timeStart + timePerPixel * canvasWidth
@@ -100,15 +105,32 @@ export const useIntervalCallback = (onChange: (_intervals: [number, Interval][][
         let newFrom = roundedTimeStart - factor * quantization
         let newTo = roundedTimeEnd + factor * quantization
 
+        // Update intervals and execute the callback if the range changed
         if (timeFrom.current !== newFrom || timeTo.current !== newTo) {
             timeFrom.current = newFrom
             timeTo.current = newTo
 
-            let unitsToCalculate = units.filter(([amount, unit]) => amount * IntervalToMs[unit] / timePerPixelGoal > minWidth)
+            let unitsToCalculate = units()
             let lowerBound = newFrom - (newTo - newFrom)
             let upperBound = newTo + (newTo - newFrom)
-            let results = await Promise.all(unitsToCalculate.map(async ([amount, unit]) => await createIntervals(lowerBound, upperBound, amount, unit)))
-            onChange(results.filter(x => !!x))
+            try {
+                let results: {key: string, intervals: Record<string, Interval>}[] = await Promise.all(
+                    unitsToCalculate.map(
+                        async ({key, amount, unit, formatStart, formatEnd}) => {
+                            let result = await createIntervals(lowerBound, upperBound, amount, unit, formatStart, formatEnd)
+                            return {key, intervals: result}
+                        }
+                    )
+                )
+
+                if (isPromise(callback)) {
+                    await callback(results)
+                } else {
+                    callback(results)
+                }
+            } catch {
+                // Do nothing
+            }
         }
     })
     return intervals.current
