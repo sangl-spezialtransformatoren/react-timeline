@@ -16,7 +16,6 @@
     height: 20px
 }
 
-.header::after {
+.header::before {
     content: var(--content);
-    vertical-align: middle;
 }

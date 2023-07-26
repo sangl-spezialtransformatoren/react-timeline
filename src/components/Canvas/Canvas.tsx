@@ -1,24 +1,27 @@
 import React, {CSSProperties, useCallback, useEffect, useRef, useState} from 'react'
-import {useSpring} from '@react-spring/web'
+import {config, useSpring} from '@react-spring/web'
 import {CanvasStoreContext, createCanvasStore} from './store'
 import {useGesture} from '@use-gesture/react'
 
 import {useResizeObserver} from '../../hooks/resizeObserver'
+import {useAnimationFrame} from '../../hooks/animationFrame'
 
 const DEFAULT_DECAY = 0.988
 const MIN_PINCH_DISTANCE = 20
+const DEFAULT_CONFIG = {
+    mass: 0.6,
+    tension: 210,
+    friction: 19,
+    clamp: true
+}
 
 let initialState = {
     canvasWidth: window.innerWidth,
     canvasHeight: window.innerHeight,
     timeStart: new Date().valueOf(),
     timePerPixel: 3600 * 1000 * 24 / 1200,
-    config: {
-        mass: 0.6,
-        tension: 210,
-        friction: 19,
-        clamp: true
-    }
+    hideOnScaleOpacity: 1,
+    config: DEFAULT_CONFIG
 }
 
 function calculatePinchPoints(center: [number, number], da: [number, number]) {
@@ -33,13 +36,14 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
     let container = useRef<HTMLDivElement>(null)
 
     // Initialize springs and state
-    let [{timeStart, timePerPixel, canvasWidth, canvasHeight}, api] = useSpring(() => initialState)
+    let [{timeStart, timePerPixel, canvasWidth, canvasHeight, hideOnScaleOpacity}, api] = useSpring(() => initialState)
     let store = useRef(createCanvasStore({
         springApi: api,
         timeStart,
         timePerPixel,
         canvasWidth,
         canvasHeight,
+        hideOnScaleOpacity,
         header: undefined
     }))
 
@@ -67,18 +71,20 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
                 dragOffset.current = movement[0] * timePerPixel.goal
                 if (last) {
                     gestureStartStartTime.current = gestureStartStartTime.current - dragOffset.current
+                    dragOffset.current = 0
                 }
                 let momentum = !down
                 api.start({
                     timeStart: gestureStartStartTime.current - dragOffset.current - pinchOffset.current,
-                    immediate: down,
-                    config: {
+                    immediate: !momentum,
+                    config: momentum ? {
                         velocity: momentum ? -1 * direction[0] * velocity[0] * timePerPixel.goal : undefined,
                         decay: momentum ? DEFAULT_DECAY : false
-                    }
+                    } : DEFAULT_CONFIG
                 })
             },
             onPinch: ({first, dragging, last, down, origin, da}) => {
+                console.log('Pinch?')
                 let [p1, p2] = calculatePinchPoints(origin, da)
                 let distanceX = Math.abs(p2[0] - p1[0])
                 let centerX = 0.5 * (p1[0] + p2[0])
@@ -114,7 +120,7 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
                     event.preventDefault()
                     let currentTimeStart = timeStart.get()
                     let currentTimePerPixel = timePerPixel.get()
-                    let factor = delta[1] > 0 ? 1 + delta[1] / 50 : 1 / (1 - delta[1] / 50)
+                    let factor = delta[1] > 0 ? 1 + delta[1] / 150 : 1 / (1 - delta[1] / 150)
                     let offset = currentTimePerPixel * (factor - 1) * event.offsetX
                     let nextTimeStart = currentTimeStart - offset
                     api.start({
@@ -156,6 +162,14 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
         }
     }, [initialized, timePerPixel, timeStart])
 
+    useAnimationFrame(() => {
+        if (timePerPixel.isAnimating) {
+            hideOnScaleOpacity.set(0)
+        } else {
+            hideOnScaleOpacity.start(1, {config: config.slow})
+        }
+    })
+
 
     return <div style={{...style, position: 'relative', touchAction: 'none'}} ref={container}>
         <CanvasStoreContext.Provider value={store.current}>
@@ -164,7 +178,7 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
             </svg>
             <div
                 ref={(element) => element && store.current.getState().setHeader(element)}
-                style={{position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, overflow: "hidden"}}
+                style={{position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, overflow: 'hidden'}}
             />
         </CanvasStoreContext.Provider>
     </div>

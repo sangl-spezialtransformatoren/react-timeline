@@ -15,6 +15,12 @@
     "plugin:react-hooks/recommended"
   ],
   "rules": {
+    "@typescript-eslint/ban-ts-comment": [
+      "error",
+      {
+        "ts-ignore": "allow-with-description"
+      }
+    ],
     "react/prop-types": "off",
     "no-unused-vars": [
       "warn",
@@ -33,9 +39,11 @@
       }
     ],
     "react-hooks/exhaustive-deps": [
-      "warn", {
-      "additionalHooks": "(useIntervals)"
-    }],
+      "warn",
+      {
+        "additionalHooks": "(useIntervals)"
+      }
+    ],
     "prefer-const": "off"
   }
 }

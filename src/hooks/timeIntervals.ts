@@ -70,8 +70,8 @@ function roundTo(value: number, size: number) {
     return size * Math.round(value / size)
 }
 
-const base = 1.1
-const factor = 0.3
+const base = 1.2
+const factor = 0
 
 export type IntervalCallbackOptions = {
     units: () => TimeUnit[]
@@ -99,8 +99,8 @@ export const useIntervals = (config: () => IntervalCallbackOptions, deps: Depend
         let timeWidth = timeEnd - timeStart
 
         const quantization = logRound(timeWidth, base)
-        const roundedTimeStart = roundTo(timeStart, quantization)
-        const roundedTimeEnd = roundTo(timeEnd, quantization)
+        const roundedTimeStart = roundTo(timeStart, quantization / 10)
+        const roundedTimeEnd = roundTo(timeEnd, quantization / 10)
 
         let newFrom = roundedTimeStart - factor * quantization
         let newTo = roundedTimeEnd + factor * quantization
@@ -113,6 +113,9 @@ export const useIntervals = (config: () => IntervalCallbackOptions, deps: Depend
             let unitsToCalculate = units()
             let lowerBound = newFrom - (newTo - newFrom)
             let upperBound = newTo + (newTo - newFrom)
+            if (unitsToCalculate.length < 1) {
+                callback([])
+            }
             try {
                 let results: {key: string, intervals: Record<string, Interval>}[] = await Promise.all(
                     unitsToCalculate.map(
@@ -122,12 +125,7 @@ export const useIntervals = (config: () => IntervalCallbackOptions, deps: Depend
                         }
                     )
                 )
-
-                if (isPromise(callback)) {
-                    await callback(results)
-                } else {
-                    callback(results)
-                }
+                callback(results)
             } catch {
                 // Do nothing
             }

@@ -4,10 +4,10 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import {Meta} from '@storybook/react'
-import {Grid} from '../Grid/grid'
+import {Grid, WeekendMarkers} from '../Grid/Grid'
 import {useTimePerPixel, useTimeStart} from './store'
 import {animated, to} from '@react-spring/web'
-import {Now} from '../Markers/Markers'
+import {Now, TimeEnd, TimeStart} from '../Markers/Markers'
 import {Header} from '../Header/Header'
 
 dayjs.extend(timezone)
@@ -40,8 +40,11 @@ const ExampleEvent: React.FC = () => {
 export const CanvasNewDemo = () => {
     return <Canvas style={{width: '100%', height: '900px'}}>
         <Grid />
+        <WeekendMarkers />
         <Now />
         <ExampleEvent />
         <Header />
+        <TimeStart />
+        <TimeEnd />
     </Canvas>
 }

@@ -7,10 +7,11 @@ type SpringType<T> = {
 }
 
 type CanvasValues = {
-    canvasWidth: number,
-    canvasHeight: number,
-    timeStart: number,
+    canvasWidth: number
+    canvasHeight: number
+    timeStart: number
     timePerPixel: number
+    hideOnScaleOpacity: number
 }
 
 type SpringApi = {
@@ -60,4 +61,7 @@ export const useCanvasHeight = () => {
 }
 export const useCanvasWidth = () => {
     return useCanvasStore(state => state.canvasWidth)
+}
+export const useHideOnScaleOpacity = () => {
+    return useCanvasStore(state => state.hideOnScaleOpacity)
 }
