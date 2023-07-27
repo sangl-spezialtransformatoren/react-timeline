@@ -1,14 +1,14 @@
 import React, {useEffect} from 'react'
 import {animated, SpringValue, to, useSpring} from '@react-spring/web'
-import {useCanvasHeight, useCanvasWidth, useTimePerPixel, useTimeStart} from '../Canvas/store'
+import {useCanvasHeight, useCanvasWidth, useTimePerPixel, useTimeZero} from '../Canvas/store'
 import {round} from '../../functions/round'
 
 export const CustomMarker: React.FC<{value: SpringValue<number>}> = ({value}) => {
     let canvasHeight = useCanvasHeight()
-    let timeStart = useTimeStart()
+    let timeZero = useTimeZero()
     let timePerPixel = useTimePerPixel()
 
-    let x = to([value, timeStart, timePerPixel], (x, tS, tpP) => (x - tS) / tpP)
+    let x = to([value, timeZero, timePerPixel], (x, tS, tpP) => (x - tS) / tpP)
     return <animated.line
         y1={0}
         y2={canvasHeight}
@@ -43,7 +43,7 @@ export const TimeEnd: React.FC = () => {
 
 export const Now: React.FC = () => {
     let height = useCanvasHeight()
-    let timeStartSpring = useTimeStart()
+    let timeZeroSpring = useTimeZero()
     let timePerPixelSpring = useTimePerPixel()
 
     let [{nowSpring}, api] = useSpring(() => ({
@@ -56,8 +56,8 @@ export const Now: React.FC = () => {
         }
     }, [api])
 
-    let xSpring = to([nowSpring, timePerPixelSpring, timeStartSpring], (now, timePerPixel, timeStart) => round((now - timeStart) / timePerPixel))
+    let xSpring = to([nowSpring, timePerPixelSpring, timeZeroSpring], (now, timePerPixel, timeStart) => round((now - timeStart) / timePerPixel))
     return <>
-        <animated.line stroke={'red'} x1={xSpring} x2={xSpring} y1={0} y2={height} />
+        <animated.line stroke={'red'} x1={xSpring} x2={xSpring} y1={0} y2={height}/>
     </>
 }

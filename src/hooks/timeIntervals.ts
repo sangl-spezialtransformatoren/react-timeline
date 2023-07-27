@@ -62,16 +62,16 @@ export const useIntervalCalculator = () => {
     return {rpcProvider, createIntervals}
 }
 
-function logRound(value: number, base = 2) {
+export function logRound(value: number, base = 2) {
     return base ** (Math.round(Math.log(value) / Math.log(base)))
 }
 
-function roundTo(value: number, size: number) {
+export function roundTo(value: number, size: number) {
     return size * Math.round(value / size)
 }
 
-const base = 1.2
-const factor = 0
+const base = 1.0001
+const factor = 0.1
 
 export type IntervalCallbackOptions = {
     units: () => TimeUnit[]
@@ -99,8 +99,8 @@ export const useIntervals = (config: () => IntervalCallbackOptions, deps: Depend
         let timeWidth = timeEnd - timeStart
 
         const quantization = logRound(timeWidth, base)
-        const roundedTimeStart = roundTo(timeStart, quantization / 10)
-        const roundedTimeEnd = roundTo(timeEnd, quantization / 10)
+        const roundedTimeStart = roundTo(timeStart, quantization)
+        const roundedTimeEnd = roundTo(timeEnd, quantization)
 
         let newFrom = roundedTimeStart - factor * quantization
         let newTo = roundedTimeEnd + factor * quantization

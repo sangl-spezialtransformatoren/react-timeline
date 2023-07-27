@@ -21,6 +21,7 @@
   "dependencies": {
     "@react-spring/shared": "^9.4.4",
     "@react-spring/web": "^9.4.3",
+    "@types/randomcolor": "^0.5.7",
     "@types/react-dom": "^18.0.0",
     "@use-gesture/react": "^10.2.6",
     "body-scroll-lock": "*",
@@ -28,6 +29,7 @@
     "dayjs": "^1.10.7",
     "extra-bigint": "^1.1.16",
     "lethargy": "^1.0.9",
+    "randomcolor": "^0.6.2",
     "react-merge-refs": "^2.0.2",
     "requestidlecallback-polyfill": "^1.0.2",
     "worker-rpc": "^0.2.0",

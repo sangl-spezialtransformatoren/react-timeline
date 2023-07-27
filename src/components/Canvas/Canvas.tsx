@@ -1,26 +1,38 @@
 import React, {CSSProperties, useCallback, useEffect, useRef, useState} from 'react'
-import {config, useSpring} from '@react-spring/web'
+import {animated, to, useSpring} from '@react-spring/web'
 import {CanvasStoreContext, createCanvasStore} from './store'
 import {useGesture} from '@use-gesture/react'
 
 import {useResizeObserver} from '../../hooks/resizeObserver'
 import {useAnimationFrame} from '../../hooks/animationFrame'
+import {logRound, roundTo} from "../../hooks/timeIntervals"
 
 const DEFAULT_DECAY = 0.988
 const MIN_PINCH_DISTANCE = 20
 const DEFAULT_CONFIG = {
     mass: 0.6,
     tension: 210,
-    friction: 19,
+    friction: 22.44,
     clamp: true
 }
+
+const QUICK_CONFIG = {
+    mass: 0.01,
+    tension: 210,
+    friction: 9.16,
+    clamp: true
+}
+
 
 let initialState = {
     canvasWidth: window.innerWidth,
     canvasHeight: window.innerHeight,
     timeStart: new Date().valueOf(),
+    timeZero: new Date().valueOf(),
     timePerPixel: 3600 * 1000 * 24 / 1200,
     hideOnScaleOpacity: 1,
+    displayStart: new Date().valueOf(),
+    displayEnd: new Date().valueOf() + 3600 * 1000,
     config: DEFAULT_CONFIG
 }
 
@@ -34,13 +46,49 @@ function calculatePinchPoints(center: [number, number], da: [number, number]) {
 
 export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => {
     let container = useRef<HTMLDivElement>(null)
+    let svgRef = useRef<SVGSVGElement>(null)
 
+    let previousDisplayStart = useRef(0)
+    let previousDisplayEnd = useRef(0)
     // Initialize springs and state
-    let [{timeStart, timePerPixel, canvasWidth, canvasHeight, hideOnScaleOpacity}, api] = useSpring(() => initialState)
+    let [{
+        timeStart,
+        timeZero,
+        timePerPixel,
+        canvasWidth,
+        canvasHeight,
+        hideOnScaleOpacity,
+        displayStart,
+        displayEnd
+    }, api] = useSpring(() => ({
+        ...initialState,
+        onChange: (result) => {
+            let timeStart = result.value['timeStart']
+            let timeEnd = result.value['timeStart'] + result.value['canvasWidth'] * result.value['timePerPixel']
+
+            let quantization = logRound(timeEnd - timeStart, 1.002)
+            let displayStart = roundTo(timeStart, quantization) - 0.5 * quantization
+            let displayEnd = roundTo(timeEnd, quantization) + 0.5 * quantization
+
+            if (previousDisplayStart.current !== displayStart || previousDisplayEnd.current !== displayEnd) {
+                console.log("!")
+                previousDisplayStart.current = displayStart
+                previousDisplayEnd.current = displayEnd
+                api.set({
+                    displayStart: displayStart,
+                    displayEnd: displayEnd
+                })
+            }
+        }
+    }))
+
     let store = useRef(createCanvasStore({
         springApi: api,
         timeStart,
+        timeZero,
         timePerPixel,
+        displayStart,
+        displayEnd,
         canvasWidth,
         canvasHeight,
         hideOnScaleOpacity,
@@ -76,15 +124,13 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
                 let momentum = !down
                 api.start({
                     timeStart: gestureStartStartTime.current - dragOffset.current - pinchOffset.current,
-                    immediate: !momentum,
                     config: momentum ? {
                         velocity: momentum ? -1 * direction[0] * velocity[0] * timePerPixel.goal : undefined,
                         decay: momentum ? DEFAULT_DECAY : false
-                    } : DEFAULT_CONFIG
+                    } : QUICK_CONFIG
                 })
             },
             onPinch: ({first, dragging, last, down, origin, da}) => {
-                console.log('Pinch?')
                 let [p1, p2] = calculatePinchPoints(origin, da)
                 let distanceX = Math.abs(p2[0] - p1[0])
                 let centerX = 0.5 * (p1[0] + p2[0])
@@ -146,6 +192,7 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
         }
     )
 
+
     let handleResize = useCallback(({width: _width, height: _height}: {width: number, height: number}) => {
         api.start({canvasWidth: _width, canvasHeight: _height})
     }, [api])
@@ -164,21 +211,32 @@ export const Canvas: React.FC<{style?: CSSProperties}> = ({style, children}) => 
 
     useAnimationFrame(() => {
         if (timePerPixel.isAnimating) {
-            hideOnScaleOpacity.set(0)
+            // hideOnScaleOpacity.set(0)
         } else {
-            hideOnScaleOpacity.start(1, {config: config.slow})
+            // hideOnScaleOpacity.start(1, {config: config.slow})
         }
     })
 
 
     return <div style={{...style, position: 'relative', touchAction: 'none'}} ref={container}>
         <CanvasStoreContext.Provider value={store.current}>
-            <svg style={{width: '100%', height: '100%'}}>
-                {children}
+            <svg style={{width: '100%', height: '100%'}} ref={svgRef}>
+                <animated.g
+                    style={{transform: to([timeStart, timeZero, timePerPixel], (timeStart, timeZero, timePerPixel) => `translateX(${(timeZero - timeStart) / timePerPixel}px)`)}}>
+                    {children}
+                </animated.g>
             </svg>
             <div
                 ref={(element) => element && store.current.getState().setHeader(element)}
-                style={{position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, overflow: 'hidden'}}
+                style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    top: 0,
+                    left: 0,
+                    overflow: 'hidden',
+                    pointerEvents: "none"
+                }}
             />
         </CanvasStoreContext.Provider>
     </div>
